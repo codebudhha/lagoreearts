@@ -1,0 +1,2395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lagoree Arts — Curated Masterpieces for Refined Spaces</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script>document.documentElement.classList.add('js');</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* ================= Global Styles & Variables ================= */
+        :root{
+            --ivory: #F7F5F0;
+            --white: #FCFBF8;
+            --forest: #123524;
+            --forest-70: rgba(16, 42, 30, 0.7);
+            --gold: #C6A15B;
+            --gold-dim: rgba(200, 169, 106, 0.3);
+            --stone: #DED5C8;
+            --charcoal: #292927;
+            --muted: #686660;
+
+            --serif: 'Cormorant Garamond', serif;
+            --sans: 'Inter', sans-serif;
+
+            --container: 1320px;
+            --gutter: clamp(16px, 4vw, 48px);
+
+            --transition: 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; overflow-x: clip; }
+        body {
+            background: var(--ivory);
+            color: var(--charcoal);
+            font-family: var(--sans);
+            font-weight: 400;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: clip;
+            width: 100%;
+        }
+        img, svg { display: block; max-width: 100%; }
+        a { color: inherit; text-decoration: none; }
+        ul { list-style: none; }
+        button { font-family: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+        input { font-family: inherit; }
+
+        ::selection { background: var(--gold-dim); }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+        }
+
+        :focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+        .wrap { 
+            max-width: var(--container); 
+            margin: 0 auto; 
+            padding-left: var(--gutter); 
+            padding-right: var(--gutter); 
+            width: 100%;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--serif);
+            font-weight: 500;
+            color: var(--forest);
+            line-height: 1.15;
+            letter-spacing: 0.01em;
+        }
+
+        /* ================= Eyebrow & Sections ================= */
+        .eyebrow {
+            font-family: var(--sans);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--gold);
+            display: inline-block;
+        }
+        .eyebrow.on-dark { color: var(--gold); }
+        .eyebrow.on-light-muted { color: var(--forest); opacity: 0.55; }
+
+        /* Unified, tightened section vertical spacing */
+        .section { padding: 64px 0; }
+        .section.tight { padding: 48px 0; }
+        @media (max-width: 768px) {
+            .section { padding: 44px 0; }
+            .section.tight { padding: 36px 0; }
+        }
+
+        .rule { height: 1px; background: linear-gradient(90deg, var(--gold-dim), var(--stone) 60%, transparent); }
+
+        /* ================= Buttons ================= */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 32px;
+            border-radius: 2px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            border: 1.5px solid var(--forest);
+            transition: background var(--transition), color var(--transition), border-color var(--transition), transform var(--transition);
+            position: relative;
+        }
+        .btn.primary {
+            background: var(--forest);
+            color: var(--ivory);
+            border-color: var(--forest);
+        }
+        .btn.primary:hover {
+            background: #0A1A12;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 42, 30, 0.15);
+        }
+        .btn.ghost {
+            background: transparent;
+            color: var(--forest);
+            border-color: var(--stone);
+        }
+        .btn.ghost:hover {
+            background: var(--forest);
+            color: var(--ivory);
+            border-color: var(--forest);
+        }
+        .btn.on-dark {
+            border-color: var(--gold);
+            color: var(--ivory);
+        }
+        .btn.on-dark:hover {
+            background: var(--gold);
+            color: var(--forest);
+            border-color: var(--gold);
+        }
+
+        /* ================= Plate System ================= */
+        .plate {
+            position: relative;
+            border: 1px solid var(--gold-dim);
+            padding: 8px;
+            background: var(--white);
+            transition: box-shadow 0.4s ease;
+            box-sizing: border-box;
+        }
+        .plate .canvas {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            transition: filter 0.8s ease, opacity 0.8s ease, transform 1s ease;
+            aspect-ratio: 4 / 5;
+        }
+        .js .plate .canvas { filter: blur(4px); opacity: 0; transform: scale(1.02); }
+        .js .plate.revealed .canvas { filter: blur(0); opacity: 1; transform: scale(1); }
+
+        .plate .canvas::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px);
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        .plate .caption {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 10px 4px 2px;
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 14px;
+            color: var(--forest);
+            opacity: 0.85;
+        }
+        .plate .caption .num {
+            font-family: var(--sans);
+            font-style: normal;
+            font-size: 10px;
+            letter-spacing: 0.16em;
+            color: var(--gold);
+            font-weight: 600;
+        }
+        .plate.no-caption .caption { display: none; }
+        .plate.dark { background: var(--forest); border-color: rgba(200, 169, 106, 0.5); }
+        .plate.dark .caption { color: var(--ivory); }
+
+        /* Canvas Gradients */
+        .cv-hero { background: radial-gradient(130% 130% at 10% 20%, #2c4433 0%, transparent 60%), radial-gradient(90% 120% at 90% 80%, #7a5a2b 0%, transparent 60%), linear-gradient(160deg, #0f2419 0%, #1c3526 45%, #3a2e1c 100%); }
+        .cv-1 { background: radial-gradient(120% 120% at 20% 20%, #8a4a3a 0%, transparent 60%), linear-gradient(150deg,#2a1a14,#5c3a2a); }
+        .cv-2 { background: radial-gradient(120% 120% at 80% 15%, #6b6046 0%, transparent 60%), linear-gradient(150deg,#1c1a14,#4a4030); }
+        .cv-3 { background: radial-gradient(120% 120% at 30% 80%, #4a5c46 0%, transparent 60%), linear-gradient(160deg,#0f1c14,#2a3a28); }
+        .cv-4 { background: radial-gradient(120% 120% at 70% 30%, #7a5c6b 0%, transparent 60%), linear-gradient(150deg,#1a1420,#3a2a40); }
+        .cv-5 { background: radial-gradient(120% 120% at 25% 70%, #8a7148 0%, transparent 60%), linear-gradient(150deg,#241c14,#5c4a2e); }
+        .cv-6 { background: radial-gradient(120% 120% at 75% 75%, #3f6b52 0%, transparent 60%), linear-gradient(160deg,#0f1e16,#2c4a36); }
+        .cv-room1 { background: radial-gradient(110% 110% at 30% 30%, #6b5636 0, transparent 60%), linear-gradient(160deg,#1a140e,#3a2e1e); }
+        .cv-room2 { background: radial-gradient(110% 110% at 70% 30%, #445c4a 0, transparent 60%), linear-gradient(160deg,#0e1a12,#243c2c); }
+        .cv-room3 { background: radial-gradient(110% 110% at 30% 70%, #5c4a6b 0, transparent 60%), linear-gradient(160deg,#160e1a,#2e2438); }
+        .cv-room4 { background: radial-gradient(110% 110% at 70% 70%, #7a6a44 0, transparent 60%), linear-gradient(160deg,#1a160e,#40361e); }
+        .cv-room5 { background: radial-gradient(110% 110% at 40% 40%, #4a5c6b 0, transparent 60%), linear-gradient(160deg,#0e161a,#243040); }
+        .cv-room6 { background: radial-gradient(110% 110% at 60% 40%, #6b4a4a 0, transparent 60%), linear-gradient(160deg,#1a0e0e,#3a2020); }
+        .cv-room7 { background: radial-gradient(110% 110% at 40% 60%, #5c6b4a 0, transparent 60%), linear-gradient(160deg,#141a0e,#2e3a1e); }
+        .cv-room8 { background: radial-gradient(110% 110% at 60% 60%, #6b5c4a 0, transparent 60%), linear-gradient(160deg,#1a160e,#3a301e); }
+        .cv-life1 { background: radial-gradient(130% 100% at 20% 0%, #4a3a2a 0, transparent 60%), linear-gradient(170deg,#1c150f,#3c2c1c);}
+        .cv-life2 { background: radial-gradient(130% 100% at 80% 100%, #2f4a3a 0, transparent 60%), linear-gradient(170deg,#0f1c15,#22392b);}
+        .cv-life3 { background: radial-gradient(130% 100% at 50% 50%, #4a2f3a 0, transparent 60%), linear-gradient(170deg,#170f16,#331f2b);}
+        .cv-life4 { background: radial-gradient(130% 100% at 10% 90%, #6b5a3a 0, transparent 60%), linear-gradient(170deg,#1c160f,#40331e);}
+        .cv-prod1 { background: radial-gradient(100% 140% at 50% 0%, #8a6a44 0, transparent 62%), linear-gradient(180deg,#221a10,#100c08); }
+        .cv-prod2 { background: radial-gradient(100% 140% at 50% 0%, #4a6b5a 0, transparent 62%), linear-gradient(180deg,#101f16,#080c0a); }
+        .cv-prod3 { background: radial-gradient(100% 140% at 50% 0%, #6b4a5c 0, transparent 62%), linear-gradient(180deg,#1c1020,#0c080d); }
+        .cv-prod4 { background: radial-gradient(100% 140% at 50% 0%, #7a7048 0, transparent 62%), linear-gradient(180deg,#1e1c10,#0d0c08); }
+        .cv-story { background: radial-gradient(120% 120% at 30% 20%, #3a4a3a 0, transparent 60%), linear-gradient(160deg,#0e1a12,#2a2420); }
+        .cv-ig1 { background: radial-gradient(110% 110% at 20% 20%,#7a5a3a 0,transparent 60%), linear-gradient(160deg,#1a140c,#382a18);}
+        .cv-ig2 { background: radial-gradient(110% 110% at 80% 20%,#3a5c4a 0,transparent 60%), linear-gradient(160deg,#0c1a12,#1e3828);}
+        .cv-ig3 { background: radial-gradient(110% 110% at 20% 80%,#5c3a4a 0,transparent 60%), linear-gradient(160deg,#160c12,#301e28);}
+        .cv-ig4 { background: radial-gradient(110% 110% at 80% 80%,#6b6244 0,transparent 60%), linear-gradient(160deg,#181608,#302c14);}
+        .cv-ig5 { background: radial-gradient(110% 110% at 50% 30%,#4a5c6b 0,transparent 60%), linear-gradient(160deg,#0c141a,#1e2c38);}
+        .cv-ig6 { background: radial-gradient(110% 110% at 50% 70%,#6b4a4a 0,transparent 60%), linear-gradient(160deg,#1a0c0c,#381e1e);}
+        .cv-sanskrit { background: radial-gradient(120% 120% at 30% 40%, #6b5a3a 0, transparent 60%), linear-gradient(160deg,#1a140c,#3a2e16); }
+
+        /* ================= Reveal on Scroll ================= */
+        .js .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .js .reveal.in { opacity: 1; transform: translateY(0); }
+
+        /* ================= Announcement Bar ================= */
+        .announce {
+            background: var(--forest);
+            color: var(--ivory);
+            text-align: center;
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            padding: 10px 40px;
+            font-weight: 400;
+            position: relative;
+            border-bottom: 1px solid rgba(200, 169, 106, 0.2);
+        }
+        .announce .close {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            opacity: 0.6;
+            line-height: 1;
+            padding: 0 6px;
+        }
+        .announce .close:hover { opacity: 1; }
+
+        /* ================= Navigation ================= */
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 74px;
+            padding: 0 var(--gutter);
+            background: rgba(247, 245, 240, 0.96);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(222, 213, 200, 0.7);
+            transition: background 0.3s ease, height 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .nav.solid, .nav.is-scrolled {
+            background: rgba(247, 245, 240, 0.98);
+            height: 68px;
+            box-shadow: 0 4px 24px rgba(18, 53, 36, 0.08);
+            border-bottom-color: rgba(198, 161, 91, 0.35);
+        }
+        .nav .side { display: flex; align-items: center; gap: 32px; flex: 1; }
+        .nav .side.right { justify-content: flex-end; }
+
+        .nav a.navlink {
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 500;
+            color: var(--forest);
+            position: relative;
+            padding-bottom: 4px;
+        }
+        .nav a.navlink::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -2px;
+            width: 0;
+            height: 1.5px;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
+        .nav a.navlink:hover::after { width: 100%; }
+
+        .logo {
+            font-family: var(--serif);
+            font-size: 26px;
+            font-weight: 500;
+            letter-spacing: 0.18em;
+            color: var(--forest);
+            text-align: center;
+        }
+
+        .nav .icons { display: flex; gap: 20px; align-items: center; }
+        .nav .icons button { color: var(--forest); position: relative; padding: 4px; }
+        .nav-mobile-toggle { display: none; flex-direction: column; gap: 5px; width: 22px; padding: 6px 0; }
+        .nav-mobile-toggle span { display: block; height: 1.5px; width: 100%; background: var(--forest); transition: transform .3s ease, opacity .3s ease; }
+
+        @media (max-width: 920px) {
+            .nav .side.left .navlink, .nav .side.right .navlink { display: none; }
+            .nav-mobile-toggle { display: flex; }
+        }
+
+        /* ================= Hero ================= */
+        .hero {
+            position: relative;
+            min-height: 80vh;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+            background: var(--forest);
+        }
+        .hero .canvas {
+            position: absolute;
+            inset: 0;
+            filter: none;
+            opacity: 1;
+            transform: none;
+            animation: heroIn 1.5s ease both;
+        }
+        @keyframes heroIn { from{ opacity:0; transform: scale(1.05); } to{ opacity:1; transform: scale(1); } }
+        .hero .canvas::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(0deg, rgba(16, 42, 30, 0.75) 0%, rgba(16, 42, 30, 0.2) 50%, rgba(16, 42, 30, 0.5) 100%);
+        }
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            padding: 0 var(--gutter) 64px;
+            max-width: 720px;
+            color: var(--ivory);
+        }
+        .hero-content .eyebrow { margin-bottom: 18px; }
+        .hero-content h1 {
+            font-size: clamp(38px, 5.5vw, 68px);
+            color: var(--ivory);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.08;
+        }
+        .hero-content p {
+            margin-top: 18px;
+            font-size: 16px;
+            color: var(--stone);
+            max-width: 44ch;
+            font-weight: 300;
+            line-height: 1.6;
+        }
+        .hero-ctas { margin-top: 32px; display: flex; gap: 16px; flex-wrap: wrap; }
+        .hero-scroll {
+            position: absolute;
+            bottom: 24px;
+            right: var(--gutter);
+            z-index: 2;
+            color: var(--stone);
+            font-size: 10px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            writing-mode: vertical-rl;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.6;
+        }
+        .hero-scroll .line { width: 1px; height: 36px; background: var(--gold); }
+
+        /* ================= Curate By Strip ================= */
+        .curateby {
+            display: flex;
+            flex-wrap: wrap;
+            border-top: 1px solid var(--stone);
+            border-bottom: 1px solid var(--stone);
+            background: var(--white);
+            width: 100%;
+        }
+        .curateby a {
+            flex: 1 1 200px;
+            text-align: center;
+            padding: 18px 12px;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 500;
+            border-right: 1px solid var(--stone);
+            color: var(--forest);
+            transition: background var(--transition), color var(--transition);
+        }
+        .curateby a:last-child { border-right: none; }
+        .curateby a span {
+            display: block;
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 13px;
+            letter-spacing: 0.02em;
+            text-transform: none;
+            opacity: 0.6;
+            margin-top: 4px;
+            font-weight: 400;
+        }
+        .curateby a:hover { background: var(--forest); color: var(--ivory); }
+
+        /* ================= Section Headers ================= */
+        .section-head { max-width: 640px; margin-bottom: 36px; }
+        .section-head h2 { font-size: clamp(28px, 3.6vw, 42px); margin-top: 8px; }
+        .section-head p.desc { margin-top: 10px; color: var(--muted); font-size: 15px; max-width: 50ch; }
+        .section-head.center { margin-left: auto; margin-right: auto; text-align: center; }
+
+        /* ================= Collections Grid ================= */
+        .filter-row { display: flex; flex-wrap: wrap; gap: 8px; margin: -12px 0 28px; }
+        .filter-pill {
+            padding: 8px 18px;
+            border: 1px solid var(--stone);
+            border-radius: 20px;
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-weight: 500;
+            transition: all 0.25s ease;
+        }
+        .filter-pill.active { background: var(--forest); border-color: var(--forest); color: var(--ivory); }
+        .filter-pill:hover:not(.active) { border-color: var(--gold); color: var(--gold); }
+
+        .collections-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+        .coll-card { grid-column: span 3; transition: opacity .35s ease; }
+        .coll-card:nth-child(1) { grid-column: span 4; }
+        .coll-card:nth-child(2) { grid-column: span 2; }
+        .coll-card:nth-child(3) { grid-column: span 2; }
+        .coll-card:nth-child(4) { grid-column: span 4; }
+        .coll-card:nth-child(5) { grid-column: span 3; }
+        .coll-card:nth-child(6) { grid-column: span 3; }
+        .coll-card.hide { display: none; }
+
+        @media (max-width: 900px) {
+            .collections-grid { grid-template-columns: repeat(2, 1fr); }
+            .coll-card, .coll-card:nth-child(n) { grid-column: span 1; }
+        }
+        @media (max-width: 560px) {
+            .collections-grid { grid-template-columns: 1fr; }
+            .coll-card, .coll-card:nth-child(n) { grid-column: span 1; }
+        }
+
+        .coll-card .plate { height: 100%; display: flex; flex-direction: column; }
+        .coll-card .canvas { aspect-ratio: 4 / 5; cursor: pointer; flex: 1; }
+        .coll-card:nth-child(1) .canvas, .coll-card:nth-child(4) .canvas { aspect-ratio: 16 / 10; }
+        .coll-card:hover .canvas { transform: scale(1.03); }
+
+        /* ================= Shop By Room ================= */
+        .room-scroller {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 4px 0 16px;
+            scroll-snap-type: x mandatory;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            width: 100%;
+        }
+        .room-scroller::-webkit-scrollbar { display: none; }
+        .room-card { flex: 0 0 200px; scroll-snap-align: start; }
+        .room-card .canvas { aspect-ratio: 3 / 4; transition: transform 0.6s ease; }
+        .room-card:hover .canvas { transform: scale(1.03); }
+        .room-card .label { margin-top: 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; text-align: center; opacity: 0.85; }
+
+        /* ================= Why Lagoree ================= */
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: var(--stone);
+            border: 1px solid var(--stone);
+            width: 100%;
+        }
+        @media (max-width: 800px) { .why-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .why-grid { grid-template-columns: 1fr; } }
+        .why-card {
+            background: var(--white);
+            padding: 36px 24px;
+            text-align: center;
+        }
+        .why-card .icon { width: 36px; height: 36px; margin: 0 auto 16px; color: var(--gold); }
+        .why-card h3 { font-size: 18px; }
+        .why-card p { margin-top: 8px; font-size: 13.5px; opacity: 0.7; line-height: 1.5; }
+
+        /* ================= Lifestyle Gallery ================= */
+        .life-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 12px;
+            width: 100%;
+        }
+        .life-grid .plate:nth-child(1) { grid-column: span 7; }
+        .life-grid .plate:nth-child(2) { grid-column: span 5; }
+        .life-grid .plate:nth-child(3) { grid-column: span 5; }
+        .life-grid .plate:nth-child(4) { grid-column: span 7; }
+        .life-grid .canvas { aspect-ratio: 1; }
+        .life-grid .plate:nth-child(1) .canvas, .life-grid .plate:nth-child(4) .canvas { aspect-ratio: 16 / 9; }
+        @media (max-width: 800px) {
+            .life-grid { grid-template-columns: 1fr; }
+            .life-grid .plate { grid-column: span 1 !important; }
+        }
+
+        /* ================= Sanskrit Edit ================= */
+        .sanskrit-section {
+            background: var(--ivory);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+        .sanskrit-section .sanskrit-bg {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: var(--serif);
+            font-size: clamp(60px, 12vw, 160px);
+            color: var(--stone);
+            opacity: 0.25;
+            font-style: italic;
+            letter-spacing: 0.05em;
+            line-height: 1;
+            pointer-events: none;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .sanskrit-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 36px;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+        .sanskrit-grid .plate .canvas { aspect-ratio: 4 / 3; }
+        @media (max-width: 860px) {
+            .sanskrit-grid { grid-template-columns: 1fr; }
+            .sanskrit-section .sanskrit-bg { display: none; }
+        }
+
+        /* ================= Product Carousel (Curator's Picks) ================= */
+        .prod-scroller {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 20px;
+            width: 100%;
+        }
+        @media (max-width: 992px) {
+            .prod-scroller {
+                display: flex;
+                gap: 16px;
+                overflow-x: auto;
+                padding-bottom: 12px;
+                scroll-snap-type: x mandatory;
+            }
+            .prod-card {
+                flex: 0 0 280px;
+                scroll-snap-align: start;
+            }
+        }
+        .prod-card {
+            background: var(--white);
+            padding: 12px;
+            border: 1px solid var(--stone);
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .prod-card:hover { border-color: var(--gold); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
+        .prod-card .canvas-wrap { position: relative; }
+        .prod-card .canvas { aspect-ratio: 4 / 5; }
+        .prod-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .prod-actions button {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(247, 245, 240, 0.92);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s ease, transform 0.2s ease;
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+        .prod-actions button:hover { background: var(--gold); color: #fff; transform: scale(1.05); }
+
+        /* Unified, robust flex layout for product metadata */
+        .prod-meta { 
+            padding: 14px 4px 4px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .prod-meta .artist { 
+            font-size: 10px; 
+            letter-spacing: 0.14em; 
+            text-transform: uppercase; 
+            color: var(--gold); 
+            font-weight: 600; 
+        }
+        .prod-meta h3 { 
+            font-size: 20px; 
+            margin-top: 4px; 
+            line-height: 1.25;
+            min-height: 50px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .prod-meta .story { 
+            font-size: 12.5px; 
+            opacity: 0.7; 
+            margin-top: 6px; 
+            line-height: 1.45;
+            min-height: 36px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .prod-meta-footer {
+            margin-top: auto;
+            padding-top: 14px;
+        }
+        .prod-meta .row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-top: 1px solid rgba(222, 213, 200, 0.5);
+            padding-top: 10px;
+        }
+        .prod-meta .price { font-family: var(--serif); font-size: 18px; font-weight: 600; color: var(--forest); }
+        .prod-meta .sizes { font-size: 11px; letter-spacing: 0.05em; opacity: 0.6; }
+        .prod-meta .quickview {
+            margin-top: 10px;
+            font-size: 10.5px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            font-weight: 600;
+            border-bottom: 1.5px solid var(--forest);
+            padding-bottom: 2px;
+            display: inline-block;
+            transition: border-color 0.2s ease, color 0.2s ease;
+            cursor: pointer;
+        }
+        .prod-meta .quickview:hover { color: var(--gold); border-color: var(--gold); }
+
+        /* ================= Story Section ================= */
+        .story {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 48px;
+            align-items: center;
+        }
+        @media (max-width: 860px) { .story { grid-template-columns: 1fr; gap: 28px; } }
+        .story blockquote {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: clamp(20px, 2.4vw, 26px);
+            color: var(--forest);
+            line-height: 1.4;
+            margin: 18px 0;
+        }
+        .story .founder { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.6; margin-top: 12px; }
+
+        /* ================= Testimonials ================= */
+        .testi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1px;
+            background: var(--stone);
+            border: 1px solid var(--stone);
+        }
+        @media (max-width: 800px) { .testi-grid { grid-template-columns: 1fr; } }
+        .testi-card {
+            background: var(--white);
+            padding: 32px 24px;
+        }
+        .stars { color: var(--gold); font-size: 13px; letter-spacing: 2px; }
+        .testi-card p.quote {
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: 17px;
+            margin: 14px 0;
+            color: var(--forest);
+            line-height: 1.45;
+        }
+        .testi-card .who { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.6; }
+
+        /* ================= Instagram ================= */
+        .ig-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+        @media (max-width: 800px) { .ig-grid { grid-template-columns: repeat(3, 1fr); } }
+        .ig-grid .canvas { aspect-ratio: 1; }
+
+        /* ================= Newsletter ================= */
+        .newsletter {
+            background: var(--forest);
+            color: var(--ivory);
+            text-align: center;
+        }
+        .newsletter h2 {
+            color: var(--ivory);
+            font-size: clamp(26px, 3.2vw, 38px);
+            font-style: italic;
+            font-weight: 400;
+        }
+        .newsletter p { color: var(--stone); margin-top: 10px; font-size: 14.5px; max-width: 46ch; margin-left: auto; margin-right: auto; }
+        .news-form {
+            margin: 28px auto 0;
+            display: flex;
+            max-width: 440px;
+            border-bottom: 1.5px solid var(--gold);
+        }
+        .news-form input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--ivory);
+            padding: 10px 4px;
+            font-size: 14px;
+            outline: none;
+        }
+        .news-form input::placeholder { color: rgba(247, 245, 242, 0.45); }
+        .news-form button {
+            font-size: 11px;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--gold);
+            padding: 10px 8px;
+            white-space: nowrap;
+            transition: color 0.2s ease;
+        }
+        .news-form button:hover { color: var(--ivory); }
+        .news-note { margin-top: 12px; font-size: 12px; color: var(--gold); opacity: 0; transition: opacity 0.3s ease; }
+        .news-note.show { opacity: 1; }
+
+        /* ================= Footer ================= */
+        footer { background: var(--ivory); padding: 56px 0 24px; }
+        .foot-grid {
+            display: grid;
+            grid-template-columns: 1.5fr repeat(4, 1fr);
+            gap: 32px;
+            padding-bottom: 40px;
+            border-bottom: 1px solid var(--stone);
+        }
+        @media (max-width: 900px) { .foot-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .foot-grid { grid-template-columns: 1fr; } }
+        .foot-grid h4 {
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--forest);
+            opacity: 0.6;
+            margin-bottom: 16px;
+            font-family: var(--sans);
+            font-weight: 600;
+        }
+        .foot-grid li { margin-bottom: 10px; font-size: 13.5px; }
+        .foot-grid li a:hover { color: var(--gold); }
+        .foot-logo { font-family: var(--serif); font-size: 26px; letter-spacing: 0.12em; color: var(--forest); }
+        .foot-grid .tag { margin-top: 12px; font-size: 13px; opacity: 0.65; max-width: 30ch; line-height: 1.5; }
+        .foot-social { display: flex; gap: 12px; margin-top: 20px; }
+        .foot-social a {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--stone);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s ease, color 0.2s ease;
+        }
+        .foot-social a:hover { border-color: var(--gold); color: var(--gold); }
+        .foot-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 20px;
+            font-size: 11.5px;
+            opacity: 0.5;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        /* ================= Interactive Overlays & Modals ================= */
+        .icon-badge {
+            position: absolute;
+            top: -6px;
+            right: -8px;
+            min-width: 15px;
+            height: 15px;
+            padding: 0 4px;
+            border-radius: 8px;
+            background: var(--gold);
+            color: var(--forest);
+            font-family: var(--sans);
+            font-size: 9px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0);
+            transition: transform 0.25s ease;
+        }
+        .icon-badge.show { transform: scale(1); }
+        .nav .icons button.active-toggle { color: var(--gold); }
+
+        .mobile-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 80%;
+            max-width: 320px;
+            background: var(--white);
+            z-index: 300;
+            transform: translateX(100%);
+            transition: transform .35s ease;
+            padding: 80px 24px 30px;
+            overflow-y: auto;
+            box-shadow: -20px 0 40px rgba(0,0,0,0.15);
+        }
+        .mobile-drawer.open { transform: translateX(0); }
+        .mobile-drawer a {
+            display: block;
+            font-family: var(--serif);
+            font-size: 22px;
+            font-style: italic;
+            color: var(--forest);
+            padding: 12px 0;
+            border-bottom: 1px solid var(--stone);
+        }
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 20, 14, 0.45);
+            z-index: 290;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+            backdrop-filter: blur(2px);
+        }
+        .scrim.show { opacity: 1; pointer-events: auto; }
+
+        .side-drawer {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: min(400px, 92vw);
+            background: var(--white);
+            z-index: 320;
+            transform: translateX(100%);
+            transition: transform .35s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -20px 0 40px rgba(0,0,0,0.15);
+        }
+        .side-drawer.open { transform: translateX(0); }
+        .drawer-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--stone);
+        }
+        .drawer-head h3 { font-size: 20px; }
+        .drawer-close { font-size: 22px; line-height: 1; color: var(--forest); opacity: 0.6; padding: 4px; }
+        .drawer-body { flex: 1; overflow-y: auto; padding: 10px 24px; }
+        .drawer-empty { padding: 40px 0; text-align: center; opacity: 0.6; font-family: var(--serif); font-style: italic; font-size: 16px; }
+        .drawer-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 1px solid var(--stone);
+        }
+        .drawer-item .thumb {
+            width: 56px;
+            height: 56px;
+            flex: 0 0 56px;
+            border: 1px solid var(--gold-dim);
+            position: relative;
+            overflow: hidden;
+        }
+        .drawer-item .thumb .canvas { position: absolute; inset: 0; }
+        .drawer-item .info { flex: 1; min-width: 0; }
+        .drawer-item .info .t { font-family: var(--serif); font-size: 15px; color: var(--forest); font-weight: 500; }
+        .drawer-item .info .s { font-size: 11px; opacity: 0.6; margin-top: 2px; }
+        .drawer-item .info .row2 {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        .drawer-item .price { font-family: var(--serif); font-size: 14px; color: var(--forest); }
+        .drawer-item .qty { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+        .drawer-item .qty button {
+            width: 20px;
+            height: 20px;
+            border: 1px solid var(--stone);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .drawer-remove {
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            opacity: 0.5;
+            text-decoration: underline;
+            margin-top: 6px;
+            display: inline-block;
+            cursor: pointer;
+        }
+        .drawer-foot {
+            padding: 20px 24px;
+            border-top: 1px solid var(--stone);
+        }
+        .drawer-foot .subtotal {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--serif);
+            font-size: 18px;
+            color: var(--forest);
+            margin-bottom: 14px;
+        }
+        .drawer-foot .btn { width: 100%; }
+        .drawer-foot .note { margin-top: 10px; font-size: 11px; opacity: 0.55; text-align: center; }
+
+        /* Search Overlay */
+        .search-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 310;
+            background: var(--white);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 90px 20px 40px;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(-6px);
+            transition: opacity .3s ease, transform .3s ease;
+        }
+        .search-overlay.open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+        .search-overlay .search-box { width: 100%; max-width: 600px; }
+        .search-overlay input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1.5px solid var(--forest);
+            font-family: var(--serif);
+            font-style: italic;
+            font-size: clamp(22px, 3.5vw, 30px);
+            color: var(--forest);
+            padding: 8px 4px 12px;
+            outline: none;
+        }
+        .search-close {
+            position: absolute;
+            top: 24px;
+            right: var(--gutter);
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            opacity: 0.6;
+        }
+        .search-results { width: 100%; max-width: 600px; margin-top: 24px; }
+        .search-result {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 4px;
+            border-bottom: 1px solid var(--stone);
+            cursor: pointer;
+        }
+        .search-result:hover { padding-left: 8px; color: var(--gold); }
+        .search-hint { margin-top: 20px; font-size: 12px; opacity: 0.5; }
+
+        /* Modals */
+        .modal-wrap {
+            position: fixed;
+            inset: 0;
+            z-index: 330;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        .modal-wrap.open { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background: var(--white);
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--gold-dim);
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            transform: translateY(12px) scale(0.99);
+            transition: transform .3s ease;
+            position: relative;
+        }
+        .modal-wrap.open .modal-box { transform: translateY(0) scale(1); }
+        @media (max-width: 760px) {
+            .modal-box { grid-template-columns: 1fr; }
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 5;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: rgba(247, 245, 240, 0.9);
+            color: var(--forest);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .modal-media {
+            padding: 32px;
+            background: rgba(200, 169, 106, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .modal-info {
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-left: 1px solid var(--stone);
+        }
+        @media (max-width: 760px) {
+            .modal-info { border-left: none; border-top: 1px solid var(--stone); }
+        }
+        .modal-info .artist { font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); font-weight: 600; }
+        .modal-info h3 { font-size: 26px; margin-top: 6px; }
+        .modal-info .story { margin-top: 10px; font-size: 13.5px; opacity: 0.7; line-height: 1.6; }
+        .modal-info .price { font-family: var(--serif); font-size: 22px; color: var(--forest); margin-top: 16px; font-weight: 600; }
+        .opt-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.6; margin-top: 18px; margin-bottom: 8px; }
+        .opt-row { display: flex; gap: 6px; flex-wrap: wrap; }
+        .opt-pill {
+            padding: 8px 14px;
+            border: 1px solid var(--stone);
+            font-size: 12px;
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+        .opt-pill.active { background: var(--forest); border-color: var(--forest); color: var(--ivory); }
+        .modal-info .btn { margin-top: 24px; width: 100%; }
+        .modal-info .btn.ghost { margin-top: 8px; }
+
+        /* Room Visualizer */
+        .room-select-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-top: 12px; }
+        .room-thumb { flex: 0 0 48px; height: 48px; border: 1.5px solid transparent; cursor: pointer; position: relative; }
+        .room-thumb.active { border-color: var(--gold); }
+        .room-thumb .canvas { position: absolute; inset: 0; }
+        .viz-stage { position: relative; height: 260px; overflow: hidden; border: 1px solid var(--gold-dim); }
+        .viz-stage .room-bg { position: absolute; inset: 0; }
+        .viz-art {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 34%;
+            aspect-ratio: 4 / 5;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+            border: 6px solid #1b1712;
+            transition: width 0.2s ease;
+        }
+        .viz-art .canvas { width: 100%; height: 100%; }
+        .size-slider { width: 100%; margin-top: 8px; accent-color: var(--gold); }
+        .viz-dim { font-size: 11px; opacity: 0.6; margin-top: 4px; }
+
+        /* Toasts */
+        .toast-stack {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 400;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+            width: 100%;
+            padding: 0 16px;
+            pointer-events: none;
+        }
+        .toast {
+            background: var(--forest);
+            color: var(--ivory);
+            padding: 12px 20px;
+            border: 1px solid var(--gold-dim);
+            font-size: 12.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            max-width: 400px;
+        }
+        .toast.show { opacity: 1; transform: translateY(0); }
+        .toast .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); }
+
+        /* Spotlight Mode */
+        .spotlight-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 250;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .5s ease;
+            background: radial-gradient(circle 280px at var(--mx, 50%) var(--my, 50%), transparent 0%, transparent 35%, rgba(6, 12, 8, 0.94) 80%);
+        }
+        body.spotlight-on .spotlight-overlay { opacity: 1; }
+        body.spotlight-on .plate { position: relative; z-index: 1; }
+        .spotlight-tip {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 255;
+            font-size: 10.5px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--gold);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        body.spotlight-on .spotlight-tip { opacity: 0.9; }
+        .js-wishlist-btn.active svg { fill: var(--gold); stroke: var(--gold); }
+    
+/* ============ Collections Hover Megamenu ============ */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+.nav-dropdown > a.navlink,
+.nav-dropdown > a.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.nav-dropdown-arrow {
+  display: inline-block;
+  font-size: 8px;
+  transition: transform 0.25s ease;
+  vertical-align: middle;
+  opacity: 0.65;
+}
+.nav-dropdown:hover .nav-dropdown-arrow {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+.megamenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 820px;
+  background: #FCFBF8;
+  border: 1px solid #DED5C8;
+  box-shadow: 0 20px 48px rgba(18, 53, 36, 0.14), 0 4px 12px rgba(0,0,0,0.04);
+  padding: 30px 32px;
+  border-radius: 3px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.25s;
+  z-index: 1000;
+  text-align: left;
+}
+.megamenu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+.nav-dropdown:hover .megamenu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.megamenu-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.5fr 1.3fr;
+  gap: 24px;
+}
+.megamenu-col h4 {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  color: #C6A15B !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid #DED5C8 !important;
+}
+.megamenu-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.megamenu-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.megamenu-list li a {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  color: #292927 !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: color 0.2s ease, transform 0.2s ease !important;
+  font-weight: 400 !important;
+  padding: 2px 0 !important;
+}
+.megamenu-list li a:hover {
+  color: #C6A15B !important;
+  transform: translateX(3px) !important;
+}
+.megamenu-artist-tag {
+  font-size: 9.5px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #686660 !important;
+  background: #F7F5F0 !important;
+  padding: 2px 6px !important;
+  border-radius: 2px !important;
+  border: 1px solid #DED5C8 !important;
+}
+.megamenu-featured-card {
+  background: #F7F5F0;
+  border: 1px solid #DED5C8;
+  border-radius: 3px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.megamenu-card-thumb {
+  height: 90px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 30% 60%, #1a4a3a 0%, #0d2a1f 40%, #050f08 100%);
+}
+.megamenu-card-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #C6A15B;
+}
+.megamenu-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  color: #123524;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.megamenu-card-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #123524;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  transition: color 0.2s ease;
+}
+.megamenu-card-btn:hover {
+  color: #C6A15B;
+}
+@media (max-width: 920px) {
+  .megamenu { display: none !important; }
+}
+
+/* ============================================================
+   RESPONSIVE ENHANCEMENTS — ultra-wide, laptop, tablet, phone
+   ============================================================ */
+
+/* ---- Big desktops (>=1440px): scale up canvas ---- */
+@media (min-width: 1440px) {
+    :root { --container: 1460px; }
+}
+
+/* ---- Ultra-wide screens (>=1920px) ---- */
+@media (min-width: 1920px) {
+    :root { --container: 1640px; }
+}
+
+/* ---- Small laptops / large tablets (<=1024px): tighten grids ---- */
+@media (max-width: 1024px) {
+    /* Collections (6-col), lifestyle (12-col), why (4-col), testimonials
+       (3-col), product scroller and footer (5-col) grids already collapse
+       via the existing 992px / 900px / 800px / 560px breakpoints —
+       nothing further needed here. */
+}
+
+/* ---- Large phones (<=768px): Instagram grid to <=2 columns ---- */
+@media (max-width: 768px) {
+    .ig-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ---- Phones (<=480px): single-column comfort ---- */
+@media (max-width: 480px) {
+    :root { --gutter: 18px; }
+    .announce { padding: 10px 46px 10px 18px; }
+    .curateby a { flex: 1 1 140px; padding: 14px 10px; }
+    .room-card { flex: 0 0 160px; }
+    .modal-media { padding: 24px 16px; }
+    .modal-info { padding: 24px 16px; }
+    .toast { max-width: 100%; }
+}
+
+/* ---- Small phones (<=380px) ---- */
+@media (max-width: 380px) {
+    :root { --gutter: 14px; }
+    .logo { font-size: 21px; letter-spacing: 0.12em; }
+    .nav .icons { gap: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ ANNOUNCEMENT BAR ============ -->
+<div class="announce" id="announce">
+    Curated Art • Premium Canvas • Timeless Objects
+    <button class="close" aria-label="Dismiss">&times;</button>
+</div>
+
+<!-- ============ NAVIGATION ============ -->
+<nav class="nav" id="nav" aria-label="Main Navigation">
+    <div class="side left">
+        <div class="nav-dropdown">
+        <a class="navlink" href="Lagoree Category.html">Collections <span class="nav-dropdown-arrow">&#9662;</span></a>
+        <div class="megamenu">
+          <div class="megamenu-grid">
+            <div class="megamenu-col">
+              <h4>Shop by Place</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?place=hall">Hall</a></li>
+                <li><a href="Lagoree Category.html?place=bedroom">Bedroom</a></li>
+                <li><a href="Lagoree Category.html?place=saloon">Saloon</a></li>
+                <li><a href="Lagoree Category.html?place=office">Office</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop by Type</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?type=canvas-print">Canvas Print</a></li>
+                <li><a href="Lagoree Category.html?type=art-frame">Art Frame</a></li>
+                <li><a href="Lagoree Category.html?type=posters">Posters</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop By Artist</h4>
+              <ul class="megamenu-list">
+                <li><a href="Artist - Lagoree Arts.html">Priya Sharma <span class="megamenu-artist-tag">Mithila</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jivya S. Mashe <span class="megamenu-artist-tag">Warli</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Rajan Vyam <span class="megamenu-artist-tag">Gond</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Bhuri Bai <span class="megamenu-artist-tag">Bhil</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jamini Roy <span class="megamenu-artist-tag">Kalighat</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Raja Ravi Varma <span class="megamenu-artist-tag">Classical</span></a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <div class="megamenu-featured-card">
+                <div class="megamenu-card-thumb"></div>
+                <span class="megamenu-card-label">Curator's Vault</span>
+                <div class="megamenu-card-title">Sacred Heritage Archive &amp; Originals</div>
+                <a href="Lagoree Category.html" class="megamenu-card-btn">Explore All &rarr;</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+        <a class="navlink" href="Antiques - Lagoree Arts.html">Antiques</a>
+        <a class="navlink" href="Lagoree Category.html?type=handicraft">Handicraft</a>
+    </div>
+    <a href="#" class="logo" aria-label="Lagoree Arts Home">LAGOREE</a>
+    <div class="side right">
+        <a class="navlink" href="#bestsellers">Curator&rsquo;s Picks</a>
+        <div class="icons">
+            <button id="spotlightToggle" aria-label="Toggle gallery spotlight mode" title="Gallery Spotlight">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v3M4.2 5.2l2 2M2 12h3M4.2 18.8l2-2M12 22v-3M19.8 18.8l-2-2M22 12h-3M19.8 5.2l-2-2"/><circle cx="12" cy="12" r="4"/></svg>
+            </button>
+            <button id="searchToggle" aria-label="Search">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+            </button>
+            <button id="wishlistToggle" aria-label="Wishlist">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg>
+                <span class="icon-badge" id="wishlistBadge">0</span>
+            </button>
+            <button id="cartToggle" aria-label="Cart">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 7h15l-1.5 10.5a2 2 0 0 1-2 1.5H8a2 2 0 0 1-2-1.5L4 3H2"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>
+                <span class="icon-badge" id="cartBadge">0</span>
+            </button>
+            <a href="Login-Register - Lagoree Arts.html" aria-label="My Account" title="My Account" style="color:var(--forest); padding:4px; display:inline-flex; align-items:center;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </a>
+            <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Open menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </div>
+</nav>
+
+<!-- ============ MODALS & OVERLAYS ============ -->
+<div class="scrim" id="scrim"></div>
+<div class="spotlight-overlay" id="spotlightOverlay"></div>
+<div class="spotlight-tip">Move cursor to spotlight gallery pieces</div>
+
+<nav class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+    <a href="#collections">Collections</a>
+    <a href="Antiques - Lagoree Arts.html">Antiques</a>
+    <a href="Lagoree Category.html?type=handicraft">Handicraft</a>
+    <a href="#bestsellers">Curator&rsquo;s Picks</a>
+    <a href="Login-Register - Lagoree Arts.html">Sign In / Account</a>
+</nav>
+
+<div class="search-overlay" id="searchOverlay">
+    <button class="search-close" id="searchClose">Close &times;</button>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search artists, collections, moods&hellip;" autocomplete="off">
+        <p class="search-hint" id="searchHint">Try &ldquo;abstract&rdquo;, &ldquo;living room&rdquo;, or an artist&rsquo;s name.</p>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+</div>
+
+<aside class="side-drawer" id="wishlistDrawer" aria-label="Wishlist">
+    <div class="drawer-head"><h3>Your Wishlist</h3><button class="drawer-close" data-close-drawer>&times;</button></div>
+    <div class="drawer-body" id="wishlistBody"></div>
+</aside>
+
+<aside class="side-drawer" id="cartDrawer" aria-label="Shopping cart">
+    <div class="drawer-head"><h3>Your Cart</h3><button class="drawer-close" data-close-drawer>&times;</button></div>
+    <div class="drawer-body" id="cartBody"></div>
+    <div class="drawer-foot" id="cartFoot" style="display:none;">
+        <div class="subtotal"><span>Subtotal</span><span id="cartSubtotal">&#8377;0</span></div>
+        <a href="#" class="btn primary">Proceed to Checkout</a>
+        <p class="note">Complimentary delivery on Statement-size canvases.</p>
+    </div>
+</aside>
+
+<div class="modal-wrap" id="quickViewModal" aria-label="Quick view">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <div class="modal-box">
+        <div class="modal-media">
+            <div class="plate no-caption"><div class="canvas" id="qvCanvas"></div></div>
+        </div>
+        <div class="modal-info">
+            <div class="artist" id="qvArtist"></div>
+            <h3 id="qvTitle"></h3>
+            <p class="story" id="qvStory"></p>
+            <div class="price" id="qvPrice"></div>
+            <div class="opt-label">Size</div>
+            <div class="opt-row" id="qvSizes"></div>
+            <div class="opt-label">Frame</div>
+            <div class="opt-row" id="qvFrames">
+                <button class="opt-pill active" data-frame="Walnut">Walnut</button>
+                <button class="opt-pill" data-frame="Black Oak">Black Oak</button>
+                <button class="opt-pill" data-frame="Unframed">Unframed</button>
+            </div>
+            <button class="btn primary" id="qvAddToCart">Add to Cart</button>
+            <button class="btn ghost" id="qvWishlist">Save to Wishlist</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-wrap" id="roomVizModal" aria-label="Visualize in your room">
+    <button class="modal-close" data-close-modal>&times;</button>
+    <div class="modal-box">
+        <div class="modal-media">
+            <div class="viz-stage" id="vizStage">
+                <div class="room-bg canvas cv-room1" id="vizRoomBg"></div>
+                <div class="viz-art"><div class="canvas" id="vizArtCanvas"></div></div>
+            </div>
+            <div class="room-select-row" id="vizRoomRow"></div>
+        </div>
+        <div class="modal-info">
+            <div class="artist">Room Visualizer</div>
+            <h3 id="vizTitle"></h3>
+            <p class="story">Preview this piece in your space. Select a room style and adjust dimensions to scale.</p>
+            <div class="opt-label">Canvas Size</div>
+            <input type="range" min="18" max="52" value="30" class="size-slider" id="vizSlider">
+            <p class="viz-dim" id="vizDim">Approx. 24&Prime; &times; 30&Prime;</p>
+            <button class="btn primary" id="vizAddToCart">Add This Size to Cart</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+    <div class="canvas cv-hero"></div>
+    <div class="hero-content">
+        <span class="eyebrow on-dark">The Art Lives Here.</span>
+        <h1>Curated Masterpieces for Refined Spaces.</h1>
+        <p>Art, canvas and timeless objects selected to bring character, culture and beauty into your space.</p>
+        <div class="hero-ctas">
+            <a href="#collections" class="btn primary">Explore Collection</a>
+            <a href="#bestsellers" class="btn on-dark">Discover Antiques</a>
+        </div>
+    </div>
+    <div class="hero-scroll"><span class="line"></span>Scroll</div>
+</header>
+
+<!-- ============ CURATE BY STRIP ============ -->
+<div class="curateby" aria-label="Shop by category">
+    <a href="#rooms">Shop by Room<span>Living, Bedroom, Study…</span></a>
+    <a href="#">Shop by Style<span>Minimal, Vintage, Spiritual…</span></a>
+    <a href="#">Shop by Colour<span>Earth, Gold, Green…</span></a>
+    <a href="#">Shop by Size<span>Small to XL Statement</span></a>
+</div>
+
+<!-- ============ FEATURED COLLECTIONS ============ -->
+<section class="section" id="collections">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="eyebrow">The Catalogue</span>
+            <h2>Explore the Collection</h2>
+            <p class="desc">Art chosen to live beautifully. From contemporary canvas to objects with history.</p>
+        </div>
+
+        <div class="filter-row reveal" id="filterRow">
+            <button class="filter-pill active" data-filter="all">All Collections</button>
+            <button class="filter-pill" data-filter="Canvas Art">Canvas Art</button>
+            <button class="filter-pill" data-filter="Indian Art">Indian Art</button>
+            <button class="filter-pill" data-filter="Famous Paintings">Famous Paintings</button>
+            <button class="filter-pill" data-filter="Antiques">Antiques</button>
+            <button class="filter-pill" data-filter="Spiritual">Spiritual Art</button>
+            <button class="filter-pill" data-filter="Sanskrit">The Sanskrit Edit</button>
+        </div>
+
+        <div class="collections-grid" id="collectionsGrid">
+            <div class="coll-card reveal" data-category="Canvas Art">
+                <div class="plate" data-qv="1"><div class="canvas cv-1"></div>
+                    <div class="caption"><span><em>Canvas Art</em></span><span class="num">PLATE I</span></div></div>
+            </div>
+            <div class="coll-card reveal" data-category="Indian Art">
+                <div class="plate" data-qv="2"><div class="canvas cv-5"></div>
+                    <div class="caption"><span><em>Indian Art</em></span><span class="num">PLATE II</span></div></div>
+            </div>
+            <div class="coll-card reveal" data-category="Famous Paintings">
+                <div class="plate" data-qv="2"><div class="canvas cv-2"></div>
+                    <div class="caption"><span><em>Famous Paintings</em></span><span class="num">PLATE III</span></div></div>
+            </div>
+            <div class="coll-card reveal" data-category="Antiques">
+                <div class="plate" data-qv="4"><div class="canvas cv-3"></div>
+                    <div class="caption"><span><em>Antiques</em></span><span class="num">PLATE IV</span></div></div>
+            </div>
+            <div class="coll-card reveal" data-category="Spiritual">
+                <div class="plate" data-qv="1"><div class="canvas cv-6"></div>
+                    <div class="caption"><span><em>Spiritual Art</em></span><span class="num">PLATE V</span></div></div>
+            </div>
+            <div class="coll-card reveal" data-category="Sanskrit">
+                <div class="plate" data-qv="3"><div class="canvas cv-sanskrit"></div>
+                    <div class="caption"><span><em>The Sanskrit Edit</em></span><span class="num">PLATE VI</span></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SHOP BY ROOM ============ -->
+<section class="section tight" id="rooms">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="eyebrow">Find Its Wall</span>
+            <h2>Art for the Way You Live</h2>
+        </div>
+        <div class="room-scroller reveal">
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room1"></div></div>
+                <p class="label">Living Room</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room2"></div></div>
+                <p class="label">Bedroom</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room3"></div></div>
+                <p class="label">Dining Room</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room4"></div></div>
+                <p class="label">Office</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room5"></div></div>
+                <p class="label">Hotel</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room6"></div></div>
+                <p class="label">Caf&eacute;</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room7"></div></div>
+                <p class="label">Reception</p></div>
+            <div class="room-card"><div class="plate no-caption"><div class="canvas cv-room8"></div></div>
+                <p class="label">Study</p></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ WHY LAGOREE ============ -->
+<section class="section tight">
+    <div class="wrap">
+        <div class="section-head center reveal">
+            <span class="eyebrow">Why Lagoree</span>
+            <h2>Art That Lives With You</h2>
+        </div>
+        <div class="why-grid reveal">
+            <div class="why-card">
+                <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="8" y="8" width="32" height="32" rx="1"/><path d="M8 30l9-9 7 7 9-11 7 6"/></svg>
+                <h3>Curated, Not Crowded</h3>
+                <p>Every collection is thoughtfully selected for contemporary living.</p>
+            </div>
+            <div class="why-card">
+                <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="6" y="6" width="36" height="36" rx="1"/><rect x="13" y="13" width="22" height="22" rx="1"/></svg>
+                <h3>Designed for Modern Spaces</h3>
+                <p>Artwork chosen with contemporary interiors in mind, always.</p>
+            </div>
+            <div class="why-card">
+                <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="24" cy="24" r="16"/><path d="M24 14v10l7 5"/></svg>
+                <h3>Quality That Lasts</h3>
+                <p>Premium printing, materials and finishing for generations.</p>
+            </div>
+            <div class="why-card">
+                <svg class="icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M24 6v8M14 14l-4 4M34 14l4 4"/><rect x="10" y="18" width="28" height="22" rx="1"/></svg>
+                <h3>Made to Be Lived With</h3>
+                <p>Art that becomes part of everyday life, not just decoration.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ LIFESTYLE GALLERY ============ -->
+<section class="section">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="eyebrow">In Situ</span>
+            <h2>The Lagoree Lookbook</h2>
+            <p class="desc">See how art transforms a space.</p>
+        </div>
+        <div class="life-grid">
+            <div class="plate reveal"><div class="canvas cv-life1"></div>
+                <div class="caption"><span><em>Bandra Residence, Living Room</em></span><span class="num">01</span></div></div>
+            <div class="plate reveal"><div class="canvas cv-life2"></div>
+                <div class="caption"><span><em>Alibaug Villa, Study</em></span><span class="num">02</span></div></div>
+            <div class="plate reveal"><div class="canvas cv-life3"></div>
+                <div class="caption"><span><em>Juhu Apartment, Bedroom</em></span><span class="num">03</span></div></div>
+            <div class="plate reveal"><div class="canvas cv-life4"></div>
+                <div class="caption"><span><em>Koregaon Park Loft, Dining</em></span><span class="num">04</span></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ SANSKRIT EDIT SECTION ============ -->
+<section class="section sanskrit-section">
+    <div class="sanskrit-bg">संस्कृतम्</div>
+    <div class="wrap">
+        <div class="sanskrit-grid">
+            <div class="reveal">
+                <span class="eyebrow">The Sanskrit Edit</span>
+                <h2>Ancient Wisdom. Modern Walls.</h2>
+                <p class="desc" style="margin-top: 12px; color: var(--muted); font-size: 15px; max-width: 44ch;">
+                    A curated collection of Sanskrit verses, shlokas and timeless wisdom translated into elegant contemporary wall art.
+                </p>
+                <a href="#collections" class="btn primary" style="margin-top: 24px;">Explore The Sanskrit Edit</a>
+            </div>
+            <div class="plate reveal no-caption">
+                <div class="canvas cv-sanskrit"></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ CURATOR'S PICKS / BEST SELLERS ============ -->
+<section class="section tight" id="bestsellers">
+    <div class="wrap">
+        <div class="section-head reveal">
+            <span class="eyebrow">Curator&rsquo;s Picks</span>
+            <h2>The Curator's Selection</h2>
+        </div>
+        <div class="prod-scroller reveal">
+
+            <div class="prod-card" data-id="p1" data-title="The Descent of Saraswati" data-artist="Indian Art" data-story="Gouache tradition reborn in archival ink, after a 19th-century Tanjore study." data-price="18500" data-sizes="S,M,L,XL" data-canvas="cv-prod1">
+                <div class="canvas-wrap">
+                    <div class="prod-actions">
+                        <button class="js-wishlist-btn" aria-label="Wishlist"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg></button>
+                        <button class="js-room-btn" aria-label="View in your room"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 16l5-5 4 4 5-6 4 4"/></svg></button>
+                    </div>
+                    <div class="plate no-caption js-open-qv"><div class="canvas cv-prod1"></div></div>
+                </div>
+                <div class="prod-meta">
+                    <div class="artist">Indian Art</div>
+                    <h3>The Descent of Saraswati</h3>
+                    <p class="story">Gouache tradition reborn in archival ink, after a 19th-century Tanjore study.</p>
+                    <div class="prod-meta-footer">
+                        <div class="row"><span class="price">&#8377;18,500</span><span class="sizes">S · M · L · XL</span></div>
+                        <span class="quickview js-open-qv">Quick View</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prod-card" data-id="p2" data-title="Golden Hour, Tuscany" data-artist="Canvas Art" data-story="A cypress-lined study in late light, printed on textured matte canvas." data-price="14200" data-sizes="S,M,L" data-canvas="cv-prod2">
+                <div class="canvas-wrap">
+                    <div class="prod-actions">
+                        <button class="js-wishlist-btn" aria-label="Wishlist"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg></button>
+                        <button class="js-room-btn" aria-label="View in your room"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 16l5-5 4 4 5-6 4 4"/></svg></button>
+                    </div>
+                    <div class="plate no-caption js-open-qv"><div class="canvas cv-prod2"></div></div>
+                </div>
+                <div class="prod-meta">
+                    <div class="artist">Canvas Art</div>
+                    <h3>Golden Hour, Tuscany</h3>
+                    <p class="story">A cypress-lined study in late light, printed on textured matte canvas.</p>
+                    <div class="prod-meta-footer">
+                        <div class="row"><span class="price">&#8377;14,200</span><span class="sizes">S · M · L</span></div>
+                        <span class="quickview js-open-qv">Quick View</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prod-card" data-id="p3" data-title="Reclining Form No. 3" data-artist="Spiritual Art" data-story="Bold gesture and restrained palette, from our resident abstractionist." data-price="22000" data-sizes="M,L,XL" data-canvas="cv-prod3">
+                <div class="canvas-wrap">
+                    <div class="prod-actions">
+                        <button class="js-wishlist-btn" aria-label="Wishlist"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg></button>
+                        <button class="js-room-btn" aria-label="View in your room"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 16l5-5 4 4 5-6 4 4"/></svg></button>
+                    </div>
+                    <div class="plate no-caption js-open-qv"><div class="canvas cv-prod3"></div></div>
+                </div>
+                <div class="prod-meta">
+                    <div class="artist">Spiritual Art</div>
+                    <h3>Reclining Form No. 3</h3>
+                    <p class="story">Bold gesture and restrained palette, from our resident abstractionist.</p>
+                    <div class="prod-meta-footer">
+                        <div class="row"><span class="price">&#8377;22,000</span><span class="sizes">M · L · XL</span></div>
+                        <span class="quickview js-open-qv">Quick View</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="prod-card" data-id="p4" data-title="The Lotus Sutra" data-artist="The Sanskrit Edit" data-story="Muted gold on deep indigo, for rooms built for quiet contemplation." data-price="16800" data-sizes="S,M,L,XL" data-canvas="cv-prod4">
+                <div class="canvas-wrap">
+                    <div class="prod-actions">
+                        <button class="js-wishlist-btn" aria-label="Wishlist"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg></button>
+                        <button class="js-room-btn" aria-label="View in your room"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 16l5-5 4 4 5-6 4 4"/></svg></button>
+                    </div>
+                    <div class="plate no-caption js-open-qv"><div class="canvas cv-prod4"></div></div>
+                </div>
+                <div class="prod-meta">
+                    <div class="artist">The Sanskrit Edit</div>
+                    <h3>The Lotus Sutra</h3>
+                    <p class="story">Muted gold on deep indigo, for rooms built for quiet contemplation.</p>
+                    <div class="prod-meta-footer">
+                        <div class="row"><span class="price">&#8377;16,800</span><span class="sizes">S · M · L · XL</span></div>
+                        <span class="quickview js-open-qv">Quick View</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- ============ STORY / PHILOSOPHY ============ -->
+<section class="section" id="story">
+    <div class="wrap">
+        <div class="story">
+            <div class="plate reveal"><div class="canvas cv-story"></div>
+                <div class="caption"><span><em>The Atelier, Pune</em></span><span class="num">FOUNDER</span></div></div>
+            <div class="reveal">
+                <span class="eyebrow">Our Philosophy</span>
+                <h2 style="margin-top:8px;">Art is not decoration.<br>Art defines a space.</h2>
+                <blockquote>&ldquo;We started Lagoree with one belief: that every wall deserves a piece of timeless beauty, not a filler. A room is finished by what hangs on it, not what fills it.&rdquo;</blockquote>
+                <p class="founder">&mdash; Founder, Lagoree Arts</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ TESTIMONIALS ============ -->
+<section class="section tight">
+    <div class="wrap">
+        <div class="section-head center reveal">
+            <span class="eyebrow">In Their Words</span>
+            <h2>Trusted by Discerning Homes</h2>
+        </div>
+        <div class="testi-grid reveal">
+            <div class="testi-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p class="quote">&ldquo;The canvas quality is unlike anything we've sourced before &mdash; our clients notice it immediately.&rdquo;</p>
+                <div class="who">Ritu Malhotra &mdash; Interior Designer</div>
+            </div>
+            <div class="testi-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p class="quote">&ldquo;Arrived framed and ready to hang, exactly as promised. The Saraswati piece anchors our whole living room now.&rdquo;</p>
+                <div class="who">Arjun Kapoor &mdash; Homeowner</div>
+            </div>
+            <div class="testi-card">
+                <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+                <p class="quote">&ldquo;I specify Lagoree for every project now. The frame options alone are more considered than most galleries.&rdquo;</p>
+                <div class="who">Priya Nair &mdash; Architect</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ INSTAGRAM ============ -->
+<section class="section tight">
+    <div class="wrap">
+        <div class="section-head center reveal">
+            <span class="eyebrow">@lagoreearts</span>
+            <h2>Life at Lagoree</h2>
+        </div>
+        <div class="ig-grid reveal">
+            <div class="plate no-caption"><div class="canvas cv-ig1"></div></div>
+            <div class="plate no-caption"><div class="canvas cv-ig2"></div></div>
+            <div class="plate no-caption"><div class="canvas cv-ig3"></div></div>
+            <div class="plate no-caption"><div class="canvas cv-ig4"></div></div>
+            <div class="plate no-caption"><div class="canvas cv-ig5"></div></div>
+            <div class="plate no-caption"><div class="canvas cv-ig6"></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ============ NEWSLETTER ============ -->
+<section class="section newsletter">
+    <div class="wrap">
+        <span class="eyebrow on-dark reveal">Stay Curated</span>
+        <h2 class="reveal">Bring More Art Into Your World.</h2>
+        <p class="reveal">Join the Lagoree Journal for new collections, art stories, interior inspiration and curated discoveries.</p>
+        <form class="news-form reveal" id="newsForm">
+            <input type="email" placeholder="Your email address" required aria-label="Email address">
+            <button type="submit">Subscribe</button>
+        </form>
+        <div class="news-note" id="newsNote">Thank you — welcome to the gallery.</div>
+    </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+    <div class="wrap">
+        <div class="foot-grid">
+            <div>
+                <div class="foot-logo">LAGOREE</div>
+                <p class="tag">Curated wall art and museum-quality canvas, for spaces meant to last.</p>
+                <div class="foot-social">
+                    <a href="#" aria-label="Instagram"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+                    <a href="#" aria-label="Pinterest"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="12" r="9"/><path d="M9 17c1-3 1.5-5.5 1.5-7A2.5 2.5 0 0 1 13 7.5c1.4 0 2.3 1 2.3 2.6 0 1.6-1 4-2.6 4-.7 0-1.2-.5-1-1.3"/></svg></a>
+                    <a href="#" aria-label="Facebook"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M14 9h2V6h-2c-1.7 0-3 1.3-3 3v2H9v3h2v6h3v-6h2l1-3h-3v-2c0-.5.5-1 1-1z"/></svg></a>
+                </div>
+            </div>
+            <div>
+                <h4>Shop</h4>
+                <ul>
+                    <li><a href="#">Canvas Art</a></li>
+                    <li><a href="#">Indian Art</a></li>
+                    <li><a href="#">Famous Paintings</a></li>
+                    <li><a href="#">The Sanskrit Edit</a></li>
+                    <li><a href="#">Antiques</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Discover</h4>
+                <ul>
+                    <li><a href="#">Collections</a></li>
+                    <li><a href="#">Lookbook</a></li>
+                    <li><a href="#">Artists</a></li>
+                    <li><a href="#">Journal</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Help</h4>
+                <ul>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">FAQs</a></li>
+                    <li><a href="#">Shipping</a></li>
+                    <li><a href="#">Returns</a></li>
+                    <li><a href="#">Care Guide</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Follow</h4>
+                <ul>
+                    <li><a href="#">Instagram</a></li>
+                    <li><a href="#">Pinterest</a></li>
+                    <li><a href="#">Facebook</a></li>
+                    <li><a href="#">YouTube</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="foot-bottom">
+            <span>&copy; 2026 Lagoree Arts. All rights reserved.</span>
+            <span>Privacy Policy · Terms &amp; Conditions</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+    (function() {
+        'use strict';
+
+        document.querySelector('.announce .close').addEventListener('click', function() {
+            document.getElementById('announce').style.display = 'none';
+        });
+
+        var nav = document.getElementById('nav');
+        window.addEventListener('scroll', function() {
+            nav.classList.toggle('solid', window.scrollY > 30);
+        }, { passive: true });
+
+        var io = new IntersectionObserver(function(entries) {
+            entries.forEach(function(e) {
+                if (e.isIntersecting) {
+                    e.target.classList.add('in');
+                    if (e.target.classList.contains('plate')) e.target.classList.add('revealed');
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+        document.querySelectorAll('.plate').forEach(function(el) { io.observe(el); });
+
+        setTimeout(function() {
+            document.querySelectorAll('.reveal:not(.in)').forEach(function(el) { el.classList.add('in'); });
+            document.querySelectorAll('.plate:not(.revealed)').forEach(function(el) { el.classList.add('revealed'); });
+        }, 2500);
+
+        var form = document.getElementById('newsForm');
+        var note = document.getElementById('newsNote');
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            note.classList.add('show');
+            form.reset();
+        });
+
+        var fmt = function(n) { return '\u20B9' + n.toLocaleString('en-IN'); };
+
+        var state = { cart: [], wishlist: [], spotlight: false };
+
+        var PRODUCTS = Array.from(document.querySelectorAll('.prod-card')).map(function(el) {
+            return {
+                id: el.dataset.id,
+                title: el.dataset.title,
+                artist: el.dataset.artist,
+                story: el.dataset.story,
+                price: Number(el.dataset.price),
+                sizes: el.dataset.sizes.split(','),
+                canvas: el.dataset.canvas,
+                el: el
+            };
+        });
+
+        var ROOMS = [
+            { key: 'cv-room1', label: 'Living Room' }, { key: 'cv-room2', label: 'Bedroom' },
+            { key: 'cv-room3', label: 'Dining Room' }, { key: 'cv-room4', label: 'Office' },
+            { key: 'cv-room5', label: 'Hotel' },       { key: 'cv-room6', label: 'Caf\u00e9' },
+            { key: 'cv-room7', label: 'Reception' },   { key: 'cv-room8', label: 'Study' }
+        ];
+
+        var COLLECTIONS = Array.from(document.querySelectorAll('.coll-card')).map(function(el) {
+            return {
+                title: el.querySelector('.caption em').textContent,
+                category: el.dataset.category
+            };
+        });
+
+        var toastStack = document.getElementById('toastStack');
+        function toast(msg) {
+            var t = document.createElement('div');
+            t.className = 'toast';
+            t.innerHTML = '<span class="dot"></span><span>' + msg + '</span>';
+            toastStack.appendChild(t);
+            requestAnimationFrame(function() { t.classList.add('show'); });
+            setTimeout(function() {
+                t.classList.remove('show');
+                setTimeout(function() { t.remove(); }, 300);
+            }, 2400);
+        }
+
+        var scrim = document.getElementById('scrim');
+        var openLayers = new Set();
+
+        function openLayer(el) {
+            el.classList.add('open');
+            openLayers.add(el);
+            scrim.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAllLayers() {
+            openLayers.forEach(function(el) { el.classList.remove('open'); });
+            openLayers.clear();
+            scrim.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        scrim.addEventListener('click', closeAllLayers);
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeAllLayers(); });
+        document.querySelectorAll('[data-close-drawer], [data-close-modal]').forEach(function(btn) {
+            btn.addEventListener('click', closeAllLayers);
+        });
+
+        var mobileDrawer = document.getElementById('mobileDrawer');
+        document.getElementById('mobileToggle').addEventListener('click', function() { openLayer(mobileDrawer); });
+        mobileDrawer.querySelectorAll('a').forEach(function(a) { a.addEventListener('click', closeAllLayers); });
+
+        var wishlistDrawer = document.getElementById('wishlistDrawer');
+        var wishlistBody = document.getElementById('wishlistBody');
+        var wishlistBadge = document.getElementById('wishlistBadge');
+
+        document.getElementById('wishlistToggle').addEventListener('click', function() {
+            renderWishlist();
+            openLayer(wishlistDrawer);
+        });
+
+        function isWishlisted(id) { return state.wishlist.some(function(w) { return w.id === id; }); }
+
+        function toggleWishlist(product) {
+            var idx = state.wishlist.findIndex(function(w) { return w.id === product.id; });
+            if (idx > -1) {
+                state.wishlist.splice(idx, 1);
+                toast('Removed from wishlist');
+            } else {
+                state.wishlist.push({ id: product.id, title: product.title, artist: product.artist, canvas: product.canvas, price: product.price });
+                toast('Saved to wishlist \u2014 ' + product.title);
+            }
+            document.querySelectorAll('.js-wishlist-btn').forEach(function(b) {
+                var card = b.closest('.prod-card');
+                if (card && card.dataset.id === product.id) {
+                    b.classList.toggle('active', isWishlisted(product.id));
+                }
+            });
+            wishlistBadge.textContent = state.wishlist.length;
+            wishlistBadge.classList.toggle('show', state.wishlist.length > 0);
+            renderWishlist();
+        }
+
+        function renderWishlist() {
+            if (state.wishlist.length === 0) {
+                wishlistBody.innerHTML = '<div class="drawer-empty">Nothing saved yet.<br>Tap the heart on any piece to keep it here.</div>';
+                return;
+            }
+            var html = '';
+            state.wishlist.forEach(function(w) {
+                html += '<div class="drawer-item">' +
+                    '<div class="thumb"><div class="canvas ' + w.canvas + '"></div></div>' +
+                    '<div class="info">' +
+                    '<div class="t">' + w.title + '</div>' +
+                    '<div class="s">' + w.artist + '</div>' +
+                    '<div class="row2"><span class="price">' + fmt(w.price) + '</span></div>' +
+                    '<a class="drawer-remove" data-remove-wish="' + w.id + '">Remove</a>' +
+                    '</div></div>';
+            });
+            wishlistBody.innerHTML = html;
+            wishlistBody.querySelectorAll('[data-remove-wish]').forEach(function(a) {
+                a.addEventListener('click', function() {
+                    var id = a.dataset.removeWish;
+                    var p = PRODUCTS.find(function(x) { return x.id === id; });
+                    toggleWishlist(p || { id: id, title: '', artist: '', canvas: '', price: 0 });
+                });
+            });
+        }
+
+        document.querySelectorAll('.js-wishlist-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = btn.closest('.prod-card');
+                var product = PRODUCTS.find(function(p) { return p.id === card.dataset.id; });
+                if (product) toggleWishlist(product);
+            });
+        });
+
+        var cartDrawer = document.getElementById('cartDrawer');
+        var cartBody = document.getElementById('cartBody');
+        var cartFoot = document.getElementById('cartFoot');
+        var cartBadge = document.getElementById('cartBadge');
+        var cartSubtotal = document.getElementById('cartSubtotal');
+
+        document.getElementById('cartToggle').addEventListener('click', function() {
+            renderCart();
+            openLayer(cartDrawer);
+        });
+
+        function addToCart(item) {
+            var existing = state.cart.find(function(c) {
+                return c.id === item.id && c.size === item.size && c.frame === item.frame;
+            });
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                state.cart.push(Object.assign({ qty: 1 }, item));
+            }
+            renderCart();
+            toast('Added to cart \u2014 ' + item.title);
+        }
+
+        function cartCount() { return state.cart.reduce(function(sum, item) { return sum + item.qty; }, 0); }
+        function cartTotal() { return state.cart.reduce(function(sum, item) { return sum + (item.qty * item.price); }, 0); }
+
+        function renderCart() {
+            cartBadge.textContent = cartCount();
+            cartBadge.classList.toggle('show', cartCount() > 0);
+            if (state.cart.length === 0) {
+                cartBody.innerHTML = '<div class="drawer-empty">Your cart is empty.<br>Every piece arrives framed and ready to hang.</div>';
+                cartFoot.style.display = 'none';
+                return;
+            }
+            cartFoot.style.display = 'block';
+            cartSubtotal.textContent = fmt(cartTotal());
+            var html = '';
+            state.cart.forEach(function(c, i) {
+                html += '<div class="drawer-item">' +
+                    '<div class="thumb"><div class="canvas ' + c.canvas + '"></div></div>' +
+                    '<div class="info">' +
+                    '<div class="t">' + c.title + '</div>' +
+                    '<div class="s">' + c.size + ' \u00b7 ' + c.frame + '</div>' +
+                    '<div class="row2">' +
+                    '<span class="price">' + fmt(c.price * c.qty) + '</span>' +
+                    '<span class="qty"><button data-dec="' + i + '">&minus;</button>' + c.qty + '<button data-inc="' + i + '">&plus;</button></span>' +
+                    '</div>' +
+                    '<a class="drawer-remove" data-remove-cart="' + i + '">Remove</a>' +
+                    '</div></div>';
+            });
+            cartBody.innerHTML = html;
+
+            cartBody.querySelectorAll('[data-inc]').forEach(function(b) {
+                b.addEventListener('click', function() { state.cart[Number(b.dataset.inc)].qty++; renderCart(); });
+            });
+            cartBody.querySelectorAll('[data-dec]').forEach(function(b) {
+                b.addEventListener('click', function() {
+                    var i = Number(b.dataset.dec);
+                    state.cart[i].qty--;
+                    if (state.cart[i].qty <= 0) state.cart.splice(i, 1);
+                    renderCart();
+                });
+            });
+            cartBody.querySelectorAll('[data-remove-cart]').forEach(function(b) {
+                b.addEventListener('click', function() { state.cart.splice(Number(b.dataset.removeCart), 1); renderCart(); });
+            });
+        }
+
+        var qvModal = document.getElementById('quickViewModal');
+        var qvCurrent = null, qvSize = null, qvFrame = 'Walnut';
+
+        function openQuickView(product) {
+            qvCurrent = product;
+            qvSize = product.sizes[0];
+            qvFrame = 'Walnut';
+            document.getElementById('qvCanvas').className = 'canvas ' + product.canvas;
+            document.getElementById('qvArtist').textContent = product.artist;
+            document.getElementById('qvTitle').textContent = product.title;
+            document.getElementById('qvStory').textContent = product.story;
+            document.getElementById('qvPrice').textContent = fmt(product.price);
+            var sizesHtml = '';
+            product.sizes.forEach(function(s, i) {
+                sizesHtml += '<button class="opt-pill' + (i === 0 ? ' active' : '') + '" data-size="' + s + '">' + s + '</button>';
+            });
+            document.getElementById('qvSizes').innerHTML = sizesHtml;
+            document.getElementById('qvWishlist').textContent = isWishlisted(product.id) ? 'Saved to Wishlist \u2713' : 'Save to Wishlist';
+            openLayer(qvModal);
+        }
+
+        document.getElementById('qvSizes').addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-size]');
+            if (!btn) return;
+            qvSize = btn.dataset.size;
+            document.getElementById('qvSizes').querySelectorAll('.opt-pill').forEach(function(p) { p.classList.toggle('active', p === btn); });
+        });
+        document.getElementById('qvFrames').addEventListener('click', function(e) {
+            var btn = e.target.closest('[data-frame]');
+            if (!btn) return;
+            qvFrame = btn.dataset.frame;
+            document.getElementById('qvFrames').querySelectorAll('.opt-pill').forEach(function(p) { p.classList.toggle('active', p === btn); });
+        });
+        document.getElementById('qvAddToCart').addEventListener('click', function() {
+            if (!qvCurrent) return;
+            addToCart({ id: qvCurrent.id, title: qvCurrent.title, artist: qvCurrent.artist, canvas: qvCurrent.canvas, size: qvSize, frame: qvFrame, price: qvCurrent.price });
+            closeAllLayers();
+        });
+        document.getElementById('qvWishlist').addEventListener('click', function() {
+            if (!qvCurrent) return;
+            toggleWishlist(qvCurrent);
+            document.getElementById('qvWishlist').textContent = isWishlisted(qvCurrent.id) ? 'Saved to Wishlist \u2713' : 'Save to Wishlist';
+        });
+
+        document.querySelectorAll('.js-open-qv').forEach(function(el) {
+            el.addEventListener('click', function() {
+                var card = el.closest('.prod-card');
+                if (card) {
+                    var product = PRODUCTS.find(function(p) { return p.id === card.dataset.id; });
+                    if (product) openQuickView(product);
+                    return;
+                }
+                var plate = el.closest('.plate');
+                var idx = plate ? Number(plate.dataset.qv) - 1 : 0;
+                openQuickView(PRODUCTS[idx] || PRODUCTS[0]);
+            });
+        });
+
+        var vizModal = document.getElementById('roomVizModal');
+        var vizRoomBg = document.getElementById('vizRoomBg');
+        var vizArtCanvas = document.getElementById('vizArtCanvas');
+        var vizSlider = document.getElementById('vizSlider');
+        var vizDim = document.getElementById('vizDim');
+        var vizRoomRow = document.getElementById('vizRoomRow');
+        var vizProduct = null;
+
+        var roomHtml = '';
+        ROOMS.forEach(function(r, i) {
+            roomHtml += '<div class="room-thumb' + (i === 0 ? ' active' : '') + '" data-room="' + r.key + '" title="' + r.label + '"><div class="canvas ' + r.key + '"></div></div>';
+        });
+        vizRoomRow.innerHTML = roomHtml;
+
+        vizRoomRow.addEventListener('click', function(e) {
+            var t = e.target.closest('[data-room]');
+            if (!t) return;
+            vizRoomBg.className = 'room-bg canvas ' + t.dataset.room;
+            vizRoomRow.querySelectorAll('.room-thumb').forEach(function(x) { x.classList.toggle('active', x === t); });
+        });
+
+        function updateVizDim() {
+            var inches = Number(vizSlider.value);
+            document.querySelector('.viz-art').style.width = (inches / 60 * 100) + '%';
+            vizDim.textContent = 'Approx. ' + inches + '\u2033 \u00d7 ' + Math.round(inches * 1.25) + '\u2033 on your wall';
+        }
+        vizSlider.addEventListener('input', updateVizDim);
+
+        function openRoomViz(product) {
+            vizProduct = product;
+            vizArtCanvas.className = 'canvas ' + product.canvas;
+            document.getElementById('vizTitle').textContent = product.title;
+            vizSlider.value = 30;
+            updateVizDim();
+            openLayer(vizModal);
+        }
+
+        document.getElementById('vizAddToCart').addEventListener('click', function() {
+            if (!vizProduct) return;
+            addToCart({ id: vizProduct.id, title: vizProduct.title, artist: vizProduct.artist, canvas: vizProduct.canvas, size: vizSlider.value + '\u2033', frame: 'Walnut', price: vizProduct.price });
+            closeAllLayers();
+        });
+
+        document.querySelectorAll('.js-room-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var card = btn.closest('.prod-card');
+                var product = PRODUCTS.find(function(p) { return p.id === card.dataset.id; });
+                if (product) openRoomViz(product);
+            });
+        });
+
+        document.getElementById('filterRow').addEventListener('click', function(e) {
+            var btn = e.target.closest('.filter-pill');
+            if (!btn) return;
+            document.querySelectorAll('.filter-pill').forEach(function(p) { p.classList.toggle('active', p === btn); });
+            var f = btn.dataset.filter;
+            document.querySelectorAll('.coll-card').forEach(function(card) {
+                var match = f === 'all' || card.dataset.category === f;
+                card.classList.toggle('hide', !match);
+            });
+        });
+
+        var searchOverlay = document.getElementById('searchOverlay');
+        var searchInput = document.getElementById('searchInput');
+        var searchResults = document.getElementById('searchResults');
+        var searchHint = document.getElementById('searchHint');
+
+        var SEARCH_INDEX = [];
+        PRODUCTS.forEach(function(p) { SEARCH_INDEX.push({ title: p.title, category: p.artist, type: 'product', ref: p }); });
+        COLLECTIONS.forEach(function(c) { SEARCH_INDEX.push({ title: c.title, category: c.category, type: 'collection', ref: c }); });
+        ROOMS.forEach(function(r) { SEARCH_INDEX.push({ title: r.label, category: 'Shop by Room', type: 'room', ref: r }); });
+
+        document.getElementById('searchToggle').addEventListener('click', function() {
+            openLayer(searchOverlay);
+            setTimeout(function() { searchInput.focus(); }, 200);
+        });
+        document.getElementById('searchClose').addEventListener('click', closeAllLayers);
+
+        searchInput.addEventListener('input', function() {
+            var q = searchInput.value.trim().toLowerCase();
+            if (!q) {
+                searchResults.innerHTML = '';
+                searchHint.style.display = 'block';
+                return;
+            }
+            searchHint.style.display = 'none';
+            var results = SEARCH_INDEX.filter(function(r) {
+                return r.title.toLowerCase().includes(q) || r.category.toLowerCase().includes(q);
+            });
+            if (results.length === 0) {
+                searchResults.innerHTML = '<p style="padding:16px 0; opacity:0.6; font-style:italic;">No pieces match &ldquo;' + searchInput.value + '&rdquo;</p>';
+                return;
+            }
+            var html = '';
+            results.slice(0, 6).forEach(function(item) {
+                html += '<div class="search-result" data-type="' + item.type + '" data-title="' + item.title + '">' +
+                    '<span>' + item.title + '</span><span style="font-size:11px; text-transform:uppercase; opacity:0.5;">' + item.category + '</span>' +
+                    '</div>';
+            });
+            searchResults.innerHTML = html;
+            searchResults.querySelectorAll('.search-result').forEach(function(el) {
+                el.addEventListener('click', function() {
+                    var type = el.dataset.type;
+                    closeAllLayers();
+                    if (type === 'product') {
+                        var p = PRODUCTS.find(function(x) { return x.title === el.dataset.title; });
+                        if (p) setTimeout(function() { openQuickView(p); }, 200);
+                    } else if (type === 'collection') {
+                        document.getElementById('collections').scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        document.getElementById('rooms').scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+
+        var spotlightBtn = document.getElementById('spotlightToggle');
+        spotlightBtn.addEventListener('click', function() {
+            state.spotlight = !state.spotlight;
+            document.body.classList.toggle('spotlight-on', state.spotlight);
+            spotlightBtn.classList.toggle('active-toggle', state.spotlight);
+        });
+        window.addEventListener('pointermove', function(e) {
+            document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+            document.documentElement.style.setProperty('--my', e.clientY + 'px');
+        }, { passive: true });
+
+    })();
+</script>
+
+<script type="module" src="/assets/js/api.js"></script>
+<script src="/assets/js/state.js"></script>
+
+</body>
+</html>

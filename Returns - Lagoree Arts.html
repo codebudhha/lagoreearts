@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Returns & 7-Day Art Trial | Lagoree Arts</title>
+<meta name="description" content="Learn about our 7-day complimentary in-home trial and easy returns.">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+
+:root {
+  --ivory: #F7F5F0;
+  --white: #FCFBF8;
+  --forest: #123524;
+  --deep: #0A1A12;
+  --gold: #C6A15B;
+  --gold-dim: rgba(198, 161, 91, 0.3);
+  --gold-light: rgba(198, 161, 91, 0.12);
+  --stone: #DED5C8;
+  --charcoal: #292927;
+  --muted: #686660;
+  --error: #b33927;
+  --success: #2e7d32;
+  --serif: 'Cormorant Garamond', serif;
+  --sans: 'Inter', sans-serif;
+  --container: 1240px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition: 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+  background: var(--ivory);
+  color: var(--charcoal);
+  font-family: var(--sans);
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button, select, input, textarea { font-family: inherit; }
+button { background: none; border: none; cursor: pointer; color: inherit; }
+::selection { background: var(--gold-dim); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.wrap { max-width: var(--container); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); width: 100%; }
+h1, h2, h3, h4 { font-family: var(--serif); font-weight: 500; color: var(--forest); line-height: 1.15; letter-spacing: 0.01em; }
+
+/* Canvas Gradient Placeholders */
+.cv { width: 100%; height: 100%; position: relative; overflow: hidden; background-size: cover; }
+.cv-hero { background: radial-gradient(ellipse at 30% 60%, #1a4a3a 0%, #0d2a1f 40%, #050f08 100%); }
+.cv-p1 { background: radial-gradient(ellipse at 40% 30%, #8B4513 0%, #3d1f0a 50%, #1a0a00 100%); }
+.cv-p2 { background: radial-gradient(ellipse at 60% 40%, #4a2060 0%, #1a0d30 50%, #0a0015 100%); }
+.cv-p3 { background: radial-gradient(ellipse at 50% 50%, #1a4a3a 0%, #0d3020 50%, #050f08 100%); }
+.cv-p4 { background: radial-gradient(ellipse at 35% 65%, #8B6914 0%, #5a3a00 50%, #2a1a00 100%); }
+.cv-p5 { background: radial-gradient(ellipse at 65% 35%, #4a1a2a 0%, #2d0d1a 50%, #150008 100%); }
+.cv-p6 { background: radial-gradient(ellipse at 45% 55%, #1a3a4a 0%, #0d2030 50%, #05080f 100%); }
+.cv-room1 { background: radial-gradient(ellipse at 50% 50%, #e8e0d5 0%, #c8bba8 40%, #a89880 100%); }
+.cv-room2 { background: radial-gradient(ellipse at 40% 60%, #d5dde8 0%, #a8b8c8 40%, #8098a8 100%); }
+.cv-life1 { background: radial-gradient(ellipse at 60% 40%, #d8c8b8 0%, #b8a090 40%, #907868 100%); }
+.cv-life2 { background: radial-gradient(ellipse at 40% 60%, #c8d8c8 0%, #a0b8a0 40%, #788a78 100%); }
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: inline-block;
+  margin-bottom: 0.75rem;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--forest);
+  transition: var(--transition);
+  cursor: pointer;
+  text-decoration: none;
+}
+.btn.primary { background: var(--forest); color: var(--ivory); border-color: var(--forest); }
+.btn.primary:hover { background: var(--deep); border-color: var(--deep); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(18,53,36,0.18); }
+.btn.secondary { background: transparent; color: var(--forest); border-color: var(--forest); }
+.btn.secondary:hover { background: var(--forest); color: var(--ivory); }
+.btn.ghost { background: transparent; color: var(--gold); border-color: var(--gold); }
+.btn.ghost:hover { background: var(--gold); color: var(--white); }
+.btn.full { width: 100%; }
+
+/* Navigation */
+.announce {
+  background: var(--forest);
+  color: var(--ivory);
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 8px 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  border-bottom: 1px solid rgba(198,161,91,0.25);
+  z-index: 100;
+}
+.announce-close { position: absolute; right: 16px; background: none; border: none; color: var(--ivory); opacity: 0.6; cursor: pointer; font-size: 12px; }
+.announce-close:hover { opacity: 1; }
+
+.nav {
+  position: sticky;
+  top: 0;
+  background: rgba(247, 245, 240, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--stone);
+  z-index: 90;
+  transition: all 0.3s var(--ease);
+}
+.nav-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.nav-side { display: flex; align-items: center; gap: 28px; width: 33.33%; }
+.nav-right { justify-content: flex-end; }
+.nav-link {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--forest);
+  position: relative;
+  padding: 6px 0;
+  transition: color 0.25s ease;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: var(--gold);
+  transition: width 0.3s var(--ease);
+}
+.nav-link:hover { color: var(--gold); }
+.nav-link:hover::after { width: 100%; }
+.nav-logo {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--forest);
+  text-align: center;
+  text-transform: uppercase;
+}
+.nav-icons { display: flex; align-items: center; gap: 18px; }
+.icon-btn { position: relative; color: var(--forest); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; transition: background 0.25s ease; }
+.icon-btn:hover { background: var(--gold-light); color: var(--gold); }
+.cart-count {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: var(--gold);
+  color: var(--deep);
+  font-size: 9px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.nav-hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; }
+.nav-hamburger span { width: 22px; height: 1.5px; background: var(--forest); transition: 0.3s; }
+
+/* Footer */
+.footer {
+  background: var(--forest);
+  color: var(--ivory);
+  padding: 70px 0 30px;
+  margin-top: 60px;
+}
+.footer-inner {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 48px;
+}
+.footer-logo { font-family: var(--serif); font-size: 26px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+.footer-tagline { font-size: 13px; color: rgba(247,245,240,0.7); max-width: 280px; line-height: 1.6; margin-bottom: 20px; }
+.footer-social { display: flex; gap: 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+.footer-heading { font-family: var(--sans); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2em; color: var(--gold); margin-bottom: 18px; }
+.footer-link { display: block; font-size: 13px; color: rgba(247,245,240,0.8); margin-bottom: 10px; transition: color 0.2s; }
+.footer-link:hover { color: var(--gold); }
+.footer-bottom {
+  max-width: var(--container);
+  margin: 50px auto 0;
+  padding: 24px var(--gutter) 0;
+  border-top: 1px solid rgba(222,213,200,0.15);
+  font-size: 12px;
+  color: rgba(247,245,240,0.5);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* Toast */
+.toast-stack {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+.toast {
+  background: var(--deep);
+  color: var(--ivory);
+  padding: 14px 22px;
+  border-radius: 3px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 3px solid var(--gold);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  animation: slideIn 0.3s var(--ease);
+}
+@keyframes slideIn { from { transform: translateX(50px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+@media (max-width: 992px) {
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 768px) {
+  .nav-side.nav-left .nav-link, .nav-side.nav-right .nav-link { display: none; }
+  .nav-hamburger { display: flex; }
+  .footer-inner { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; gap: 10px; }
+}
+
+
+
+/* ============ Collections Hover Megamenu ============ */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+.nav-dropdown > a.navlink,
+.nav-dropdown > a.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.nav-dropdown-arrow {
+  display: inline-block;
+  font-size: 8px;
+  transition: transform 0.25s ease;
+  vertical-align: middle;
+  opacity: 0.65;
+}
+.nav-dropdown:hover .nav-dropdown-arrow {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+.megamenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 820px;
+  background: #FCFBF8;
+  border: 1px solid #DED5C8;
+  box-shadow: 0 20px 48px rgba(18, 53, 36, 0.14), 0 4px 12px rgba(0,0,0,0.04);
+  padding: 30px 32px;
+  border-radius: 3px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.25s;
+  z-index: 1000;
+  text-align: left;
+}
+.megamenu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+.nav-dropdown:hover .megamenu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.megamenu-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.5fr 1.3fr;
+  gap: 24px;
+}
+.megamenu-col h4 {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  color: #C6A15B !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid #DED5C8 !important;
+}
+.megamenu-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.megamenu-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.megamenu-list li a {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  color: #292927 !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: color 0.2s ease, transform 0.2s ease !important;
+  font-weight: 400 !important;
+  padding: 2px 0 !important;
+}
+.megamenu-list li a:hover {
+  color: #C6A15B !important;
+  transform: translateX(3px) !important;
+}
+.megamenu-artist-tag {
+  font-size: 9.5px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #686660 !important;
+  background: #F7F5F0 !important;
+  padding: 2px 6px !important;
+  border-radius: 2px !important;
+  border: 1px solid #DED5C8 !important;
+}
+.megamenu-featured-card {
+  background: #F7F5F0;
+  border: 1px solid #DED5C8;
+  border-radius: 3px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.megamenu-card-thumb {
+  height: 90px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 30% 60%, #1a4a3a 0%, #0d2a1f 40%, #050f08 100%);
+}
+.megamenu-card-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #C6A15B;
+}
+.megamenu-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  color: #123524;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.megamenu-card-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #123524;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  transition: color 0.2s ease;
+}
+.megamenu-card-btn:hover {
+  color: #C6A15B;
+}
+@media (max-width: 920px) {
+  .megamenu { display: none !important; }
+}
+
+
+/* ============================================================
+   RESPONSIVE ENHANCEMENTS — ultra-wide, laptop, tablet, phone
+   ============================================================ */
+
+/* ---- Big desktops (>=1440px) ---- */
+@media (min-width: 1440px) {
+  :root { --container: 1400px; }
+}
+
+/* ---- Ultra-wide screens (>=1920px) ---- */
+@media (min-width: 1920px) {
+  :root { --container: 1560px; }
+}
+
+/* ---- Long-form text keeps a comfortable measure at every size ---- */
+main.wrap { max-width: min(880px, 100%) !important; }
+
+/* ---- Rate/policy tables scroll horizontally instead of overflowing ---- */
+main.wrap table { display: block; max-width: 100%; overflow-x: auto; }
+
+/* ---- Phones (<=480px) ---- */
+@media (max-width: 480px) {
+  :root { --gutter: 18px; }
+  main.wrap { margin-top: 44px !important; margin-bottom: 72px !important; }
+  main.wrap h1 { font-size: 32px !important; }
+  main.wrap div[style*="padding:36px"] { padding: 22px 16px !important; }
+  main.wrap ul[style*="margin-left:20px"] { margin-left: 18px !important; }
+}
+
+/* ---- Small phones (<=380px) ---- */
+@media (max-width: 380px) {
+  :root { --gutter: 14px; }
+}
+
+
+
+/* ===== Unified Navbar Compatibility ===== */
+.nav { display: flex; align-items: center; justify-content: space-between; height: 74px; padding: 0 var(--gutter); }
+.nav .side { display: flex; align-items: center; gap: 32px; flex: 1; }
+.nav .side.right { justify-content: flex-end; }
+.nav a.navlink { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; color: var(--forest); position: relative; padding-bottom: 4px; }
+.nav a.navlink::after { content: ""; position: absolute; left: 0; bottom: -2px; width: 0; height: 1.5px; background: var(--gold); transition: width 0.3s ease; }
+.nav a.navlink:hover::after { width: 100%; }
+.logo { font-family: var(--serif); font-size: 26px; font-weight: 500; letter-spacing: 0.18em; color: var(--forest); text-align: center; }
+.nav .icons { display: flex; gap: 20px; align-items: center; }
+.nav .icons a, .nav .icons button { color: var(--forest); position: relative; display: inline-flex; align-items: center; padding: 4px; }
+.icon-badge { position: absolute; top: -6px; right: -8px; min-width: 14px; height: 14px; padding: 0 3px; border-radius: 7px; background: var(--gold); color: var(--forest); font-size: 8.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.nav-mobile-toggle { display: none; flex-direction: column; gap: 5px; width: 22px; padding: 6px 0; cursor: pointer; background: none; border: none; }
+.nav-mobile-toggle span { display: block; height: 1.5px; width: 100%; background: var(--forest); }
+.scrim { position: fixed; inset: 0; background: rgba(10,26,18,0.5); z-index: 290; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+.scrim.show { opacity: 1; visibility: visible; }
+.mobile-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(320px, 80%); background: var(--white); z-index: 300; transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1); padding: 72px 24px 30px; overflow-y: auto; box-shadow: -20px 0 40px rgba(0,0,0,0.12); }
+.mobile-drawer.open { transform: translateX(0); }
+.mobile-drawer a { display: block; font-family: var(--serif); font-size: 22px; font-style: italic; color: var(--forest); padding: 12px 0; border-bottom: 1px solid rgba(222,213,200,0.6); }
+.mobile-drawer a:hover { color: var(--gold, #C6A15B); }
+
+@media (max-width: 920px) { .nav .side.left .navlink, .nav .side.right .navlink { display: none; } .nav-mobile-toggle { display: flex; } .logo { font-size: 22px; } }
+</style>
+</head>
+<body>
+<!-- Announcement Bar -->
+<div class="announce" id="announce">
+  <span>✦ Complimentary framing on orders above ₹15,000 &nbsp;·&nbsp; Free pan-India shipping &nbsp;·&nbsp; Authenticity guaranteed ✦</span>
+  <button class="announce-close" onclick="this.parentElement.remove()" aria-label="Close">✕</button>
+</div>
+
+<!-- Sticky Navigation -->
+<!-- ============ NAVIGATION ============ -->
+<nav class="nav" id="nav" aria-label="Main Navigation">
+  <div class="side left">
+    <div class="nav-dropdown">
+        <a class="navlink" href="Lagoree Category.html">Collections <span class="nav-dropdown-arrow">&#9662;</span></a>
+        <div class="megamenu">
+          <div class="megamenu-grid">
+            <div class="megamenu-col">
+              <h4>Shop by Place</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?place=hall">Hall</a></li>
+                <li><a href="Lagoree Category.html?place=bedroom">Bedroom</a></li>
+                <li><a href="Lagoree Category.html?place=saloon">Saloon</a></li>
+                <li><a href="Lagoree Category.html?place=office">Office</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop by Type</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?type=canvas-print">Canvas Print</a></li>
+                <li><a href="Lagoree Category.html?type=art-frame">Art Frame</a></li>
+                <li><a href="Lagoree Category.html?type=posters">Posters</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop By Artist</h4>
+              <ul class="megamenu-list">
+                <li><a href="Artist - Lagoree Arts.html">Priya Sharma <span class="megamenu-artist-tag">Mithila</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jivya S. Mashe <span class="megamenu-artist-tag">Warli</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Rajan Vyam <span class="megamenu-artist-tag">Gond</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Bhuri Bai <span class="megamenu-artist-tag">Bhil</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jamini Roy <span class="megamenu-artist-tag">Kalighat</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Raja Ravi Varma <span class="megamenu-artist-tag">Classical</span></a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <div class="megamenu-featured-card">
+                <div class="megamenu-card-thumb"></div>
+                <span class="megamenu-card-label">Curator's Vault</span>
+                <div class="megamenu-card-title">Sacred Heritage Archive &amp; Originals</div>
+                <a href="Lagoree Category.html" class="megamenu-card-btn">Explore All &rarr;</a>
+              </div>
+            </div>
+          </div>
+        
+        </div>
+      </div>
+    <a class="navlink" href="Antiques - Lagoree Arts.html">Antiques</a>
+    <a class="navlink" href="Lagoree Category.html?type=handicraft">Handicraft</a>
+  </div>
+  <a href="Lagoree Homepage.html" class="logo" aria-label="Lagoree Arts Home">LAGOREE</a>
+  <div class="side right">
+    <a class="navlink" href="Lagoree Category.html">Curator&rsquo;s Picks</a>
+    <div class="icons">
+      <a href="Search - Lagoree Arts.html" aria-label="Search" title="Search" style="color:var(--forest); padding:4px; display:inline-flex; align-items:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+      </a>
+      <a href="Wishlist - Lagoree Arts.html" aria-label="Wishlist" title="Wishlist" style="color:var(--forest); padding:4px; display:inline-flex; align-items:center; position:relative;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg>
+        <span class="icon-badge">0</span>
+      </a>
+      <a href="Lagoree_Cart claude.html" aria-label="Cart" title="Cart" style="color:var(--forest); padding:4px; display:inline-flex; align-items:center; position:relative;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 7h15l-1.5 10.5a2 2 0 0 1-2 1.5H8a2 2 0 0 1-2-1.5L4 3H2"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>
+        <span class="icon-badge">2</span>
+      </a>
+      <a href="Login-Register - Lagoree Arts.html" aria-label="My Account" title="My Account" style="color:var(--forest); padding:4px; display:inline-flex; align-items:center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+      <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<div class="scrim" id="scrim"></div>
+<nav class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+  <a href="Lagoree Category.html">Collections</a>
+  <a href="Antiques - Lagoree Arts.html">Antiques</a>
+  <a href="Lagoree Category.html?type=handicraft">Handicraft</a>
+  <a href="Lagoree Category.html">Curator&rsquo;s Picks</a>
+  <a href="Login-Register - Lagoree Arts.html">Sign In / Account</a>
+</nav>
+
+
+<main class="wrap" style="max-width:880px; margin:60px auto 100px;">
+  <span class="eyebrow">Curatorial Guarantee</span>
+  <h1 style="font-size:42px; margin-bottom:20px;">Returns, Exchanges & 7-Day Art Trial</h1>
+  <p style="font-size:15px; color:var(--muted); line-height:1.8; margin-bottom:40px;">We want every artwork you acquire to be a lifelong source of serenity and inspiration.</p>
+
+  <div style="background:var(--white); border:1px solid var(--stone); padding:36px; border-radius:4px; margin-bottom:30px;">
+    <h3 style="font-size:22px; color:var(--forest); margin-bottom:12px;">Return Eligibility</h3>
+    <p style="font-size:14px; color:var(--muted); line-height:1.8; margin-bottom:14px;">You have <strong>7 days</strong> from physical receipt of the artwork to initiate an exchange or return.</p>
+    <ul style="font-size:14px; color:var(--muted); line-height:1.9; list-style:disc; margin-left:20px;">
+      <li>Artwork must be in original, unblemished condition.</li>
+      <li>Original certificate of authenticity and packaging crate must be preserved.</li>
+      <li>Custom commissioned pieces made to non-standard bespoke dimensions are eligible for exchange only.</li>
+    </ul>
+  </div>
+
+  <div style="background:var(--white); border:1px solid var(--stone); padding:36px; border-radius:4px;">
+    <h3 style="font-size:22px; color:var(--forest); margin-bottom:12px;">How to Initiate a Return</h3>
+    <p style="font-size:14px; color:var(--muted); line-height:1.8; margin-bottom:20px;">Contact our concierge with your Order ID (#LAG-...) via WhatsApp or email at <strong>returns@lagoreearts.com</strong>. We will dispatch our insured art logistics courier to pack and retrieve the crate from your residence.</p>
+    <a href="Contact - Lagoree Arts.html" class="btn primary">Contact Return Concierge</a>
+  </div>
+</main>
+
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">Lagoree Arts</div>
+      <p class="footer-tagline">Curating India's living heritage — hand-crafted folk and tribal masterworks for contemporary sanctuaries.</p>
+      <div class="footer-social">
+        <a href="#">Instagram</a>
+        <a href="#">Pinterest</a>
+        <a href="#">Artsy</a>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Collections</h4>
+      <a href="Lagoree Category.html" class="footer-link">Madhubani Art</a>
+      <a href="Lagoree Category.html" class="footer-link">Warli Masterpieces</a>
+      <a href="Lagoree Category.html" class="footer-link">Gond Narratives</a>
+      <a href="Lagoree Category.html" class="footer-link">Pichwai Gold叶</a>
+      <a href="Gift - Lagoree Arts.html" class="footer-link">Art Gift Vouchers</a>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">Patron Concierge</h4>
+      <a href="Contact - Lagoree Arts.html" class="footer-link">Atelier Direct</a>
+      <a href="FAQ - Lagoree Arts.html" class="footer-link">Care & Preservation</a>
+      <a href="Shipping - Lagoree Arts.html" class="footer-link">Global Logistics</a>
+      <a href="Returns - Lagoree Arts.html" class="footer-link">Art Return Policy</a>
+    </div>
+    <div class="footer-col">
+      <h4 class="footer-heading">The House</h4>
+      <a href="About - Lagoree Arts.html" class="footer-link">Our Heritage Mission</a>
+      <a href="Journal - Lagoree Arts.html" class="footer-link">Curator's Journal</a>
+      <a href="Privacy - Lagoree Arts.html" class="footer-link">Privacy Parchment</a>
+      <a href="Terms - Lagoree Arts.html" class="footer-link">Patron Terms</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2024 Lagoree Arts Private Limited. All Rights Reserved. Mumbai & New Delhi.</p>
+    <p>Authenticity Certified &middot; Handcrafted in India 🇮🇳</p>
+  </div>
+</footer>
+
+<div class="toast-stack" id="toast-stack"></div>
+
+<script>
+(function() {
+  'use strict';
+  window.showToast = function(msg) {
+    var stack = document.getElementById('toast-stack');
+    if (!stack) return;
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = '<span style="color:var(--gold)">✦</span> ' + msg;
+    stack.appendChild(t);
+    setTimeout(function() {
+      t.style.opacity = '0';
+      t.style.transform = 'translateY(10px)';
+      t.style.transition = 'all 0.4s ease';
+      setTimeout(function() { t.remove(); }, 400);
+    }, 4000);
+  };
+})();
+</script>
+<script>
+(function() {
+  var t = document.getElementById('mobileToggle');
+  var d = document.getElementById('mobileDrawer');
+  var s = document.getElementById('scrim');
+  function closeDrawer() {
+    if (d) d.classList.remove('open');
+    if (s) s.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  if (t && d) {
+    t.addEventListener('click', function(e) {
+      e.stopPropagation();
+      var open = d.classList.toggle('open');
+      if (s) s.classList.toggle('show', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+    });
+  }
+  if (s) s.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeDrawer(); });
+  if (d) d.querySelectorAll('a').forEach(function(a) { a.addEventListener('click', closeDrawer); });
+})();
+</script>
+</body>
+</html>

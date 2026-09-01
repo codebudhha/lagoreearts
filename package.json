@@ -1,0 +1,31 @@
+{
+  "name": "lagoree-arts-ecommerce",
+  "version": "1.0.0",
+  "description": "Full-Fledged Luxury E-Commerce Platform for Lagoree Arts",
+  "main": "server/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "seed": "node server/db/seed.js",
+    "test": "node server/tests/apiTest.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0"
+  },
+  "keywords": [
+    "ecommerce",
+    "lagoree-arts",
+    "express",
+    "sqlite",
+    "art-gallery"
+  ],
+  "author": "Lagoree Arts",
+  "license": "ISC"
+}

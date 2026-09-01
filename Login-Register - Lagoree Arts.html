@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In or Create Account | Lagoree Arts — Curated Masterpieces for Refined Spaces</title>
+<meta name="description" content="Sign in to your Lagoree Arts account or create a connoisseur account to access curated collections, order tracking, and patron privileges.">
+<script>document.documentElement.classList.add('js');</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ================= GLOBAL ================= */
+:root {
+  --ivory: #F7F5F0;
+  --white: #FCFBF8;
+  --forest: #123524;
+  --deep: #0A1A12;
+  --gold: #C6A15B;
+  --gold-dim: rgba(200, 169, 106, 0.3);
+  --gold-light: rgba(200, 169, 106, 0.12);
+  --stone: #DED5C8;
+  --charcoal: #292927;
+  --muted: #686660;
+  --error: #b33927;
+  --error-bg: rgba(179, 57, 39, 0.08);
+  --success: #2e7d32;
+  --serif: 'Cormorant Garamond', serif;
+  --sans: 'Inter', sans-serif;
+  --container: 1240px;
+  --gutter: clamp(16px, 4vw, 48px);
+  --ease: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --transition: 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body {
+  background: var(--ivory);
+  color: var(--charcoal);
+  font-family: var(--sans);
+  font-weight: 400;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  width: 100%;
+}
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+button, select { font-family: inherit; background: none; border: none; cursor: pointer; color: inherit; }
+input { font-family: inherit; }
+
+::selection { background: var(--gold-dim); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.wrap { max-width: var(--container); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); width: 100%; }
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 500;
+  color: var(--forest);
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+}
+
+/* ================= EYEBROW ================= */
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: inline-block;
+}
+
+/* ================= BUTTONS ================= */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: 2px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--forest);
+  transition: background 0.3s var(--ease), color 0.3s var(--ease), border-color 0.3s var(--ease), transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
+  position: relative;
+  cursor: pointer;
+}
+.btn.primary {
+  background: var(--forest);
+  color: var(--ivory);
+  border-color: var(--forest);
+}
+.btn.primary:hover {
+  background: var(--deep);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16,42,30,0.18);
+}
+.btn.ghost {
+  background: transparent;
+  color: var(--forest);
+  border-color: var(--stone);
+}
+.btn.ghost:hover {
+  background: var(--forest);
+  color: var(--ivory);
+  border-color: var(--forest);
+}
+.btn.gold-outline {
+  background: transparent;
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.btn.gold-outline:hover {
+  background: var(--gold);
+  color: var(--forest);
+  border-color: var(--gold);
+}
+.btn.w-full { width: 100%; justify-content: center; }
+.btn-sm { padding: 9px 18px; font-size: 10px; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* Social Login Button */
+.btn-social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 18px;
+  border: 1px solid var(--stone);
+  background: var(--white);
+  color: var(--forest);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  border-radius: 2px;
+  transition: border-color 0.25s ease, background 0.25s ease, transform 0.2s ease;
+  cursor: pointer;
+}
+.btn-social svg { width: 18px; height: 18px; flex-shrink: 0; }
+.btn-social:hover {
+  border-color: var(--gold);
+  background: var(--ivory);
+  transform: translateY(-1px);
+}
+
+/* ================= PLATE SYSTEM ================= */
+.plate {
+  position: relative;
+  border: 1px solid var(--gold-dim);
+  padding: 8px;
+  background: var(--white);
+  transition: box-shadow 0.4s ease;
+  box-sizing: border-box;
+}
+.plate .canvas {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+  transition: filter 0.8s ease, opacity 0.8s ease, transform 1s ease;
+  aspect-ratio: 4 / 5;
+}
+.plate .canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px);
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+.js .plate .canvas { filter: blur(4px); opacity: 0; transform: scale(1.02); }
+.js .plate.revealed .canvas { filter: blur(0); opacity: 1; transform: scale(1); }
+
+/* ================= CANVAS GRADIENTS ================= */
+.cv-p1 { background: radial-gradient(100% 140% at 50% 0%, #8a6a44 0, transparent 62%), linear-gradient(180deg,#221a10,#100c08); }
+.cv-p2 { background: radial-gradient(100% 140% at 50% 0%, #4a6b5a 0, transparent 62%), linear-gradient(180deg,#101f16,#080c0a); }
+.cv-p3 { background: radial-gradient(100% 140% at 50% 0%, #6b4a5c 0, transparent 62%), linear-gradient(180deg,#1c1020,#0c080d); }
+.cv-hero { background: radial-gradient(130% 130% at 10% 20%, #2c4433 0%, transparent 60%), radial-gradient(90% 120% at 90% 80%, #7a5a2b 0%, transparent 60%), linear-gradient(160deg, #0f2419 0%, #1c3526 45%, #3a2e1c 100%); }
+.cv-sanskrit { background: radial-gradient(120% 120% at 30% 40%, #6b5a3a 0, transparent 60%), linear-gradient(160deg,#1a140c,#3a2e16); }
+
+/* ================= REVEAL ================= */
+.js .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s ease, transform 0.6s ease; }
+.js .reveal.in { opacity: 1; transform: translateY(0); }
+
+/* ================= ANNOUNCEMENT ================= */
+.announce {
+  background: var(--forest);
+  color: var(--ivory);
+  text-align: center;
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  padding: 9px 36px;
+  position: relative;
+  border-bottom: 1px solid rgba(200,169,106,0.18);
+}
+.announce .close {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 17px;
+  opacity: 0.6;
+  padding: 0 4px;
+  cursor: pointer;
+  color: var(--ivory);
+}
+.announce .close:hover { opacity: 1; }
+
+/* ================= NAVIGATION ================= */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 74px;
+  padding: 0 var(--gutter);
+  background: rgba(247,245,240,0.96);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--stone);
+}
+.nav .side { display: flex; align-items: center; gap: 32px; flex: 1; }
+.nav .side.right { justify-content: flex-end; }
+.nav a.navlink {
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--forest);
+  position: relative;
+  padding-bottom: 3px;
+}
+.nav a.navlink::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1.5px;
+  background: var(--gold);
+  transition: width 0.3s ease;
+}
+.nav a.navlink:hover::after { width: 100%; }
+
+.logo {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--forest);
+  text-align: center;
+}
+
+.nav .icons { display: flex; gap: 18px; align-items: center; }
+.nav .icons button, .nav .icons a { color: var(--forest); position: relative; padding: 4px; display: inline-flex; align-items: center; }
+.nav .icons svg { width: 18px; height: 18px; }
+.icon-badge {
+  position: absolute;
+  top: -5px;
+  right: -7px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 7px;
+  background: var(--gold);
+  color: var(--forest);
+  font-size: 8.5px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(1);
+  transition: transform 0.2s ease;
+}
+.icon-badge.hide { transform: scale(0); }
+.nav .icons button.active-toggle { color: var(--gold); }
+
+.nav-mobile-toggle {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  width: 22px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.nav-mobile-toggle span {
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: var(--forest);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+@media (max-width: 920px) {
+  .nav .side.left, .nav .side.right .navlink { display: none; }
+  .nav-mobile-toggle { display: flex; }
+  .logo { font-size: 22px; }
+}
+
+/* ================= BREADCRUMB ================= */
+.breadcrumb-strip { padding: 18px 0 10px; }
+.breadcrumb {
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.breadcrumb a:hover { color: var(--gold); }
+.breadcrumb span { color: var(--gold); }
+
+/* ================= AUTH SECTION ================= */
+.auth-page {
+  padding: 16px 0 80px;
+}
+
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  align-items: stretch;
+  margin-top: 16px;
+}
+
+@media (max-width: 960px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+}
+
+/* Auth Card (Left) */
+.auth-card {
+  background: var(--white);
+  border: 1px solid var(--stone);
+  padding: clamp(28px, 4vw, 44px);
+  position: relative;
+  box-shadow: 0 4px 24px rgba(16, 42, 30, 0.03);
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--forest), var(--gold) 50%, var(--forest));
+}
+
+.auth-header {
+  margin-bottom: 28px;
+}
+.auth-header .eyebrow {
+  margin-bottom: 8px;
+}
+.auth-header h1 {
+  font-size: clamp(28px, 3.2vw, 38px);
+  font-weight: 400;
+  margin-bottom: 10px;
+}
+.auth-header p {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+/* Demo autofill badge */
+.demo-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--gold-light);
+  border: 1px solid var(--gold-dim);
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--forest);
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.demo-pill:hover {
+  background: var(--gold);
+  color: var(--forest);
+}
+
+/* Form Groups & Inputs */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.form-group label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--stone);
+  background: var(--ivory);
+  font-size: 13.5px;
+  color: var(--charcoal);
+  border-radius: 2px;
+  outline: none;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+.input-wrapper input:focus {
+  border-color: var(--gold);
+  background: var(--white);
+  box-shadow: 0 0 0 3px var(--gold-light);
+}
+
+.input-wrapper input.has-error {
+  border-color: var(--error);
+  background: var(--error-bg);
+}
+
+.input-icon-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  padding: 4px;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+.input-icon-btn:hover { color: var(--forest); }
+.input-icon-btn svg { width: 17px; height: 17px; }
+
+.form-error {
+  font-size: 11px;
+  color: var(--error);
+  display: none;
+  margin-top: 2px;
+}
+.form-error.show { display: block; }
+
+/* Form Options: Remember + Forgot */
+.form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12.5px;
+  margin-top: -4px;
+}
+
+.checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--charcoal);
+}
+
+.checkbox-label input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--stone);
+  border-radius: 2px;
+  background: var(--ivory);
+  cursor: pointer;
+  display: grid;
+  place-content: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background: var(--forest);
+  border-color: var(--forest);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: "";
+  width: 8px;
+  height: 4px;
+  border-left: 1.5px solid var(--ivory);
+  border-bottom: 1.5px solid var(--ivory);
+  transform: rotate(-45deg) translate(1px, -1px);
+}
+
+.forgot-link {
+  color: var(--gold);
+  font-weight: 500;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+.forgot-link:hover {
+  border-color: var(--gold);
+  color: var(--forest);
+}
+
+/* Or Divider */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 10px 0;
+}
+.auth-divider .line {
+  flex: 1;
+  height: 1px;
+  background: var(--stone);
+}
+.auth-divider span {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Social Login Grid */
+.social-login-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Auth Switch Prompt */
+.auth-switch {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--stone);
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
+.auth-switch a {
+  color: var(--forest);
+  font-weight: 600;
+  border-bottom: 1px solid var(--gold);
+  padding-bottom: 1px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.auth-switch a:hover {
+  color: var(--gold);
+  border-color: var(--forest);
+}
+
+/* Showcase Card (Right) */
+.auth-showcase {
+  background: var(--forest);
+  color: var(--ivory);
+  border: 1px solid rgba(200, 169, 106, 0.4);
+  padding: clamp(28px, 4vw, 44px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-showcase::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 80% 20%, rgba(198, 161, 91, 0.15) 0%, transparent 60%), radial-gradient(circle at 10% 90%, rgba(18, 53, 36, 0.8) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.showcase-content {
+  position: relative;
+  z-index: 2;
+}
+
+.showcase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(200, 169, 106, 0.16);
+  border: 1px solid rgba(200, 169, 106, 0.35);
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+
+.showcase-art {
+  margin: 20px 0 24px;
+}
+.showcase-art .plate {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(200, 169, 106, 0.35);
+  padding: 6px;
+}
+.showcase-art .canvas {
+  aspect-ratio: 16 / 9;
+  border-radius: 1px;
+}
+
+.showcase-quote {
+  font-family: var(--serif);
+  font-size: clamp(20px, 2.2vw, 26px);
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+.showcase-cite {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  display: block;
+  margin-bottom: 28px;
+}
+
+.patron-perks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+}
+.perk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--stone);
+  line-height: 1.4;
+}
+.perk-item .perk-icon {
+  font-size: 16px;
+  color: var(--gold);
+  flex-shrink: 0;
+  margin-top: -1px;
+}
+
+/* ================= FORGOT PASSWORD MODAL ================= */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 26, 18, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.modal-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+.modal-box {
+  background: var(--white);
+  border: 1px solid var(--stone);
+  padding: clamp(24px, 4vw, 36px);
+  max-width: 480px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  transform: translateY(20px);
+  transition: transform 0.3s ease;
+}
+.modal-overlay.open .modal-box {
+  transform: translateY(0);
+}
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+}
+.modal-close:hover { color: var(--forest); }
+.modal-box h3 { font-size: 24px; margin-bottom: 8px; }
+.modal-box p { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+
+/* ================= MOBILE DRAWER ================= */
+.mobile-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 80%;
+  max-width: 320px;
+  background: var(--white);
+  z-index: 300;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  padding: 80px 24px 30px;
+  overflow-y: auto;
+  box-shadow: -20px 0 40px rgba(0,0,0,0.12);
+}
+.mobile-drawer.open { transform: translateX(0); }
+.mobile-drawer a {
+  display: block;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-style: italic;
+  color: var(--forest);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--stone);
+  transition: color 0.2s ease, padding-left 0.2s ease;
+}
+.mobile-drawer a:hover { color: var(--gold); padding-left: 8px; }
+
+/* ================= SIDE DRAWERS (Cart / Wishlist) ================= */
+.side-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(380px, 92vw);
+  background: var(--white);
+  z-index: 320;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -20px 0 40px rgba(0,0,0,0.12);
+}
+.side-drawer.open { transform: translateX(0); }
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--stone);
+}
+.drawer-head h3 { font-size: 20px; }
+.drawer-close {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.6;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.drawer-close:hover { opacity: 1; }
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 24px;
+}
+.drawer-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--stone);
+}
+.drawer-item .thumb {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border: 1px solid var(--gold-dim);
+  overflow: hidden;
+}
+.drawer-item .thumb .canvas { width: 100%; height: 100%; }
+.drawer-item .info { flex: 1; min-width: 0; }
+.drawer-item .info .t { font-family: var(--serif); font-size: 15px; font-weight: 500; }
+.drawer-item .info .s { font-size: 10px; opacity: 0.6; }
+.drawer-item .info .row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.drawer-item .price { font-family: var(--serif); font-size: 14px; font-weight: 600; color: var(--forest); }
+.drawer-item .qty { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.drawer-item .qty button {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--stone);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.drawer-item .drawer-remove {
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  display: inline-block;
+  margin-top: 4px;
+}
+.drawer-item .drawer-remove:hover { color: var(--error); }
+.drawer-foot {
+  padding: 18px 24px;
+  border-top: 1px solid var(--stone);
+  background: var(--ivory);
+}
+.drawer-foot .subtotal {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Scrim */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,26,18,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 290;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.scrim.show { opacity: 1; visibility: visible; }
+
+/* Spotlight feature */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99;
+  background: radial-gradient(circle 240px at var(--mx, 50vw) var(--my, 50vh), transparent 0%, rgba(10,26,18,0.85) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.spotlight-on .spotlight-overlay { opacity: 1; }
+
+/* Search Overlay */
+.search-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(247, 245, 240, 0.98);
+  backdrop-filter: blur(16px);
+  z-index: 350;
+  padding: 40px var(--gutter) 48px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  transform: translateY(-100%);
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.search-overlay.open { transform: translateY(0); }
+.search-close {
+  position: absolute;
+  top: 20px;
+  right: var(--gutter);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+.search-box {
+  max-width: 680px;
+  margin: 0 auto;
+}
+.search-box input {
+  width: 100%;
+  font-family: var(--serif);
+  font-size: clamp(22px, 3.5vw, 32px);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--forest);
+  padding: 10px 0;
+  outline: none;
+  color: var(--forest);
+}
+.search-hint { font-size: 12px; color: var(--muted); margin-top: 10px; }
+.search-results { max-width: 680px; margin: 20px auto 0; display: flex; flex-direction: column; gap: 8px; }
+.search-result {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--white);
+  border: 1px solid var(--stone);
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.search-result:hover { border-color: var(--gold); }
+
+/* ================= FOOTER ================= */
+footer {
+  background: var(--forest);
+  color: var(--ivory);
+  padding: 64px 0 28px;
+  border-top: 1px solid rgba(200, 169, 106, 0.3);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 36px;
+}
+@media (min-width: 640px) {
+  .footer-grid { grid-template-columns: 1.6fr repeat(3, 1fr); }
+}
+.footer-logo {
+  font-family: var(--serif);
+  font-size: 26px;
+  letter-spacing: 0.18em;
+  color: var(--ivory);
+  margin-bottom: 12px;
+}
+.footer-grid p {
+  color: var(--stone);
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 32ch;
+}
+.footer-grid h4 {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 16px;
+}
+.footer-grid a {
+  display: block;
+  font-size: 13px;
+  color: var(--stone);
+  margin-bottom: 10px;
+  transition: color 0.2s ease, padding-left 0.2s ease;
+}
+.footer-grid a:hover { color: var(--gold); padding-left: 4px; }
+
+.copyright {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  margin-top: 48px;
+  padding-top: 20px;
+  color: #a9a398;
+  font-size: 11px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* ================= TOAST STACK ================= */
+.toast-stack {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+.toast {
+  background: var(--forest);
+  color: var(--ivory);
+  padding: 12px 20px;
+  border-radius: 2px;
+  border: 1px solid var(--gold);
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+  transform: translateY(20px);
+  opacity: 0;
+  transition: transform 0.3s var(--ease), opacity 0.3s var(--ease);
+  pointer-events: auto;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+
+/* ============ Collections Hover Megamenu ============ */
+.nav-dropdown {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+}
+.nav-dropdown > a.navlink,
+.nav-dropdown > a.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+.nav-dropdown-arrow {
+  display: inline-block;
+  font-size: 8px;
+  transition: transform 0.25s ease;
+  vertical-align: middle;
+  opacity: 0.65;
+}
+.nav-dropdown:hover .nav-dropdown-arrow {
+  transform: rotate(180deg);
+  opacity: 1;
+}
+.megamenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 820px;
+  background: #FCFBF8;
+  border: 1px solid #DED5C8;
+  box-shadow: 0 20px 48px rgba(18, 53, 36, 0.14), 0 4px 12px rgba(0,0,0,0.04);
+  padding: 30px 32px;
+  border-radius: 3px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(10px);
+  transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.25s;
+  z-index: 1000;
+  text-align: left;
+}
+.megamenu::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 14px;
+}
+.nav-dropdown:hover .megamenu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.megamenu-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1.1fr 1.5fr 1.3fr;
+  gap: 24px;
+}
+.megamenu-col h4 {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.18em !important;
+  color: #C6A15B !important;
+  margin-bottom: 14px !important;
+  padding-bottom: 6px !important;
+  border-bottom: 1px solid #DED5C8 !important;
+}
+.megamenu-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.megamenu-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+.megamenu-list li a {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 13px !important;
+  color: #292927 !important;
+  text-decoration: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: color 0.2s ease, transform 0.2s ease !important;
+  font-weight: 400 !important;
+  padding: 2px 0 !important;
+}
+.megamenu-list li a:hover {
+  color: #C6A15B !important;
+  transform: translateX(3px) !important;
+}
+.megamenu-artist-tag {
+  font-size: 9.5px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: #686660 !important;
+  background: #F7F5F0 !important;
+  padding: 2px 6px !important;
+  border-radius: 2px !important;
+  border: 1px solid #DED5C8 !important;
+}
+.megamenu-featured-card {
+  background: #F7F5F0;
+  border: 1px solid #DED5C8;
+  border-radius: 3px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+}
+.megamenu-card-thumb {
+  height: 90px;
+  border-radius: 2px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 30% 60%, #1a4a3a 0%, #0d2a1f 40%, #050f08 100%);
+}
+.megamenu-card-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #C6A15B;
+}
+.megamenu-card-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  color: #123524;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.megamenu-card-btn {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #123524;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: auto;
+  transition: color 0.2s ease;
+}
+.megamenu-card-btn:hover {
+  color: #C6A15B;
+}
+@media (max-width: 920px) {
+  .megamenu { display: none !important; }
+}
+
+/* ============================================================
+   MERGED REGISTER-ONLY STYLES
+   ============================================================ */
+
+/* Two-up field rows (register) */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; gap: 18px; }
+}
+
+/* Password strength meter */
+.pwd-strength-container { margin-top: 4px; }
+.strength-bars {
+  display: flex;
+  gap: 4px;
+  height: 3.5px;
+  width: 100%;
+}
+.strength-bar {
+  flex: 1;
+  background: var(--stone);
+  border-radius: 2px;
+  transition: background 0.3s ease;
+}
+.strength-bar.weak { background: #d9534f; }
+.strength-bar.fair { background: #f0ad4e; }
+.strength-bar.good { background: var(--gold); }
+.strength-bar.strong { background: var(--forest); }
+
+.strength-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: flex;
+  justify-content: space-between;
+}
+.strength-label span.strong-text { color: var(--forest); font-weight: 600; }
+
+/* Register checkbox stack (multi-line labels) */
+.checkbox-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0;
+}
+#panel-register .checkbox-label {
+  align-items: flex-start;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+#panel-register .checkbox-label input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; }
+#panel-register .checkbox-label a {
+  color: var(--forest);
+  font-weight: 500;
+  text-decoration: underline;
+}
+
+/* Register showcase extras */
+.showcase-title {
+  font-size: 24px;
+  color: var(--ivory);
+  font-weight: 400;
+  margin-bottom: 8px;
+}
+.showcase-desc {
+  font-size: 13px;
+  color: var(--stone);
+  line-height: 1.5;
+  margin-bottom: 24px;
+}
+
+.patron-benefits-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+}
+.benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+.benefit-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(200, 169, 106, 0.15);
+  border: 1px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: var(--gold);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.benefit-info h4 {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ivory);
+  margin-bottom: 2px;
+}
+.benefit-info p {
+  font-size: 12px;
+  color: var(--stone);
+  line-height: 1.4;
+}
+
+/* ============================================================
+   LOGIN / REGISTER MODE SWITCHER
+   ============================================================ */
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: var(--ivory);
+  border: 1px solid var(--stone);
+  border-radius: 3px;
+  padding: 6px;
+  margin-bottom: 26px;
+}
+
+.auth-tab {
+  padding: 11px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  min-height: 44px;
+}
+
+.auth-tab:hover { color: var(--forest); }
+
+.auth-tab.active {
+  background: var(--forest);
+  color: var(--ivory);
+  box-shadow: 0 4px 14px rgba(18, 53, 36, 0.22);
+}
+
+.auth-panel { display: none; }
+.auth-panel.active {
+  display: block;
+  animation: panelIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Showcase variant switching */
+.showcase-mode { display: none; }
+.showcase-mode.active {
+  display: block;
+  animation: panelIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-panel.active,
+  .showcase-mode.active { animation: none; }
+}
+
+/* ============================================================
+   RESPONSIVE ENHANCEMENTS — ultra-wide, laptop, tablet, phone
+   ============================================================ */
+
+/* ---- Big desktops (>=1440px): widen canvas, cap form column ---- */
+@media (min-width: 1440px) {
+  :root { --container: 1400px; }
+  .auth-layout {
+    grid-template-columns: minmax(0, 620px) minmax(420px, 1fr);
+    gap: 56px;
+  }
+  .auth-card { padding: clamp(36px, 3.2vw, 52px); }
+  .auth-showcase { padding: clamp(36px, 3.2vw, 52px); }
+}
+
+/* ---- Ultra-wide screens (>=1920px): showcase breathes wider ---- */
+@media (min-width: 1920px) {
+  :root { --container: 1560px; }
+  .auth-showcase { padding: clamp(44px, 3vw, 64px); }
+}
+
+/* ---- Phones (<=480px): tighten spacing, stack socials, safe modal ---- */
+@media (max-width: 480px) {
+  :root { --gutter: 18px; }
+  .auth-page { padding-bottom: 56px; }
+  .auth-layout { margin-top: 8px; }
+  .auth-card,
+  .auth-showcase { padding: 26px 20px; }
+
+  /* Keep tap targets >=44px */
+  .input-wrapper input { min-height: 46px; }
+  .auth-form .btn { min-height: 46px; }
+  .btn-social { min-height: 46px; }
+
+  /* Social buttons stack full-width */
+  .social-login-grid { grid-template-columns: 1fr; }
+
+  /* Remember-me row and hint pill wrap cleanly */
+  .form-options { row-gap: 12px; }
+  .checkbox-label span { overflow-wrap: break-word; }
+  .demo-pill { max-width: 100%; }
+
+  /* Guard wide elements against viewport overflow */
+  .modal-box,
+  .toast-stack .toast { max-width: 100%; }
+  .toast-stack { left: 18px; right: 18px; bottom: 18px; }
+
+  /* Forgot-password modal: near-fullscreen friendly on phones */
+  .modal-overlay { padding: 16px; }
+  .modal-box { max-height: 90vh; overflow-y: auto; }
+}
+
+/* ---- Small phones (<=380px) ---- */
+@media (max-width: 380px) {
+  :root { --gutter: 14px; }
+  .auth-card,
+  .auth-showcase { padding: 22px 16px; }
+  .auth-header h1 { font-size: 27px; }
+  .breadcrumb-strip { padding: 12px 0 8px; }
+  .breadcrumb { flex-wrap: wrap; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ============ ANNOUNCEMENT ============ -->
+<div class="announce" id="announce">
+  Curated Art • Premium Canvas • Timeless Objects
+  <button class="close" aria-label="Dismiss">&times;</button>
+</div>
+
+<!-- ============ NAVIGATION ============ -->
+<nav class="nav" id="nav" aria-label="Main Navigation">
+  <div class="side left">
+    <div class="nav-dropdown">
+        <a class="navlink" href="Lagoree Category.html">Collections <span class="nav-dropdown-arrow">&#9662;</span></a>
+        <div class="megamenu">
+          <div class="megamenu-grid">
+            <div class="megamenu-col">
+              <h4>Shop by Place</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?place=hall">Hall</a></li>
+                <li><a href="Lagoree Category.html?place=bedroom">Bedroom</a></li>
+                <li><a href="Lagoree Category.html?place=saloon">Saloon</a></li>
+                <li><a href="Lagoree Category.html?place=office">Office</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop by Type</h4>
+              <ul class="megamenu-list">
+                <li><a href="Lagoree Category.html?type=canvas-print">Canvas Print</a></li>
+                <li><a href="Lagoree Category.html?type=art-frame">Art Frame</a></li>
+                <li><a href="Lagoree Category.html?type=posters">Posters</a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <h4>Shop By Artist</h4>
+              <ul class="megamenu-list">
+                <li><a href="Artist - Lagoree Arts.html">Priya Sharma <span class="megamenu-artist-tag">Mithila</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jivya S. Mashe <span class="megamenu-artist-tag">Warli</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Rajan Vyam <span class="megamenu-artist-tag">Gond</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Bhuri Bai <span class="megamenu-artist-tag">Bhil</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Jamini Roy <span class="megamenu-artist-tag">Kalighat</span></a></li>
+                <li><a href="Artist - Lagoree Arts.html">Raja Ravi Varma <span class="megamenu-artist-tag">Classical</span></a></li>
+              </ul>
+            </div>
+            <div class="megamenu-col">
+              <div class="megamenu-featured-card">
+                <div class="megamenu-card-thumb"></div>
+                <span class="megamenu-card-label">Curator's Vault</span>
+                <div class="megamenu-card-title">Sacred Heritage Archive &amp; Originals</div>
+                <a href="Lagoree Category.html" class="megamenu-card-btn">Explore All &rarr;</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    <a class="navlink" href="Antiques - Lagoree Arts.html">Antiques</a>
+    <a class="navlink" href="Lagoree Category.html?type=handicraft">Handicraft</a>
+  </div>
+  <a href="Lagoree Homepage.html" class="logo" aria-label="Lagoree Arts Home">LAGOREE</a>
+  <div class="side right">
+    <a class="navlink" href="Lagoree Category.html">Curator&rsquo;s Picks</a>    <div class="icons">
+      <button id="spotlightToggle" aria-label="Toggle gallery spotlight mode" title="Gallery Spotlight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 2v3M4.2 5.2l2 2M2 12h3M4.2 18.8l2-2M12 22v-3M19.8 18.8l-2-2M22 12h-3M19.8 5.2l-2-2"/><circle cx="12" cy="12" r="4"/></svg>
+      </button>
+      <button id="searchToggle" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.6" y2="16.6"/></svg>
+      </button>
+      <button id="wishlistToggle" aria-label="Wishlist">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7.5-4.87-10-9.5C.6 8.1 2.4 4.5 6 4.5c2.1 0 3.6 1.2 6 3.5 2.4-2.3 3.9-3.5 6-3.5 3.6 0 5.4 3.6 4 7C19.5 16.13 12 21 12 21z"/></svg>
+        <span class="icon-badge" id="wishlistBadge">4</span>
+      </button>
+      <button id="cartToggle" aria-label="Cart">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M6 7h15l-1.5 10.5a2 2 0 0 1-2 1.5H8a2 2 0 0 1-2-1.5L4 3H2"/><circle cx="9" cy="21" r="1"/><circle cx="18" cy="21" r="1"/></svg>
+        <span class="icon-badge" id="cartBadge">3</span>
+      </button>
+      <a href="My Account Lagoree Arts.html" aria-label="My Account" title="My Account" style="color:var(--gold);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+      <button class="nav-mobile-toggle" id="mobileToggle" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ OVERLAYS & DRAWERS ============ -->
+<div class="scrim" id="scrim"></div>
+<div class="spotlight-overlay" id="spotlightOverlay"></div>
+
+<!-- Mobile Drawer -->
+<nav class="mobile-drawer" id="mobileDrawer" aria-label="Mobile navigation">
+  <a href="Lagoree Category.html">Collections</a>
+  <a href="Antiques - Lagoree Arts.html">Antiques</a>
+  <a href="Lagoree Category.html">Curator&rsquo;s Picks</a>
+  <a href="Lagoree Category.html?type=handicraft">Handicraft</a>
+  <a href="My Account Lagoree Arts.html">My Account</a>
+  <a href="Login-Register - Lagoree Arts.html?mode=register">Join Membership</a>
+</nav>
+
+<!-- Search Overlay -->
+<div class="search-overlay" id="searchOverlay">
+  <button class="search-close" id="searchClose">Close &times;</button>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search artists, collections, moods…" autocomplete="off">
+    <p class="search-hint" id="searchHint">Try &ldquo;Krishna&rdquo;, &ldquo;Living Room&rdquo;, or &ldquo;Abstract&rdquo;.</p>
+  </div>
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<!-- Wishlist Drawer -->
+<aside class="side-drawer" id="wishlistDrawer" aria-label="Wishlist">
+  <div class="drawer-head"><h3>Wishlist</h3><button class="drawer-close" data-close-drawer>&times;</button></div>
+  <div class="drawer-body" id="wishlistBody">
+    <div class="drawer-item">
+      <div class="thumb"><div class="canvas cv-p1"></div></div>
+      <div class="info">
+        <div class="t">Krishna &amp; Cow</div>
+        <div class="s">Indian Art &middot; 18&times;24</div>
+        <div class="row2"><span class="price">&inr;2,499</span></div>
+        <a class="drawer-remove">Remove</a>
+      </div>
+    </div>
+    <div class="drawer-item">
+      <div class="thumb"><div class="canvas cv-p3"></div></div>
+      <div class="info">
+        <div class="t">Reclining Form No. 3</div>
+        <div class="s">Spiritual Art &middot; 30&times;40</div>
+        <div class="row2"><span class="price">&inr;22,000</span></div>
+        <a class="drawer-remove">Remove</a>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <div class="subtotal"><span>2 items</span><span>&inr;24,499</span></div>
+    <a href="My Account Lagoree Arts.html" class="btn primary w-full">View Full Wishlist</a>
+  </div>
+</aside>
+
+<!-- Cart Drawer -->
+<aside class="side-drawer" id="cartDrawer" aria-label="Shopping cart">
+  <div class="drawer-head"><h3>Your Cart</h3><button class="drawer-close" data-close-drawer>&times;</button></div>
+  <div class="drawer-body" id="cartDrawerBody">
+    <div class="drawer-item">
+      <div class="thumb"><div class="canvas cv-p1"></div></div>
+      <div class="info">
+        <div class="t">Krishna &amp; Cow</div>
+        <div class="s">18&times;24 &middot; Walnut Frame</div>
+        <div class="row2">
+          <span class="price">&inr;2,499</span>
+          <span class="qty"><button class="qty-btn" data-op="dec">&minus;</button><span>1</span><button class="qty-btn" data-op="inc">&plus;</button></span>
+        </div>
+        <a class="drawer-remove">Remove</a>
+      </div>
+    </div>
+    <div class="drawer-item">
+      <div class="thumb"><div class="canvas cv-p2"></div></div>
+      <div class="info">
+        <div class="t">Golden Hour, Tuscany</div>
+        <div class="s">24&times;36 &middot; Black Oak</div>
+        <div class="row2">
+          <span class="price">&inr;14,200</span>
+          <span class="qty"><button class="qty-btn" data-op="dec">&minus;</button><span>1</span><button class="qty-btn" data-op="inc">&plus;</button></span>
+        </div>
+        <a class="drawer-remove">Remove</a>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <div class="subtotal"><span>Subtotal</span><span>&inr;16,699</span></div>
+    <a href="Checkout - Lagoree Arts.html" class="btn primary w-full">Proceed to Checkout</a>
+  </div>
+</aside>
+
+<!-- ============ MAIN CONTENT ============ -->
+<main class="wrap auth-page">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb-strip">
+    <div class="breadcrumb">
+      <a href="Lagoree Homepage.html">Home</a>
+      <span>/</span>
+      <a href="My Account Lagoree Arts.html">Account</a>
+      <span>/</span>
+      <span id="crumbMode">Sign In</span>
+    </div>
+  </div>
+
+  <!-- Auth Layout -->
+  <div class="auth-layout">
+
+    <!-- Left Column: Form Card -->
+    <div class="auth-card reveal">
+
+      <!-- Mode Switcher -->
+      <div class="auth-tabs" role="tablist" aria-label="Account access options">
+        <button type="button" class="auth-tab active" id="tab-login" role="tab" aria-selected="true" aria-controls="panel-login" data-mode="login">Sign In</button>
+        <button type="button" class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="panel-register" data-mode="register">Create Account</button>
+      </div>
+
+      <!-- ============ SIGN IN PANEL ============ -->
+      <div class="auth-panel active" id="panel-login" role="tabpanel" aria-labelledby="tab-login">
+
+      <div class="auth-header">
+        <span class="eyebrow">Connoisseur Access</span>
+        <h1>Welcome Back</h1>
+        <p>Sign in to view your art portfolio, acquired certificates of authenticity, and personalized curation notes.</p>
+        <button class="demo-pill" id="demoFillBtn" type="button" title="Fill with demo patron credentials">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:11px;height:11px;vertical-align:-1px;"><path d="M12 3l1.9 5.8L20 12l-6.1 3.2L12 21l-1.9-5.8L4 12l6.1-3.2z"/></svg></span> Auto-fill Demo Account (aarav@example.com)
+        </button>
+      </div>
+
+      <!-- Social Logins -->
+      <div class="social-login-grid">
+        <button class="btn-social" type="button" id="googleLoginBtn">
+          <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Google
+        </button>
+        <button class="btn-social" type="button" id="appleLoginBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.65-.79 1.09-1.89.97-2.99-.94.04-2.08.63-2.75 1.42-.59.68-1.11 1.78-.97 2.85 1.05.08 2.13-.53 2.75-1.28z"/>
+          </svg>
+          Apple
+        </button>
+      </div>
+
+      <div class="auth-divider">
+        <div class="line"></div>
+        <span>or with credentials</span>
+        <div class="line"></div>
+      </div>
+
+      <!-- Login Form -->
+      <form class="auth-form" id="loginForm" novalidate>
+        <!-- Email / Member ID -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="loginEmail">Email or Patron ID</label>
+          </div>
+          <div class="input-wrapper">
+            <input type="email" id="loginEmail" name="email" placeholder="name@domain.com" required autocomplete="email">
+          </div>
+          <div class="form-error" id="emailError">Please enter a valid email address.</div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <div class="form-label-row">
+            <label for="loginPassword">Password</label>
+            <a href="#" class="forgot-link" id="forgotPwdTrigger">Forgot password?</a>
+          </div>
+          <div class="input-wrapper">
+            <input type="password" id="loginPassword" name="password" placeholder="••••••••••••" required autocomplete="current-password">
+            <button type="button" class="input-icon-btn" id="togglePasswordBtn" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="eyeIcon">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="form-error" id="passwordError">Password must be at least 6 characters.</div>
+        </div>
+
+        <!-- Remember Me Checkbox -->
+        <div class="form-options">
+          <label class="checkbox-label">
+            <input type="checkbox" id="rememberMe" name="remember" checked>
+            <span>Remember this device for 30 days</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn primary w-full" id="submitBtn">
+          <span>Sign In to Account</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+
+        <!-- Switch to Register -->
+        <div class="auth-switch">
+          Not yet a member? <a href="#" data-switch="register">Create a Connoisseur Account &rarr;</a>
+        </div>
+      </form>
+
+      </div>
+
+      <!-- ============ CREATE ACCOUNT PANEL ============ -->
+      <div class="auth-panel" id="panel-register" role="tabpanel" aria-labelledby="tab-register">
+
+      <div class="auth-header">
+        <span class="eyebrow">Patron Membership Invitation</span>
+        <h1>Create Your Account</h1>
+        <p>Join our private circle of collectors. Enjoy bespoke curatorial services, framing consultations, and certificate provenance tracking.</p>
+        <button class="demo-pill" id="demoRegisterFillBtn" type="button" title="Fill sample collector details">
+          <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:11px;height:11px;vertical-align:-1px;"><path d="M12 3l1.9 5.8L20 12l-6.1 3.2L12 21l-1.9-5.8L4 12l6.1-3.2z"/></svg></span> Auto-fill Sample Patron Details
+        </button>
+      </div>
+
+      <!-- Social Sign Up -->
+      <div class="social-login-grid">
+        <button class="btn-social" type="button" id="googleSignupBtn">
+          <svg viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          Sign up with Google
+        </button>
+        <button class="btn-social" type="button" id="appleSignupBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.65-.79 1.09-1.89.97-2.99-.94.04-2.08.63-2.75 1.42-.59.68-1.11 1.78-.97 2.85 1.05.08 2.13-.53 2.75-1.28z"/>
+          </svg>
+          Sign up with Apple
+        </button>
+      </div>
+
+      <div class="auth-divider">
+        <div class="line"></div>
+        <span>or register with email</span>
+        <div class="line"></div>
+      </div>
+
+      <!-- Registration Form -->
+      <form class="auth-form" id="registerForm" novalidate>
+
+        <!-- Name Fields -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="firstName" name="firstName" placeholder="Aarav" required autocomplete="given-name">
+            </div>
+            <div class="form-error" id="firstNameError">Please provide your first name.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="lastName">Last Name</label>
+            <div class="input-wrapper">
+              <input type="text" id="lastName" name="lastName" placeholder="Sharma" required autocomplete="family-name">
+            </div>
+            <div class="form-error" id="lastNameError">Please provide your last name.</div>
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="regEmail">Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="regEmail" name="email" placeholder="aarav.sharma@example.com" required autocomplete="email">
+          </div>
+          <div class="form-error" id="regEmailError">Please enter a valid email address.</div>
+        </div>
+
+        <!-- Phone & Art Interest -->
+        <div class="form-row">
+          <div class="form-group">
+            <label for="regPhone">Phone (For Delivery Updates)</label>
+            <div class="input-wrapper">
+              <input type="tel" id="regPhone" name="phone" placeholder="+91 98765 43210" autocomplete="tel">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="artPreference">Primary Art Interest</label>
+            <div class="input-wrapper">
+              <select id="artPreference" name="preference">
+                <option value="indian">Indian Art &amp; Heritage</option>
+                <option value="sanskrit">The Sanskrit Edit</option>
+                <option value="famous">Famous Classical Paintings</option>
+                <option value="abstract">Contemporary &amp; Minimalist</option>
+                <option value="antiques">Rare Antiques &amp; Miniatures</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="regPassword">Create Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="regPassword" name="password" placeholder="At least 8 characters" required autocomplete="new-password">
+            <button type="button" class="input-icon-btn" id="toggleRegPwdBtn" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="regEyeIcon">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <!-- Live Strength Meter -->
+          <div class="pwd-strength-container" id="strengthMeter">
+            <div class="strength-bars">
+              <div class="strength-bar" id="sb1"></div>
+              <div class="strength-bar" id="sb2"></div>
+              <div class="strength-bar" id="sb3"></div>
+              <div class="strength-bar" id="sb4"></div>
+            </div>
+            <div class="strength-label">
+              <span>Security strength:</span>
+              <span id="strengthStatus">Requires 8+ characters</span>
+            </div>
+          </div>
+          <div class="form-error" id="regPasswordError">Password must be at least 8 characters with numbers or symbols.</div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="form-group">
+          <label for="regConfirmPassword">Confirm Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required autocomplete="new-password">
+            <button type="button" class="input-icon-btn" id="toggleConfirmPwdBtn" aria-label="Show password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="confirmEyeIcon">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <div class="form-error" id="confirmPasswordError">Passwords do not match.</div>
+        </div>
+
+        <!-- Terms & Newsletter Checkboxes -->
+        <div class="checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="agreeTerms" name="agreeTerms" required>
+            <span>I accept the <a href="#" target="_blank">Terms of Service</a>, <a href="#" target="_blank">Privacy Policy</a>, and Authenticity Guarantee.</span>
+          </label>
+          <div class="form-error" id="termsError">You must agree to the terms to create an account.</div>
+
+          <label class="checkbox-label">
+            <input type="checkbox" id="curatorOptIn" name="curatorOptIn" checked>
+            <span>Receive complimentary issues of the <em>Lagoree Curator&rsquo;s Journal</em> and early notifications on rare acquisitions.</span>
+          </label>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn primary w-full" id="regSubmitBtn">
+          <span>Create Connoisseur Account</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+
+        <!-- Switch to Login -->
+        <div class="auth-switch">
+          Already an esteemed patron? <a href="#" data-switch="login">Sign In to Account &rarr;</a>
+        </div>
+      </form>
+
+      </div>
+
+    </div>
+
+    <!-- Right Column: Editorial Art Showcase -->
+    <div class="auth-showcase reveal">
+      <div class="showcase-content">
+        <div class="showcase-badge" id="showcaseBadge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>&nbsp;Lagoree Private Gallery
+        </div>
+
+        <div class="showcase-art">
+          <div class="plate">
+            <div class="canvas cv-hero" id="showcaseCanvas"></div>
+          </div>
+        </div>
+
+        <!-- Login-mode showcase -->
+        <div class="showcase-mode active" id="showcase-login">
+          <blockquote class="showcase-quote">
+            &ldquo;Every canvas holds a story, rendered not just in pigment, but in quiet intention.&rdquo;
+          </blockquote>
+          <cite class="showcase-cite">&mdash; Curator&rsquo;s Journal, Vol. IV</cite>
+
+          <div class="patron-perks-list">
+            <div class="perk-item">
+              <span class="perk-icon">✦</span>
+              <div><strong>Curated Provenance:</strong> View high-resolution archival certificates for all acquired masterworks.</div>
+            </div>
+            <div class="perk-item">
+              <span class="perk-icon">✦</span>
+              <div><strong>Private Previews:</strong> 48-hour advance window to acquire limited edition canvas releases.</div>
+            </div>
+            <div class="perk-item">
+              <span class="perk-icon">✦</span>
+              <div><strong>White Glove Support:</strong> Direct WhatsApp consultation with our framing &amp; art styling atelier.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Register-mode showcase -->
+        <div class="showcase-mode" id="showcase-register">
+          <h3 class="showcase-title">A Curated Art Experience</h3>
+          <p class="showcase-desc">Your membership unlocks exclusive privileges designed for true connoisseurs of fine living and heritage art.</p>
+
+          <div class="patron-benefits-grid">
+            <div class="benefit-item">
+              <div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <div class="benefit-info">
+                <h4>Archival Certificates</h4>
+                <p>Every piece arrives with an individually registered certificate of provenance.</p>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+              <div class="benefit-info">
+                <h4>Bespoke Framing Atelier</h4>
+                <p>Consult with our master framers for custom Italian walnut, gold leaf, and museum acrylics.</p>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <div class="benefit-info">
+                <h4>Private Salons &amp; Previews</h4>
+                <p>Enjoy a 48-hour priority reservation window before new heritage canvas editions open to public.</p>
+              </div>
+            </div>
+            <div class="benefit-item">
+              <div class="benefit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+              <div class="benefit-info">
+                <h4>White Glove Logistics</h4>
+                <p>Custom crate packaging, climate insulated to protect pure canvas pigments in transit.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<!-- ============ FORGOT PASSWORD MODAL ============ -->
+<div class="modal-overlay" id="forgotModal" role="dialog" aria-modal="true">
+  <div class="modal-box">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Close dialog">&times;</button>
+    <span class="eyebrow" style="margin-bottom: 6px;">Account Recovery</span>
+    <h3>Reset Your Password</h3>
+    <p>Enter the email address registered with your Lagoree account. We will send you a confidential link to reset your security credentials.</p>
+    <form id="forgotForm" novalidate>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label for="resetEmail">Email Address</label>
+        <div class="input-wrapper">
+          <input type="email" id="resetEmail" placeholder="name@domain.com" required>
+        </div>
+        <div class="form-error" id="resetEmailError">Please enter a valid email.</div>
+      </div>
+      <button type="submit" class="btn primary w-full">Send Recovery Link</button>
+    </form>
+  </div>
+</div>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-logo">LAGOREE</div>
+        <p>The Art Lives Here.<br>Curated masterpieces for refined spaces.</p>
+      </div>
+      <div>
+        <h4>Shop</h4>
+        <a href="Lagoree Category.html">Canvas Art</a>
+        <a href="Lagoree Category.html">Indian Art</a>
+        <a href="Lagoree Category.html">Famous Paintings</a>
+        <a href="Lagoree Category.html">Antiques</a>
+        <a href="Lagoree Category.html">The Sanskrit Edit</a>
+      </div>
+      <div>
+        <h4>Discover</h4>
+        <a href="Lagoree Category.html">Collections</a>
+        <a href="Lagoree Homepage.html">Artists</a>
+        <a href="Lagoree Homepage.html">Lookbook</a>
+        <a href="Lagoree Homepage.html#journal">Journal</a>
+        <a href="Lagoree Homepage.html">About</a>
+      </div>
+      <div>
+        <h4>Help</h4>
+        <a href="#">Contact Atelier</a>
+        <a href="#">FAQs</a>
+        <a href="#">Shipping &amp; Delivery</a>
+        <a href="#">Returns &amp; Provenance</a>
+        <a href="#">Art Care Guide</a>
+      </div>
+    </div>
+    <div class="copyright">
+      <span>&copy; 2026 Lagoree Arts. All rights reserved.</span>
+      <span>Privacy Policy &middot; Terms &amp; Conditions &middot; Authenticity Guarantee</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============ TOAST STACK ============ -->
+<div class="toast-stack" id="toastStack"></div>
+
+<!-- ============ JAVASCRIPT ============ -->
+<script>
+(function() {
+  'use strict';
+
+  // ===== TOAST SYSTEM =====
+  var toastStack = document.getElementById('toastStack');
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = '<span class="dot"></span><span>' + msg + '</span>';
+    toastStack.appendChild(t);
+    requestAnimationFrame(function() { t.classList.add('show'); });
+    setTimeout(function() {
+      t.classList.remove('show');
+      setTimeout(function() { t.remove(); }, 300);
+    }, 2800);
+  }
+
+  // ===== ANNOUNCEMENT BAR =====
+  var announceClose = document.querySelector('.announce .close');
+  if (announceClose) {
+    announceClose.addEventListener('click', function() {
+      document.getElementById('announce').style.display = 'none';
+    });
+  }
+
+  // ===== SCROLL REVEAL =====
+  var io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        var plate = e.target.querySelector('.plate');
+        if (plate) plate.classList.add('revealed');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+  setTimeout(function() {
+    document.querySelectorAll('.plate').forEach(function(p) { p.classList.add('revealed'); });
+  }, 300);
+
+  // ===== OVERLAYS & DRAWERS =====
+  var scrim = document.getElementById('scrim');
+  var openLayers = new Set();
+
+  function openLayer(el) {
+    if (!el) return;
+    el.classList.add('open');
+    openLayers.add(el);
+    scrim.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeAllLayers() {
+    openLayers.forEach(function(el) { el.classList.remove('open'); });
+    openLayers.clear();
+    scrim.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  scrim.addEventListener('click', closeAllLayers);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeAllLayers();
+  });
+  document.querySelectorAll('[data-close-drawer]').forEach(function(btn) {
+    btn.addEventListener('click', closeAllLayers);
+  });
+
+  // Mobile Drawer Toggle
+  var mobileToggle = document.getElementById('mobileToggle');
+  var mobileDrawer = document.getElementById('mobileDrawer');
+  if (mobileToggle && mobileDrawer) {
+    mobileToggle.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openLayer(mobileDrawer);
+    });
+  }
+
+  // Cart & Wishlist Drawers
+  var cartToggle = document.getElementById('cartToggle');
+  var cartDrawer = document.getElementById('cartDrawer');
+  if (cartToggle && cartDrawer) {
+    cartToggle.addEventListener('click', function() { openLayer(cartDrawer); });
+  }
+
+  var wishlistToggle = document.getElementById('wishlistToggle');
+  var wishlistDrawer = document.getElementById('wishlistDrawer');
+  if (wishlistToggle && wishlistDrawer) {
+    wishlistToggle.addEventListener('click', function() { openLayer(wishlistDrawer); });
+  }
+
+  // Drawer remove items
+  document.querySelectorAll('.drawer-remove').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = btn.closest('.drawer-item');
+      if (item) {
+        item.style.opacity = '0';
+        setTimeout(function() {
+          item.remove();
+          toast('Item removed from collection');
+        }, 200);
+      }
+    });
+  });
+
+  // Drawer quantity stepper
+  document.querySelectorAll('.qty-btn').forEach(function(b) {
+    b.addEventListener('click', function() {
+      var span = b.parentElement.querySelector('span');
+      var count = parseInt(span.textContent, 10);
+      if (b.dataset.op === 'inc') count++;
+      else if (count > 1) count--;
+      span.textContent = count;
+    });
+  });
+
+  // ===== SEARCH OVERLAY =====
+  var searchOverlay = document.getElementById('searchOverlay');
+  var searchToggle = document.getElementById('searchToggle');
+  var searchClose = document.getElementById('searchClose');
+  var searchInput = document.getElementById('searchInput');
+  var searchResults = document.getElementById('searchResults');
+  var searchHint = document.getElementById('searchHint');
+
+  var searchData = [
+    { title: 'Krishna & Cow', category: 'Indian Art' },
+    { title: 'Golden Hour, Tuscany', category: 'Canvas Art' },
+    { title: 'Reclining Form No. 3', category: 'Spiritual Art' },
+    { title: 'The Lotus Sutra', category: 'The Sanskrit Edit' }
+  ];
+
+  if (searchToggle && searchOverlay) {
+    searchToggle.addEventListener('click', function() {
+      openLayer(searchOverlay);
+      setTimeout(function() { if (searchInput) searchInput.focus(); }, 150);
+    });
+  }
+  if (searchClose) searchClose.addEventListener('click', closeAllLayers);
+
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      var q = searchInput.value.trim().toLowerCase();
+      if (!q) {
+        searchResults.innerHTML = '';
+        if (searchHint) searchHint.style.display = 'block';
+        return;
+      }
+      if (searchHint) searchHint.style.display = 'none';
+      var matches = searchData.filter(function(i) {
+        return i.title.toLowerCase().includes(q) || i.category.toLowerCase().includes(q);
+      });
+      if (matches.length === 0) {
+        searchResults.innerHTML = '<p style="padding:12px 0; opacity:0.6; font-style:italic;">No pieces match your search.</p>';
+        return;
+      }
+      var html = '';
+      matches.forEach(function(m) {
+        html += '<div class="search-result"><span>' + m.title + '</span><span style="font-size:11px; text-transform:uppercase; color:var(--gold);">' + m.category + '</span></div>';
+      });
+      searchResults.innerHTML = html;
+      searchResults.querySelectorAll('.search-result').forEach(function(el) {
+        el.addEventListener('click', function() {
+          closeAllLayers();
+          window.location.href = 'Lagoree Category.html';
+        });
+      });
+    });
+  }
+
+  // ===== SPOTLIGHT TOGGLE =====
+  var spotlightBtn = document.getElementById('spotlightToggle');
+  var spotlightOn = false;
+  if (spotlightBtn) {
+    spotlightBtn.addEventListener('click', function() {
+      spotlightOn = !spotlightOn;
+      document.body.classList.toggle('spotlight-on', spotlightOn);
+      spotlightBtn.classList.toggle('active-toggle', spotlightOn);
+      toast(spotlightOn ? 'Gallery Spotlight Enabled' : 'Spotlight mode off');
+    });
+  }
+  window.addEventListener('pointermove', function(e) {
+    document.documentElement.style.setProperty('--mx', e.clientX + 'px');
+    document.documentElement.style.setProperty('--my', e.clientY + 'px');
+  }, { passive: true });
+
+  // ===== PASSWORD SHOW / HIDE =====
+  function setupPasswordToggle(btnId, inputId, iconId) {
+    var btn = document.getElementById(btnId);
+    var input = document.getElementById(inputId);
+    var icon = document.getElementById(iconId);
+    if (!btn || !input) return;
+
+    btn.addEventListener('click', function() {
+      var isPassword = input.getAttribute('type') === 'password';
+      input.setAttribute('type', isPassword ? 'text' : 'password');
+      btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      if (isPassword) {
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+      } else {
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+    });
+  }
+
+  setupPasswordToggle('togglePasswordBtn', 'loginPassword', 'eyeIcon');
+  setupPasswordToggle('toggleRegPwdBtn', 'regPassword', 'regEyeIcon');
+  setupPasswordToggle('toggleConfirmPwdBtn', 'regConfirmPassword', 'confirmEyeIcon');
+
+  // ===== MODE SWITCHING (SIGN IN / CREATE ACCOUNT) =====
+  var MODES = {
+    login: {
+      crumb: 'Sign In',
+      title: 'Sign In or Create Account | Lagoree Arts',
+      badge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>&nbsp;Lagoree Private Gallery',
+      canvas: ['cv-hero', 'cv-sanskrit']
+    },
+    register: {
+      crumb: 'Create Account',
+      title: 'Create Account | Lagoree Arts',
+      badge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:13px;height:13px;"><path d="M3 17h18M4 17l-1-9 5.5 4L12 5l3.5 7L21 8l-1 9z"/></svg>&nbsp;Patron Privileges',
+      canvas: ['cv-sanskrit', 'cv-hero']
+    }
+  };
+
+  var currentMode = 'login';
+
+  function setMode(mode) {
+    if (!MODES[mode]) mode = 'login';
+    currentMode = mode;
+    var cfg = MODES[mode];
+
+    document.querySelectorAll('.auth-tab').forEach(function(t) {
+      var on = t.dataset.mode === mode;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+
+    document.getElementById('panel-login').classList.toggle('active', mode === 'login');
+    document.getElementById('panel-register').classList.toggle('active', mode === 'register');
+    document.getElementById('showcase-login').classList.toggle('active', mode === 'login');
+    document.getElementById('showcase-register').classList.toggle('active', mode === 'register');
+
+    var crumb = document.getElementById('crumbMode');
+    if (crumb) crumb.textContent = cfg.crumb;
+    document.title = cfg.title;
+
+    var badge = document.getElementById('showcaseBadge');
+    if (badge) badge.innerHTML = cfg.badge;
+    var canvas = document.getElementById('showcaseCanvas');
+    if (canvas) {
+      canvas.classList.remove(cfg.canvas[1]);
+      canvas.classList.add(cfg.canvas[0]);
+    }
+
+    try { history.replaceState(null, '', mode === 'login' ? location.pathname : '?mode=' + mode); } catch (err) {}
+  }
+
+  document.querySelectorAll('.auth-tab').forEach(function(t) {
+    t.addEventListener('click', function() { setMode(t.dataset.mode); });
+  });
+
+  document.querySelectorAll('[data-switch]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      setMode(a.dataset.switch);
+      var card = document.querySelector('.auth-card');
+      if (card) {
+        var top = card.getBoundingClientRect().top + window.pageYOffset - 90;
+        if (window.pageYOffset > top) window.scrollTo({ top: top, behavior: 'smooth' });
+      }
+    });
+  });
+
+  // Deep link: Login-Register - Lagoree Arts.html?mode=register
+  try {
+    if (new URLSearchParams(location.search).get('mode') === 'register') setMode('register');
+  } catch (err) {}
+
+  // ===== AUTO-FILL DEMO ACCOUNT =====
+  var demoFillBtn = document.getElementById('demoFillBtn');
+  var loginEmail = document.getElementById('loginEmail');
+  if (demoFillBtn && loginEmail && loginPassword) {
+    demoFillBtn.addEventListener('click', function() {
+      loginEmail.value = 'aarav@example.com';
+      loginPassword.value = 'LagoreePatron2026!';
+      document.getElementById('emailError').classList.remove('show');
+      document.getElementById('passwordError').classList.remove('show');
+      loginEmail.classList.remove('has-error');
+      loginPassword.classList.remove('has-error');
+      toast('Demo credentials populated');
+    });
+  }
+
+  // ===== SOCIAL LOGIN SIMULATION =====
+  document.getElementById('googleLoginBtn').addEventListener('click', function() {
+    toast('Connecting to Google Identity Service…');
+    setTimeout(function() {
+      toast('✓ Signed in as Google Patron');
+      setTimeout(function() { window.location.href = 'My Account Lagoree Arts.html'; }, 1000);
+    }, 1200);
+  });
+
+  document.getElementById('appleLoginBtn').addEventListener('click', function() {
+    toast('Authenticating with Apple ID…');
+    setTimeout(function() {
+      toast('✓ Signed in with Apple ID');
+      setTimeout(function() { window.location.href = 'My Account Lagoree Arts.html'; }, 1000);
+    }, 1200);
+  });
+
+  // ===== FORGOT PASSWORD MODAL =====
+  var forgotPwdTrigger = document.getElementById('forgotPwdTrigger');
+  var forgotModal = document.getElementById('forgotModal');
+  var modalCloseBtn = document.getElementById('modalCloseBtn');
+  var forgotForm = document.getElementById('forgotForm');
+  var resetEmail = document.getElementById('resetEmail');
+  var resetEmailError = document.getElementById('resetEmailError');
+
+  if (forgotPwdTrigger && forgotModal) {
+    forgotPwdTrigger.addEventListener('click', function(e) {
+      e.preventDefault();
+      forgotModal.classList.add('open');
+      if (resetEmail) {
+        resetEmail.value = loginEmail ? loginEmail.value : '';
+        setTimeout(function() { resetEmail.focus(); }, 150);
+      }
+    });
+  }
+
+  if (modalCloseBtn && forgotModal) {
+    modalCloseBtn.addEventListener('click', function() { forgotModal.classList.remove('open'); });
+    forgotModal.addEventListener('click', function(e) {
+      if (e.target === forgotModal) forgotModal.classList.remove('open');
+    });
+  }
+
+  if (forgotForm) {
+    forgotForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var val = resetEmail.value.trim();
+      if (!val || !val.includes('@') || !val.includes('.')) {
+        resetEmail.classList.add('has-error');
+        resetEmailError.classList.add('show');
+        return;
+      }
+      resetEmail.classList.remove('has-error');
+      resetEmailError.classList.remove('show');
+      forgotModal.classList.remove('open');
+      toast('Recovery email dispatched to ' + val);
+    });
+  }
+
+  // ===== FORM SUBMISSION & VALIDATION =====
+  var loginForm = document.getElementById('loginForm');
+  var emailError = document.getElementById('emailError');
+  var passwordError = document.getElementById('passwordError');
+  var submitBtn = document.getElementById('submitBtn');
+
+  if (loginForm) {
+    loginForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var valid = true;
+
+      // Validate Email
+      var emailVal = loginEmail.value.trim();
+      if (!emailVal || !emailVal.includes('@') || !emailVal.includes('.')) {
+        loginEmail.classList.add('has-error');
+        emailError.classList.add('show');
+        valid = false;
+      } else {
+        loginEmail.classList.remove('has-error');
+        emailError.classList.remove('show');
+      }
+
+      // Validate Password
+      var pwdVal = loginPassword.value;
+      if (!pwdVal || pwdVal.length < 6) {
+        loginPassword.classList.add('has-error');
+        passwordError.classList.add('show');
+        valid = false;
+      } else {
+        loginPassword.classList.remove('has-error');
+        passwordError.classList.remove('show');
+      }
+
+      if (!valid) return;
+
+      // Simulate Authentication Progress
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>Verifying Credentials…</span>';
+      toast('Verifying credentials with Lagoree Atelier…');
+
+      setTimeout(function() {
+        toast('✓ Welcome back, Connoisseur');
+        setTimeout(function() {
+          window.location.href = 'My Account Lagoree Arts.html';
+        }, 900);
+      }, 1000);
+    });
+
+    // Real-time error clearance
+    loginEmail.addEventListener('input', function() {
+      if (emailError.classList.contains('show') && loginEmail.value.includes('@')) {
+        loginEmail.classList.remove('has-error');
+        emailError.classList.remove('show');
+      }
+    });
+
+    loginPassword.addEventListener('input', function() {
+      if (passwordError.classList.contains('show') && loginPassword.value.length >= 6) {
+        loginPassword.classList.remove('has-error');
+        passwordError.classList.remove('show');
+      }
+    });
+  }
+
+  // ===== LIVE PASSWORD STRENGTH METER =====
+  var regPassword = document.getElementById('regPassword');
+  var sb1 = document.getElementById('sb1');
+  var sb2 = document.getElementById('sb2');
+  var sb3 = document.getElementById('sb3');
+  var sb4 = document.getElementById('sb4');
+  var strengthStatus = document.getElementById('strengthStatus');
+
+  function calculateStrength(pwd) {
+    var score = 0;
+    if (!pwd) return 0;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+    return Math.min(4, score);
+  }
+
+  if (regPassword) {
+    regPassword.addEventListener('input', function() {
+      var val = regPassword.value;
+      var score = calculateStrength(val);
+
+      [sb1, sb2, sb3, sb4].forEach(function(bar) { bar.className = 'strength-bar'; });
+
+      if (score === 0) {
+        strengthStatus.textContent = 'Requires 8+ characters';
+        strengthStatus.className = '';
+      } else if (score === 1) {
+        sb1.classList.add('weak');
+        strengthStatus.textContent = 'Weak';
+        strengthStatus.className = '';
+      } else if (score === 2) {
+        sb1.classList.add('fair');
+        sb2.classList.add('fair');
+        strengthStatus.textContent = 'Fair';
+        strengthStatus.className = '';
+      } else if (score === 3) {
+        sb1.classList.add('good');
+        sb2.classList.add('good');
+        sb3.classList.add('good');
+        strengthStatus.textContent = 'Good';
+        strengthStatus.className = '';
+      } else if (score >= 4) {
+        sb1.classList.add('strong');
+        sb2.classList.add('strong');
+        sb3.classList.add('strong');
+        sb4.classList.add('strong');
+        strengthStatus.innerHTML = '<span class="strong-text">Strong &amp; Secure &#x2713;</span>';
+      }
+    });
+  }
+
+  // ===== AUTO-FILL DEMO REGISTER =====
+  var demoRegisterFillBtn = document.getElementById('demoRegisterFillBtn');
+  if (demoRegisterFillBtn && regPassword) {
+    demoRegisterFillBtn.addEventListener('click', function() {
+      setMode('register');
+      document.getElementById('firstName').value = 'Meera';
+      document.getElementById('lastName').value = 'Kapoor';
+      document.getElementById('regEmail').value = 'meera.kapoor@example.com';
+      document.getElementById('regPhone').value = '+91 98201 45678';
+      document.getElementById('artPreference').value = 'sanskrit';
+      regPassword.value = 'LagoreeArtPass@2026';
+      document.getElementById('regConfirmPassword').value = 'LagoreeArtPass@2026';
+      document.getElementById('agreeTerms').checked = true;
+
+      regPassword.dispatchEvent(new Event('input'));
+
+      document.querySelectorAll('#panel-register .form-error').forEach(function(e) { e.classList.remove('show'); });
+      document.querySelectorAll('#panel-register input').forEach(function(i) { i.classList.remove('has-error'); });
+
+      toast('Sample patron information populated');
+    });
+  }
+
+  // ===== SOCIAL SIGNUP SIMULATION =====
+  var googleSignupBtn = document.getElementById('googleSignupBtn');
+  if (googleSignupBtn) {
+    googleSignupBtn.addEventListener('click', function() {
+      toast('Connecting to Google Identity Service…');
+      setTimeout(function() {
+        toast('✓ Google patron account linked');
+        setTimeout(function() { window.location.href = 'My Account Lagoree Arts.html'; }, 1000);
+      }, 1200);
+    });
+  }
+
+  var appleSignupBtn = document.getElementById('appleSignupBtn');
+  if (appleSignupBtn) {
+    appleSignupBtn.addEventListener('click', function() {
+      toast('Authenticating with Apple ID…');
+      setTimeout(function() {
+        toast('✓ Apple ID patron account linked');
+        setTimeout(function() { window.location.href = 'My Account Lagoree Arts.html'; }, 1000);
+      }, 1200);
+    });
+  }
+
+  // ===== REGISTER FORM VALIDATION =====
+  var registerForm = document.getElementById('registerForm');
+  var regSubmitBtn = document.getElementById('regSubmitBtn');
+
+  if (registerForm) {
+    registerForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var valid = true;
+
+      var firstName = document.getElementById('firstName');
+      var firstNameError = document.getElementById('firstNameError');
+      if (!firstName.value.trim()) {
+        firstName.classList.add('has-error');
+        firstNameError.classList.add('show');
+        valid = false;
+      } else {
+        firstName.classList.remove('has-error');
+        firstNameError.classList.remove('show');
+      }
+
+      var lastName = document.getElementById('lastName');
+      var lastNameError = document.getElementById('lastNameError');
+      if (!lastName.value.trim()) {
+        lastName.classList.add('has-error');
+        lastNameError.classList.add('show');
+        valid = false;
+      } else {
+        lastName.classList.remove('has-error');
+        lastNameError.classList.remove('show');
+      }
+
+      var regEmail = document.getElementById('regEmail');
+      var regEmailError = document.getElementById('regEmailError');
+      if (!regEmail.value.trim() || !regEmail.value.includes('@') || !regEmail.value.includes('.')) {
+        regEmail.classList.add('has-error');
+        regEmailError.classList.add('show');
+        valid = false;
+      } else {
+        regEmail.classList.remove('has-error');
+        regEmailError.classList.remove('show');
+      }
+
+      var regPasswordError = document.getElementById('regPasswordError');
+      if (!regPassword.value || regPassword.value.length < 8) {
+        regPassword.classList.add('has-error');
+        regPasswordError.classList.add('show');
+        valid = false;
+      } else {
+        regPassword.classList.remove('has-error');
+        regPasswordError.classList.remove('show');
+      }
+
+      var regConfirmPassword = document.getElementById('regConfirmPassword');
+      var confirmPasswordError = document.getElementById('confirmPasswordError');
+      if (regConfirmPassword.value !== regPassword.value) {
+        regConfirmPassword.classList.add('has-error');
+        confirmPasswordError.classList.add('show');
+        valid = false;
+      } else {
+        regConfirmPassword.classList.remove('has-error');
+        confirmPasswordError.classList.remove('show');
+      }
+
+      var agreeTerms = document.getElementById('agreeTerms');
+      var termsError = document.getElementById('termsError');
+      if (!agreeTerms.checked) {
+        termsError.classList.add('show');
+        valid = false;
+      } else {
+        termsError.classList.remove('show');
+      }
+
+      if (!valid) return;
+
+      // Simulate Registration
+      regSubmitBtn.disabled = true;
+      regSubmitBtn.innerHTML = '<span>Creating Connoisseur Portfolio…</span>';
+      toast('Establishing your private patron account…');
+
+      setTimeout(function() {
+        toast('✓ Welcome to the Circle of Lagoree Patrons');
+        setTimeout(function() {
+          window.location.href = 'My Account Lagoree Arts.html';
+        }, 1000);
+      }, 1200);
+    });
+
+    ['firstName', 'lastName', 'regEmail', 'regConfirmPassword'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('input', function() {
+          el.classList.remove('has-error');
+          var err = document.getElementById(id + 'Error');
+          if (err) err.classList.remove('show');
+        });
+      }
+    });
+
+    document.getElementById('agreeTerms').addEventListener('change', function() {
+      if (this.checked) document.getElementById('termsError').classList.remove('show');
+    });
+  }
+
+})();
+</script>
+
+<script type="module" src="/assets/js/api.js"></script>
+<script src="/assets/js/state.js"></script>
+<script src="/assets/js/auth.js"></script>
+
+</body>
+</html>
