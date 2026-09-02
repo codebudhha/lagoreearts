@@ -60,6 +60,18 @@ enum ProductVariantStatus {
   ARCHIVED
 }
 
+enum MediaType {
+  IMAGE
+}
+
+enum MediaRole {
+  PRIMARY
+  GALLERY
+  THUMBNAIL
+  BANNER
+  OG
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -212,6 +224,7 @@ model Category {
   children           Category[]          @relation("CategoryHierarchy")
   categoryAttributes CategoryAttribute[]
   products           Product[]
+  media              CategoryMedia[]
 
   @@index([slug])
   @@index([status])
@@ -312,6 +325,7 @@ model Collection {
   updatedAt          DateTime            @updatedAt @map("updated_at")
 
   productCollections ProductCollection[]
+  media              CollectionMedia[]
 
   @@index([slug])
   @@index([status])
@@ -361,6 +375,7 @@ model Product {
   attributes        ProductAttributeValue[]
   options           ProductOption[]
   variants          ProductVariant[]
+  media             ProductMedia[]
 
   @@index([slug])
   @@index([sku])
@@ -466,6 +481,7 @@ model ProductVariant {
 
   product           Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
   optionValues      ProductVariantOptionValue[]
+  media             ProductVariantMedia[]
 
   @@index([productId])
   @@index([sku])
@@ -486,4 +502,132 @@ model ProductVariantOptionValue {
   @@index([variantId])
   @@index([optionValueId])
   @@map("product_variant_option_values")
+}
+
+model MediaFolder {
+  id          String        @id @default(uuid()) @db.VarChar(36)
+  name        String        @db.VarChar(100)
+  slug        String        @db.VarChar(120)
+  parentId    String?       @map("parent_id") @db.VarChar(36)
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  parent      MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children    MediaFolder[] @relation("FolderHierarchy")
+  assets      MediaAsset[]
+
+  @@unique([parentId, slug])
+  @@index([slug])
+  @@index([parentId])
+  @@map("media_folders")
+}
+
+model MediaAsset {
+  id               String                @id @default(uuid()) @db.VarChar(36)
+  filename         String                @db.VarChar(255)
+  originalFilename String                @map("original_filename") @db.VarChar(255)
+  storageKey       String                @unique @map("storage_key") @db.VarChar(255)
+  publicUrl        String                @map("public_url") @db.VarChar(500)
+  mimeType         String                @map("mime_type") @db.VarChar(100)
+  mediaType        MediaType             @default(IMAGE) @map("media_type")
+  fileSize         Int                   @map("file_size")
+  width            Int?
+  height           Int?
+  checksum         String                @db.VarChar(64)
+  title            String?               @db.VarChar(255)
+  altText          String?               @map("alt_text") @db.VarChar(255)
+  caption          String?               @db.Text
+  folderId         String?               @map("folder_id") @db.VarChar(36)
+  createdAt        DateTime              @default(now()) @map("created_at")
+  updatedAt        DateTime              @updatedAt @map("updated_at")
+
+  folder           MediaFolder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  productMedia     ProductMedia[]
+  variantMedia     ProductVariantMedia[]
+  categoryMedia    CategoryMedia[]
+  collectionMedia  CollectionMedia[]
+
+  @@index([storageKey])
+  @@index([mimeType])
+  @@index([mediaType])
+  @@index([folderId])
+  @@index([checksum])
+  @@index([createdAt])
+  @@map("media_assets")
+}
+
+model ProductMedia {
+  productId String     @map("product_id") @db.VarChar(36)
+  mediaId   String     @map("media_id") @db.VarChar(36)
+  sortOrder Int        @default(0) @map("sort_order")
+  isPrimary Boolean    @default(false) @map("is_primary")
+  role      MediaRole  @default(GALLERY)
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([productId, mediaId])
+  @@index([productId])
+  @@index([mediaId])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@map("product_media")
+}
+
+model ProductVariantMedia {
+  variantId String         @map("variant_id") @db.VarChar(36)
+  mediaId   String         @map("media_id") @db.VarChar(36)
+  sortOrder Int            @default(0) @map("sort_order")
+  isPrimary Boolean        @default(false) @map("is_primary")
+  role      MediaRole      @default(GALLERY)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  media     MediaAsset     @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([variantId, mediaId])
+  @@index([variantId])
+  @@index([mediaId])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@map("product_variant_media")
+}
+
+model CategoryMedia {
+  categoryId String     @map("category_id") @db.VarChar(36)
+  mediaId    String     @map("media_id") @db.VarChar(36)
+  sortOrder  Int        @default(0) @map("sort_order")
+  isPrimary  Boolean    @default(false) @map("is_primary")
+  role       MediaRole  @default(PRIMARY)
+  createdAt  DateTime   @default(now()) @map("created_at")
+
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  media      MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([categoryId, mediaId])
+  @@index([categoryId])
+  @@index([mediaId])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@map("category_media")
+}
+
+model CollectionMedia {
+  collectionId String     @map("collection_id") @db.VarChar(36)
+  mediaId      String     @map("media_id") @db.VarChar(36)
+  sortOrder    Int        @default(0) @map("sort_order")
+  isPrimary    Boolean    @default(false) @map("is_primary")
+  role         MediaRole  @default(PRIMARY)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  media        MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([collectionId, mediaId])
+  @@index([collectionId])
+  @@index([mediaId])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@map("collection_media")
 }

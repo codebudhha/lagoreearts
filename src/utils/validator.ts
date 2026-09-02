@@ -78,4 +78,8 @@ export class SchemaValidator {
       next();
     };
   }
+
+  validateMiddleware() {
+    return this.middleware();
+  }
 }

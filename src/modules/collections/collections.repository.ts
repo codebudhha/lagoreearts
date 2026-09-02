@@ -1,15 +1,17 @@
 import { prisma } from '../../database/prisma.ts';
 
 export class CollectionsRepository {
-  static async findById(id: string) {
+  static async findById(id: string, include?: any) {
     return prisma.collection.findUnique({
-      where: { id }
+      where: { id },
+      include
     });
   }
 
-  static async findBySlug(slug: string) {
+  static async findBySlug(slug: string, include?: any) {
     return prisma.collection.findUnique({
-      where: { slug }
+      where: { slug },
+      include
     });
   }
 

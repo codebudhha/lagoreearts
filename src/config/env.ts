@@ -45,5 +45,10 @@ export const ENV = {
   RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 mins
   RATE_LIMIT_MAX_ATTEMPTS: parseInt(process.env.RATE_LIMIT_MAX_ATTEMPTS || '5', 10),
 
+  MEDIA_STORAGE_DRIVER: process.env.MEDIA_STORAGE_DRIVER || 'local',
+  MEDIA_STORAGE_PATH: process.env.MEDIA_STORAGE_PATH || 'uploads/media',
+  MEDIA_MAX_FILE_SIZE_BYTES: parseInt(process.env.MEDIA_MAX_FILE_SIZE_BYTES || '10485760', 10), // 10MB
+  MEDIA_PUBLIC_URL_PREFIX: process.env.MEDIA_PUBLIC_URL_PREFIX || '/uploads/media',
+
   IS_PROD: process.env.NODE_ENV === 'production'
 };

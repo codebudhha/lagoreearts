@@ -14,8 +14,13 @@ export function requirePermission(requiredPermission: string) {
     }
 
     // Super Admin has all permissions or check explicit permission slug
-    const isSuperAdmin = admin.role.slug === 'SUPER_ADMIN' || admin.role.slug === 'super_admin';
-    const hasPermission = isSuperAdmin || admin.permissions.includes(requiredPermission);
+    const isSuperAdmin =
+      admin.role?.slug?.toLowerCase() === 'super_admin' ||
+      admin.role?.slug?.toLowerCase() === 'super-admin' ||
+      admin.role?.name === 'SUPER_ADMIN' ||
+      admin.role?.name === 'Super Admin' ||
+      admin.permissions?.includes('*');
+    const hasPermission = isSuperAdmin || admin.permissions?.includes(requiredPermission);
 
     if (!hasPermission) {
       return ApiResponse.forbidden(res, 'You do not have permission to perform this action');

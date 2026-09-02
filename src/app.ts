@@ -10,6 +10,13 @@ import { adminCategoryFiltersRoutes, publicCategoryFiltersRoutes } from './modul
 import { adminCollectionsRoutes, publicCollectionsRoutes } from './modules/collections/collections.routes.ts';
 import { adminProductsRoutes, publicProductsRoutes } from './modules/products/products.routes.ts';
 import { adminProductOptionsRouter, adminProductVariantsRouter } from './modules/product-variants/variants.routes.ts';
+import {
+  adminMediaRouter,
+  adminProductMediaRouter,
+  adminVariantMediaRouter,
+  adminCategoryMediaRouter,
+  adminCollectionMediaRouter
+} from './modules/media/media.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -126,21 +133,43 @@ export function createApp() {
         'Module 4: Attributes & Dynamic Filter Engine',
         'Module 5: Collections',
         'Module 6: Product Catalogue Management',
-        'Module 7: Product Variants'
+        'Module 7: Product Variants',
+        'Module 8: Media Library & Asset Management'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
     });
   });
 
+  // Serve uploaded media files statically
+  app.use('/uploads', (req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const cleanUrl = (req.originalUrl || req.url || '').split('?')[0];
+    const relPath = cleanUrl.replace(/^\/uploads\/?/, '');
+    const uploadsDir = path.resolve(process.cwd(), 'uploads');
+    const filePath = path.resolve(uploadsDir, relPath);
+    if (!filePath.startsWith(uploadsDir)) {
+      return res.status(403).json({ success: false, error: { code: 'FORBIDDEN', message: 'Access denied' } });
+    }
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+    next();
+  });
+
   // 3. Module Routes
   app.use('/api/v1/admin/auth', adminAuthRoutes);
   app.use('/api/v1/admin/users', adminUsersRoutes);
   app.use('/api/v1/admin/roles', adminRolesRoutes);
+  app.use('/api/v1/admin/media', adminMediaRouter);
+  app.use('/api/v1/admin/categories', adminCategoryMediaRouter);
   app.use('/api/v1/admin/categories', adminCategoryFiltersRoutes);
   app.use('/api/v1/admin/categories', adminCategoriesRoutes);
   app.use('/api/v1/admin/attributes', adminAttributesRoutes);
+  app.use('/api/v1/admin/collections', adminCollectionMediaRouter);
   app.use('/api/v1/admin/collections', adminCollectionsRoutes);
+  app.use('/api/v1/admin/products', adminProductMediaRouter);
+  app.use('/api/v1/admin/products', adminVariantMediaRouter);
   app.use('/api/v1/admin/products', adminProductOptionsRouter);
   app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);

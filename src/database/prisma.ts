@@ -372,6 +372,115 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_prod_var_opt_val_var_id ON product_variant_option_values(variant_id);
   CREATE INDEX IF NOT EXISTS idx_prod_var_opt_val_val_id ON product_variant_option_values(option_value_id);
+
+  CREATE TABLE IF NOT EXISTS media_folders (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    parent_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(parent_id, slug),
+    FOREIGN KEY (parent_id) REFERENCES media_folders(id) ON DELETE RESTRICT
+  );
+
+  CREATE TABLE IF NOT EXISTS media_assets (
+    id TEXT PRIMARY KEY,
+    filename TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    storage_key TEXT UNIQUE NOT NULL,
+    public_url TEXT NOT NULL,
+    mime_type TEXT NOT NULL,
+    media_type TEXT NOT NULL DEFAULT 'IMAGE',
+    file_size INTEGER NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    checksum TEXT NOT NULL,
+    title TEXT,
+    alt_text TEXT,
+    caption TEXT,
+    folder_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (folder_id) REFERENCES media_folders(id) ON DELETE SET NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS product_media (
+    product_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    role TEXT NOT NULL DEFAULT 'GALLERY',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (product_id, media_id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE TABLE IF NOT EXISTS product_variant_media (
+    variant_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    role TEXT NOT NULL DEFAULT 'GALLERY',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (variant_id, media_id),
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE TABLE IF NOT EXISTS category_media (
+    category_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    role TEXT NOT NULL DEFAULT 'PRIMARY',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (category_id, media_id),
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE TABLE IF NOT EXISTS collection_media (
+    collection_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    role TEXT NOT NULL DEFAULT 'PRIMARY',
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (collection_id, media_id),
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_media_folders_slug ON media_folders(slug);
+  CREATE INDEX IF NOT EXISTS idx_media_folders_parent ON media_folders(parent_id);
+
+  CREATE INDEX IF NOT EXISTS idx_media_assets_key ON media_assets(storage_key);
+  CREATE INDEX IF NOT EXISTS idx_media_assets_mime ON media_assets(mime_type);
+  CREATE INDEX IF NOT EXISTS idx_media_assets_folder ON media_assets(folder_id);
+  CREATE INDEX IF NOT EXISTS idx_media_assets_checksum ON media_assets(checksum);
+  CREATE INDEX IF NOT EXISTS idx_media_assets_created ON media_assets(created_at);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_media_prod_id ON product_media(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_media_media_id ON product_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_media_primary ON product_media(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_prod_media_sort ON product_media(sort_order);
+
+  CREATE INDEX IF NOT EXISTS idx_var_media_var_id ON product_variant_media(variant_id);
+  CREATE INDEX IF NOT EXISTS idx_var_media_media_id ON product_variant_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_var_media_primary ON product_variant_media(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_var_media_sort ON product_variant_media(sort_order);
+
+  CREATE INDEX IF NOT EXISTS idx_cat_media_cat_id ON category_media(category_id);
+  CREATE INDEX IF NOT EXISTS idx_cat_media_media_id ON category_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_cat_media_primary ON category_media(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_cat_media_sort ON category_media(sort_order);
+
+  CREATE INDEX IF NOT EXISTS idx_col_media_col_id ON collection_media(collection_id);
+  CREATE INDEX IF NOT EXISTS idx_col_media_media_id ON collection_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_col_media_primary ON collection_media(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_col_media_sort ON collection_media(sort_order);
 `);
 
 /**
@@ -866,6 +975,12 @@ export const prisma = {
       }
       if (include?.children) {
         formatted.children = prisma.category.findMany({ where: { parentId: row.id } });
+      }
+      if (include?.media) {
+        formatted.media = prisma.categoryMedia.findMany({
+          where: { categoryId: row.id },
+          include: { media: true }
+        });
       }
 
       return formatted;
@@ -1472,7 +1587,7 @@ export const prisma = {
   },
 
   collection: {
-    findUnique: ({ where }: { where: { id?: string; slug?: string } }) => {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
       let row: any = null;
       if (where.id) {
         row = db.prepare('SELECT * FROM collections WHERE id = ?').get(where.id);
@@ -1481,7 +1596,7 @@ export const prisma = {
       }
       if (!row) return null;
 
-      return {
+      const coll: any = {
         id: row.id,
         name: row.name,
         slug: row.slug,
@@ -1504,6 +1619,15 @@ export const prisma = {
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at)
       };
+
+      if (include?.media) {
+        coll.media = prisma.collectionMedia.findMany({
+          where: { collectionId: row.id },
+          include: { media: true }
+        });
+      }
+
+      return coll;
     },
 
     findFirst: ({ where }: any = {}) => {
@@ -1711,6 +1835,27 @@ export const prisma = {
         formatted.attributes = prisma.productAttributeValue.findMany({
           where: { productId: row.id },
           include: { attribute: true, attributeValue: true }
+        });
+      }
+
+      if (include?.options) {
+        formatted.options = prisma.productOption.findMany({
+          where: { productId: row.id },
+          include: { values: true }
+        });
+      }
+
+      if (include?.variants) {
+        formatted.variants = prisma.productVariant.findMany({
+          where: { productId: row.id },
+          include: { optionValues: { include: { optionValue: true } }, media: { include: { media: true } } }
+        });
+      }
+
+      if (include?.media) {
+        formatted.media = prisma.productMedia.findMany({
+          where: { productId: row.id },
+          include: { media: true }
         });
       }
 
@@ -2439,6 +2584,13 @@ export const prisma = {
         v.product = prisma.product.findUnique({ where: { id: v.productId } });
       }
 
+      if (include?.media) {
+        v.media = prisma.productVariantMedia.findMany({
+          where: { variantId: v.id },
+          include: { media: true }
+        });
+      }
+
       return v;
     },
 
@@ -2606,5 +2758,884 @@ export const prisma = {
       if (where?.optionValueId) { sql += ' AND option_value_id = ?'; params.push(where.optionValueId); }
       db.prepare(sql).run(...params);
     }
+  },
+
+  mediaFolder: {
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.id) {
+        row = db.prepare('SELECT * FROM media_folders WHERE id = ?').get(where.id);
+      } else if (where?.parentId_slug) {
+        if (where.parentId_slug.parentId) {
+          row = db.prepare('SELECT * FROM media_folders WHERE parent_id = ? AND LOWER(slug) = LOWER(?)').get(where.parentId_slug.parentId, where.parentId_slug.slug);
+        } else {
+          row = db.prepare('SELECT * FROM media_folders WHERE parent_id IS NULL AND LOWER(slug) = LOWER(?)').get(where.parentId_slug.slug);
+        }
+      } else if (where?.slug) {
+        row = db.prepare('SELECT * FROM media_folders WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+
+      const folder: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        parentId: row.parent_id,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.parent && folder.parentId) {
+        folder.parent = prisma.mediaFolder.findUnique({ where: { id: folder.parentId } });
+      }
+      if (include?.children) {
+        folder.children = prisma.mediaFolder.findMany({ where: { parentId: folder.id } });
+      }
+      if (include?.assets) {
+        folder.assets = prisma.mediaAsset.findMany({ where: { folderId: folder.id } });
+      }
+
+      return folder;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM media_folders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.name) { sql += ' AND LOWER(name) = LOWER(?)'; params.push(where.name); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) {
+          sql += ' AND parent_id IS NULL';
+        } else {
+          sql += ' AND parent_id = ?';
+          params.push(where.parentId);
+        }
+      }
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.mediaFolder.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM media_folders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) {
+          sql += ' AND parent_id IS NULL';
+        } else {
+          sql += ' AND parent_id = ?';
+          params.push(where.parentId);
+        }
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(slug) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      if (orderBy?.name) {
+        sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY created_at ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.mediaFolder.findUnique({ where: { id: r.id }, include }));
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as total FROM media_folders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) {
+          sql += ' AND parent_id IS NULL';
+        } else {
+          sql += ' AND parent_id = ?';
+          params.push(where.parentId);
+        }
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return res?.total || 0;
+    },
+
+    create: ({ data, include }: any) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO media_folders (id, name, slug, parent_id, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.parentId || null,
+        now,
+        now
+      );
+      return prisma.mediaFolder.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { sets.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { sets.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.parentId !== undefined) { sets.push('parent_id = ?'); params.push(data.parentId || null); }
+
+      sets.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE media_folders SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.mediaFolder.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.mediaFolder.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM media_folders WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('UPDATE media_folders SET parent_id = NULL').run();
+        db.prepare('DELETE FROM media_folders').run();
+        return;
+      }
+      let sql = 'DELETE FROM media_folders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) { sql += ' AND parent_id IS NULL'; }
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  mediaAsset: {
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.id) {
+        row = db.prepare('SELECT * FROM media_assets WHERE id = ?').get(where.id);
+      } else if (where?.storageKey) {
+        row = db.prepare('SELECT * FROM media_assets WHERE storage_key = ?').get(where.storageKey);
+      }
+      if (!row) return null;
+
+      const asset: any = {
+        id: row.id,
+        filename: row.filename,
+        originalFilename: row.original_filename,
+        storageKey: row.storage_key,
+        publicUrl: row.public_url,
+        mimeType: row.mime_type,
+        mediaType: row.media_type || 'IMAGE',
+        fileSize: Number(row.file_size),
+        width: row.width !== null ? Number(row.width) : null,
+        height: row.height !== null ? Number(row.height) : null,
+        checksum: row.checksum,
+        title: row.title || null,
+        altText: row.alt_text || null,
+        caption: row.caption || null,
+        folderId: row.folder_id || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.folder && asset.folderId) {
+        asset.folder = prisma.mediaFolder.findUnique({ where: { id: asset.folderId } });
+      }
+      if (include?.productMedia) {
+        asset.productMedia = prisma.productMedia.findMany({ where: { mediaId: asset.id } });
+      }
+      if (include?.variantMedia) {
+        asset.variantMedia = prisma.productVariantMedia.findMany({ where: { mediaId: asset.id } });
+      }
+      if (include?.categoryMedia) {
+        asset.categoryMedia = prisma.categoryMedia.findMany({ where: { mediaId: asset.id } });
+      }
+      if (include?.collectionMedia) {
+        asset.collectionMedia = prisma.collectionMedia.findMany({ where: { mediaId: asset.id } });
+      }
+
+      return asset;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM media_assets WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.storageKey) { sql += ' AND storage_key = ?'; params.push(where.storageKey); }
+      if (where?.checksum) { sql += ' AND checksum = ?'; params.push(where.checksum); }
+      if (where?.folderId !== undefined) {
+        if (where.folderId === null) {
+          sql += ' AND folder_id IS NULL';
+        } else {
+          sql += ' AND folder_id = ?';
+          params.push(where.folderId);
+        }
+      }
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.mediaAsset.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM media_assets WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.folderId !== undefined) {
+        if (where.folderId === null) {
+          sql += ' AND folder_id IS NULL';
+        } else {
+          sql += ' AND folder_id = ?';
+          params.push(where.folderId);
+        }
+      }
+      if (where?.mimeType) {
+        sql += ' AND mime_type = ?';
+        params.push(where.mimeType);
+      }
+      if (where?.mediaType) {
+        sql += ' AND media_type = ?';
+        params.push(where.mediaType);
+      }
+      if (where?.checksum) {
+        sql += ' AND checksum = ?';
+        params.push(where.checksum);
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(filename) LIKE LOWER(?) OR LOWER(original_filename) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?) OR LOWER(alt_text) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+      if (where?.isOrphan) {
+        sql += ` AND id NOT IN (
+          SELECT media_id FROM product_media
+          UNION SELECT media_id FROM product_variant_media
+          UNION SELECT media_id FROM category_media
+          UNION SELECT media_id FROM collection_media
+        )`;
+      }
+
+      if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else if (orderBy?.fileSize) {
+        sql += ` ORDER BY file_size ${orderBy.fileSize.toUpperCase()}`;
+      } else if (orderBy?.filename) {
+        sql += ` ORDER BY filename ${orderBy.filename.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.mediaAsset.findUnique({ where: { id: r.id }, include }));
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as total FROM media_assets WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.folderId !== undefined) {
+        if (where.folderId === null) {
+          sql += ' AND folder_id IS NULL';
+        } else {
+          sql += ' AND folder_id = ?';
+          params.push(where.folderId);
+        }
+      }
+      if (where?.mimeType) {
+        sql += ' AND mime_type = ?';
+        params.push(where.mimeType);
+      }
+      if (where?.mediaType) {
+        sql += ' AND media_type = ?';
+        params.push(where.mediaType);
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(filename) LIKE LOWER(?) OR LOWER(original_filename) LIKE LOWER(?) OR LOWER(title) LIKE LOWER(?) OR LOWER(alt_text) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+      if (where?.isOrphan) {
+        sql += ` AND id NOT IN (
+          SELECT media_id FROM product_media
+          UNION SELECT media_id FROM product_variant_media
+          UNION SELECT media_id FROM category_media
+          UNION SELECT media_id FROM collection_media
+        )`;
+      }
+
+      const res: any = db.prepare(sql).get(...params);
+      return res?.total || 0;
+    },
+
+    create: ({ data, include }: any) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO media_assets (
+          id, filename, original_filename, storage_key, public_url, mime_type,
+          media_type, file_size, width, height, checksum, title, alt_text, caption, folder_id,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.filename,
+        data.originalFilename,
+        data.storageKey,
+        data.publicUrl,
+        data.mimeType,
+        data.mediaType || 'IMAGE',
+        Number(data.fileSize),
+        data.width !== undefined && data.width !== null ? Number(data.width) : null,
+        data.height !== undefined && data.height !== null ? Number(data.height) : null,
+        data.checksum,
+        data.title || null,
+        data.altText || null,
+        data.caption || null,
+        data.folderId || null,
+        now,
+        now
+      );
+      return prisma.mediaAsset.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.title !== undefined) { sets.push('title = ?'); params.push(data.title); }
+      if (data.altText !== undefined) { sets.push('alt_text = ?'); params.push(data.altText); }
+      if (data.caption !== undefined) { sets.push('caption = ?'); params.push(data.caption); }
+      if (data.folderId !== undefined) { sets.push('folder_id = ?'); params.push(data.folderId || null); }
+
+      sets.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE media_assets SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.mediaAsset.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.mediaAsset.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM media_assets WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM product_media').run();
+        db.prepare('DELETE FROM product_variant_media').run();
+        db.prepare('DELETE FROM category_media').run();
+        db.prepare('DELETE FROM collection_media').run();
+        db.prepare('DELETE FROM media_assets').run();
+        return;
+      }
+      let sql = 'DELETE FROM media_assets WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.folderId !== undefined) {
+        if (where.folderId === null) { sql += ' AND folder_id IS NULL'; }
+        else { sql += ' AND folder_id = ?'; params.push(where.folderId); }
+      }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productMedia: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM product_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => ({
+        productId: r.product_id,
+        mediaId: r.media_id,
+        sortOrder: Number(r.sort_order),
+        isPrimary: Boolean(r.is_primary),
+        role: r.role,
+        createdAt: new Date(r.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: r.media_id } }) : undefined,
+        product: include?.product ? prisma.product.findUnique({ where: { id: r.product_id } }) : undefined
+      }));
+    },
+
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.productId_mediaId) {
+        row = db.prepare('SELECT * FROM product_media WHERE product_id = ? AND media_id = ?').get(
+          where.productId_mediaId.productId,
+          where.productId_mediaId.mediaId
+        );
+      } else if (where?.productId && where?.mediaId) {
+        row = db.prepare('SELECT * FROM product_media WHERE product_id = ? AND media_id = ?').get(
+          where.productId,
+          where.mediaId
+        );
+      }
+      if (!row) return null;
+      return {
+        productId: row.product_id,
+        mediaId: row.media_id,
+        sortOrder: Number(row.sort_order),
+        isPrimary: Boolean(row.is_primary),
+        role: row.role,
+        createdAt: new Date(row.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: row.media_id } }) : undefined,
+        product: include?.product ? prisma.product.findUnique({ where: { id: row.product_id } }) : undefined
+      };
+    },
+
+    create: ({ data, include }: any) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO product_media (product_id, media_id, sort_order, is_primary, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.productId,
+        data.mediaId,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.isPrimary ? 1 : 0,
+        data.role || 'GALLERY',
+        now
+      );
+      return prisma.productMedia.findUnique({
+        where: { productId_mediaId: { productId: data.productId, mediaId: data.mediaId } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      const pId = where?.productId_mediaId?.productId || where?.productId;
+      const mId = where?.productId_mediaId?.mediaId || where?.mediaId;
+      params.push(pId, mId);
+      db.prepare(`UPDATE product_media SET ${sets.join(', ')} WHERE product_id = ? AND media_id = ?`).run(...params);
+
+      return prisma.productMedia.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      let sql = `UPDATE product_media SET ${sets.join(', ')} WHERE 1=1`;
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.productMedia.findUnique({ where });
+      if (existing) {
+        const pId = where?.productId_mediaId?.productId || where?.productId;
+        const mId = where?.productId_mediaId?.mediaId || where?.mediaId;
+        db.prepare('DELETE FROM product_media WHERE product_id = ? AND media_id = ?').run(pId, mId);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productVariantMedia: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM product_variant_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => ({
+        variantId: r.variant_id,
+        mediaId: r.media_id,
+        sortOrder: Number(r.sort_order),
+        isPrimary: Boolean(r.is_primary),
+        role: r.role,
+        createdAt: new Date(r.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: r.media_id } }) : undefined
+      }));
+    },
+
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.variantId_mediaId) {
+        row = db.prepare('SELECT * FROM product_variant_media WHERE variant_id = ? AND media_id = ?').get(
+          where.variantId_mediaId.variantId,
+          where.variantId_mediaId.mediaId
+        );
+      } else if (where?.variantId && where?.mediaId) {
+        row = db.prepare('SELECT * FROM product_variant_media WHERE variant_id = ? AND media_id = ?').get(
+          where.variantId,
+          where.mediaId
+        );
+      }
+      if (!row) return null;
+      return {
+        variantId: row.variant_id,
+        mediaId: row.media_id,
+        sortOrder: Number(row.sort_order),
+        isPrimary: Boolean(row.is_primary),
+        role: row.role,
+        createdAt: new Date(row.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: row.media_id } }) : undefined
+      };
+    },
+
+    create: ({ data, include }: any) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO product_variant_media (variant_id, media_id, sort_order, is_primary, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.variantId,
+        data.mediaId,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.isPrimary ? 1 : 0,
+        data.role || 'GALLERY',
+        now
+      );
+      return prisma.productVariantMedia.findUnique({
+        where: { variantId_mediaId: { variantId: data.variantId, mediaId: data.mediaId } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      const vId = where?.variantId_mediaId?.variantId || where?.variantId;
+      const mId = where?.variantId_mediaId?.mediaId || where?.mediaId;
+      params.push(vId, mId);
+      db.prepare(`UPDATE product_variant_media SET ${sets.join(', ')} WHERE variant_id = ? AND media_id = ?`).run(...params);
+
+      return prisma.productVariantMedia.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      let sql = `UPDATE product_variant_media SET ${sets.join(', ')} WHERE 1=1`;
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.productVariantMedia.findUnique({ where });
+      if (existing) {
+        const vId = where?.variantId_mediaId?.variantId || where?.variantId;
+        const mId = where?.variantId_mediaId?.mediaId || where?.mediaId;
+        db.prepare('DELETE FROM product_variant_media WHERE variant_id = ? AND media_id = ?').run(vId, mId);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_variant_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  categoryMedia: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM category_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => ({
+        categoryId: r.category_id,
+        mediaId: r.media_id,
+        sortOrder: Number(r.sort_order),
+        isPrimary: Boolean(r.is_primary),
+        role: r.role,
+        createdAt: new Date(r.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: r.media_id } }) : undefined
+      }));
+    },
+
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.categoryId_mediaId) {
+        row = db.prepare('SELECT * FROM category_media WHERE category_id = ? AND media_id = ?').get(
+          where.categoryId_mediaId.categoryId,
+          where.categoryId_mediaId.mediaId
+        );
+      } else if (where?.categoryId && where?.mediaId) {
+        row = db.prepare('SELECT * FROM category_media WHERE category_id = ? AND media_id = ?').get(
+          where.categoryId,
+          where.mediaId
+        );
+      }
+      if (!row) return null;
+      return {
+        categoryId: row.category_id,
+        mediaId: row.media_id,
+        sortOrder: Number(row.sort_order),
+        isPrimary: Boolean(row.is_primary),
+        role: row.role,
+        createdAt: new Date(row.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: row.media_id } }) : undefined
+      };
+    },
+
+    create: ({ data, include }: any) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO category_media (category_id, media_id, sort_order, is_primary, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.categoryId,
+        data.mediaId,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.isPrimary ? 1 : 0,
+        data.role || 'PRIMARY',
+        now
+      );
+      return prisma.categoryMedia.findUnique({
+        where: { categoryId_mediaId: { categoryId: data.categoryId, mediaId: data.mediaId } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      const catId = where?.categoryId_mediaId?.categoryId || where?.categoryId;
+      const medId = where?.categoryId_mediaId?.mediaId || where?.mediaId;
+      params.push(catId, medId);
+      db.prepare(`UPDATE category_media SET ${sets.join(', ')} WHERE category_id = ? AND media_id = ?`).run(...params);
+
+      return prisma.categoryMedia.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      let sql = `UPDATE category_media SET ${sets.join(', ')} WHERE 1=1`;
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.categoryMedia.findUnique({ where });
+      if (existing) {
+        const catId = where?.categoryId_mediaId?.categoryId || where?.categoryId;
+        const medId = where?.categoryId_mediaId?.mediaId || where?.mediaId;
+        db.prepare('DELETE FROM category_media WHERE category_id = ? AND media_id = ?').run(catId, medId);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM category_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  collectionMedia: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM collection_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => ({
+        collectionId: r.collection_id,
+        mediaId: r.media_id,
+        sortOrder: Number(r.sort_order),
+        isPrimary: Boolean(r.is_primary),
+        role: r.role,
+        createdAt: new Date(r.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: r.media_id } }) : undefined
+      }));
+    },
+
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where?.collectionId_mediaId) {
+        row = db.prepare('SELECT * FROM collection_media WHERE collection_id = ? AND media_id = ?').get(
+          where.collectionId_mediaId.collectionId,
+          where.collectionId_mediaId.mediaId
+        );
+      } else if (where?.collectionId && where?.mediaId) {
+        row = db.prepare('SELECT * FROM collection_media WHERE collection_id = ? AND media_id = ?').get(
+          where.collectionId,
+          where.mediaId
+        );
+      }
+      if (!row) return null;
+      return {
+        collectionId: row.collection_id,
+        mediaId: row.media_id,
+        sortOrder: Number(row.sort_order),
+        isPrimary: Boolean(row.is_primary),
+        role: row.role,
+        createdAt: new Date(row.created_at),
+        media: include?.media ? prisma.mediaAsset.findUnique({ where: { id: row.media_id } }) : undefined
+      };
+    },
+
+    create: ({ data, include }: any) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO collection_media (collection_id, media_id, sort_order, is_primary, role, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.collectionId,
+        data.mediaId,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.isPrimary ? 1 : 0,
+        data.role || 'PRIMARY',
+        now
+      );
+      return prisma.collectionMedia.findUnique({
+        where: { collectionId_mediaId: { collectionId: data.collectionId, mediaId: data.mediaId } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      const colId = where?.collectionId_mediaId?.collectionId || where?.collectionId;
+      const medId = where?.collectionId_mediaId?.mediaId || where?.mediaId;
+      params.push(colId, medId);
+      db.prepare(`UPDATE collection_media SET ${sets.join(', ')} WHERE collection_id = ? AND media_id = ?`).run(...params);
+
+      return prisma.collectionMedia.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: any) => {
+      const sets: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { sets.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { sets.push('role = ?'); params.push(data.role); }
+
+      let sql = `UPDATE collection_media SET ${sets.join(', ')} WHERE 1=1`;
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.collectionMedia.findUnique({ where });
+      if (existing) {
+        const colId = where?.collectionId_mediaId?.collectionId || where?.collectionId;
+        const medId = where?.collectionId_mediaId?.mediaId || where?.mediaId;
+        db.prepare('DELETE FROM collection_media WHERE collection_id = ? AND media_id = ?').run(colId, medId);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM collection_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  $transaction: async (fn: any) => {
+    if (typeof fn === 'function') {
+      return fn(prisma);
+    }
+    if (Array.isArray(fn)) {
+      return Promise.all(fn);
+    }
+    return fn;
   }
 };

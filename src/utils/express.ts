@@ -11,6 +11,95 @@ export interface Request extends http.IncomingMessage {
   originalUrl?: string;
   cookies?: Record<string, string>;
   admin?: any;
+  file?: {
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    buffer: Buffer;
+    size: number;
+  };
+  files?: Array<{
+    fieldname: string;
+    originalname: string;
+    encoding: string;
+    mimetype: string;
+    buffer: Buffer;
+    size: number;
+  }>;
+  rawBody?: Buffer;
+}
+
+export function parseMultipartData(buffer: Buffer, contentType: string) {
+  const match = contentType.match(/boundary=([^;]+)/i);
+  if (!match) return { fields: {}, file: null, files: [] };
+
+  let boundary = match[1].trim();
+  if (boundary.startsWith('"') && boundary.endsWith('"')) {
+    boundary = boundary.slice(1, -1);
+  }
+
+  const boundaryBuffer = Buffer.from(`--${boundary}`);
+  const fields: Record<string, any> = {};
+  const files: any[] = [];
+
+  let start = 0;
+  while (start < buffer.length) {
+    const bIndex = buffer.indexOf(boundaryBuffer, start);
+    if (bIndex === -1) break;
+
+    const nextIndex = buffer.indexOf(boundaryBuffer, bIndex + boundaryBuffer.length);
+    if (nextIndex === -1) break;
+
+    // Extract part buffer excluding boundary prefix and trailing \r\n
+    let partBuffer = buffer.subarray(bIndex + boundaryBuffer.length, nextIndex);
+    if (partBuffer[0] === 0x0d && partBuffer[1] === 0x0a) {
+      partBuffer = partBuffer.subarray(2);
+    }
+    if (partBuffer[partBuffer.length - 2] === 0x0d && partBuffer[partBuffer.length - 1] === 0x0a) {
+      partBuffer = partBuffer.subarray(0, partBuffer.length - 2);
+    }
+
+    // Split headers and body at \r\n\r\n
+    const headerSepIndex = partBuffer.indexOf(Buffer.from('\r\n\r\n'));
+    if (headerSepIndex !== -1) {
+      const headerStr = partBuffer.subarray(0, headerSepIndex).toString('utf8');
+      const bodyBuffer = partBuffer.subarray(headerSepIndex + 4);
+
+      const dispMatch = headerStr.match(/Content-Disposition:\s*form-data;\s*name="([^"]+)"(?:;\s*filename="([^"]+)")?/i);
+      if (dispMatch) {
+        const fieldName = dispMatch[1];
+        const filename = dispMatch[2];
+        const typeMatch = headerStr.match(/Content-Type:\s*([^\r\n]+)/i);
+        const mimeType = typeMatch ? typeMatch[1].trim() : 'application/octet-stream';
+
+        if (filename) {
+          const fileObj = {
+            fieldname: fieldName,
+            originalname: filename,
+            encoding: '7bit',
+            mimetype: mimeType,
+            buffer: bodyBuffer,
+            size: bodyBuffer.length
+          };
+          files.push(fileObj);
+          if (!fields[fieldName]) {
+            fields[fieldName] = fileObj;
+          }
+        } else {
+          fields[fieldName] = bodyBuffer.toString('utf8');
+        }
+      }
+    }
+
+    start = nextIndex;
+  }
+
+  return {
+    fields,
+    file: files[0] || null,
+    files
+  };
 }
 
 export interface Response extends http.ServerResponse {
@@ -163,18 +252,27 @@ export class ExpressApp extends RouterInstance {
       req.originalUrl = req.url;
       req.ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress;
 
-      // Parse JSON body if present
-      let bodyData = '';
+      // Collect raw chunks
+      const chunks: Buffer[] = [];
       req.on('data', chunk => {
-        bodyData += chunk;
+        chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
       });
 
       req.on('end', async () => {
-        if (bodyData) {
+        const rawBody = Buffer.concat(chunks);
+        const contentType = req.headers['content-type'] || '';
+
+        if (contentType.includes('multipart/form-data')) {
+          const parsed = parseMultipartData(rawBody, contentType);
+          req.body = parsed.fields;
+          req.file = parsed.file;
+          req.files = parsed.files;
+        } else if (rawBody.length > 0) {
+          const bodyStr = rawBody.toString('utf8');
           try {
-            req.body = JSON.parse(bodyData);
+            req.body = JSON.parse(bodyStr);
           } catch {
-            req.body = bodyData;
+            req.body = bodyStr;
           }
         } else {
           req.body = {};

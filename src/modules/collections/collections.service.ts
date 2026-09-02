@@ -339,10 +339,13 @@ export class CollectionsService {
   }
 
   static async getPublicCollectionBySlug(slug: string) {
-    const collection = await CollectionsRepository.findBySlug(slug);
+    const collection = await CollectionsRepository.findBySlug(slug, { media: true });
     if (!collection || collection.status !== 'ACTIVE') {
       throw { status: 404, code: 'NOT_FOUND', message: 'Collection not found or inactive' };
     }
+
+    const primaryMediaUrl = collection.media?.find((m: any) => m.isPrimary)?.media?.publicUrl;
+    const bannerMediaUrl = collection.media?.find((m: any) => m.role === 'BANNER')?.media?.publicUrl;
 
     return {
       id: collection.id,
@@ -350,8 +353,22 @@ export class CollectionsService {
       slug: collection.slug,
       shortDescription: collection.shortDescription,
       description: collection.description,
-      image: collection.image,
-      bannerImage: collection.bannerImage,
+      media: (collection.media || []).map((m: any) => {
+        const asset = m.media || m;
+        return {
+          id: asset.id,
+          url: asset.publicUrl || asset.url,
+          altText: asset.altText || null,
+          caption: asset.caption || null,
+          width: asset.width || null,
+          height: asset.height || null,
+          sortOrder: m.sortOrder !== undefined ? m.sortOrder : 0,
+          role: m.role || 'PRIMARY',
+          isPrimary: Boolean(m.isPrimary)
+        };
+      }),
+      image: primaryMediaUrl || collection.image || null,
+      bannerImage: bannerMediaUrl || collection.bannerImage || null,
       heroTitle: collection.heroTitle,
       heroDescription: collection.heroDescription,
       isFeatured: collection.isFeatured,
@@ -361,7 +378,7 @@ export class CollectionsService {
       canonicalUrl: collection.canonicalUrl,
       ogTitle: collection.ogTitle || collection.metaTitle || collection.name,
       ogDescription: collection.ogDescription || collection.metaDescription,
-      ogImage: collection.ogImage || collection.image
+      ogImage: collection.ogImage || primaryMediaUrl || collection.image
     };
   }
 }

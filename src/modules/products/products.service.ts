@@ -716,15 +716,46 @@ export class ProductsService {
         numberValue: pav.numberValue,
         booleanValue: pav.booleanValue
       })),
-      image: p.image,
-      thumbnail: p.thumbnail,
-      bannerImage: p.bannerImage,
+      media: (p.media || []).map((m: any) => {
+        const asset = m.media || m;
+        return {
+          id: asset.id,
+          url: asset.publicUrl || asset.url,
+          altText: asset.altText || null,
+          caption: asset.caption || null,
+          width: asset.width || null,
+          height: asset.height || null,
+          sortOrder: m.sortOrder !== undefined ? m.sortOrder : 0,
+          role: m.role || 'GALLERY',
+          isPrimary: Boolean(m.isPrimary)
+        };
+      }),
+      image: (p.media?.find((m: any) => m.isPrimary)?.media?.publicUrl ||
+              p.media?.find((m: any) => m.isPrimary)?.media?.url ||
+              p.media?.[0]?.media?.publicUrl ||
+              p.media?.[0]?.media?.url ||
+              p.media?.[0]?.publicUrl ||
+              p.image || null),
+      thumbnail: (p.media?.find((m: any) => m.role === 'THUMBNAIL')?.media?.publicUrl ||
+                  p.media?.find((m: any) => m.role === 'THUMBNAIL')?.media?.url ||
+                  p.thumbnail ||
+                  p.media?.find((m: any) => m.isPrimary)?.media?.publicUrl ||
+                  p.media?.[0]?.media?.publicUrl ||
+                  p.image || null),
+      bannerImage: (p.media?.find((m: any) => m.role === 'BANNER')?.media?.publicUrl ||
+                    p.media?.find((m: any) => m.role === 'BANNER')?.media?.url ||
+                    p.bannerImage || null),
       metaTitle: p.metaTitle || p.name,
       metaDescription: p.metaDescription,
       canonicalUrl: p.canonicalUrl,
       ogTitle: p.ogTitle || p.metaTitle || p.name,
       ogDescription: p.ogDescription || p.metaDescription,
-      ogImage: p.ogImage || p.image
+      ogImage: (p.media?.find((m: any) => m.role === 'OG')?.media?.publicUrl ||
+                p.media?.find((m: any) => m.role === 'OG')?.media?.url ||
+                p.ogImage ||
+                p.media?.find((m: any) => m.isPrimary)?.media?.publicUrl ||
+                p.media?.[0]?.media?.publicUrl ||
+                p.image || null)
     };
 
     if (p.productType === 'VARIABLE') {
@@ -758,7 +789,21 @@ export class ProductsService {
             compareAtPrice: v.compareAtPrice !== null ? v.compareAtPrice : p.compareAtPrice,
             inStock: varInStock,
             allowBackorder: v.allowBackorder,
-            image: v.image || p.image,
+            media: (v.media || []).map((m: any) => {
+              const asset = m.media || m;
+              return {
+                id: asset.id,
+                url: asset.publicUrl || asset.url,
+                altText: asset.altText || null,
+                caption: asset.caption || null,
+                width: asset.width || null,
+                height: asset.height || null,
+                sortOrder: m.sortOrder !== undefined ? m.sortOrder : 0,
+                role: m.role || 'GALLERY',
+                isPrimary: Boolean(m.isPrimary)
+              };
+            }),
+            image: v.media?.find((m: any) => m.isPrimary)?.media?.publicUrl || v.image || p.image,
             options: optionMap
           };
         });

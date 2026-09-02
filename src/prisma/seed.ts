@@ -47,11 +47,15 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Option', slug: 'product-option.update', module: 'VARIANTS', description: 'Modify product options and values' },
   { name: 'Delete Option', slug: 'product-option.delete', module: 'VARIANTS', description: 'Delete product options and values' },
 
-  // MEDIA
+  // MEDIA & FOLDERS
   { name: 'View Media Assets', slug: 'media.view', module: 'MEDIA', description: 'View artwork images and digital media' },
   { name: 'Upload Media', slug: 'media.create', module: 'MEDIA', description: 'Upload artwork assets' },
   { name: 'Update Media', slug: 'media.update', module: 'MEDIA', description: 'Modify artwork media metadata' },
   { name: 'Delete Media', slug: 'media.delete', module: 'MEDIA', description: 'Delete artwork media files' },
+  { name: 'View Media Folders', slug: 'media-folder.view', module: 'MEDIA', description: 'View media library folders' },
+  { name: 'Create Media Folder', slug: 'media-folder.create', module: 'MEDIA', description: 'Create media library folder' },
+  { name: 'Update Media Folder', slug: 'media-folder.update', module: 'MEDIA', description: 'Update media library folder' },
+  { name: 'Delete Media Folder', slug: 'media-folder.delete', module: 'MEDIA', description: 'Delete media library folder' },
 
   // ORDERS
   { name: 'View Orders', slug: 'order.view', module: 'ORDERS', description: 'View customer orders and status' },
@@ -107,6 +111,7 @@ export const ROLES_DATA = [
       'variant.view', 'variant.create', 'variant.update', 'variant.delete',
       'product-option.view', 'product-option.create', 'product-option.update', 'product-option.delete',
       'media.view', 'media.create', 'media.update', 'media.delete',
+      'media-folder.view', 'media-folder.create', 'media-folder.update', 'media-folder.delete',
       'seo.view', 'seo.update'
     ]
   },
@@ -123,7 +128,8 @@ export const ROLES_DATA = [
       'product.view', 'product.create', 'product.update',
       'variant.view', 'variant.create', 'variant.update',
       'product-option.view', 'product-option.create', 'product-option.update',
-      'media.view', 'media.create', 'media.update', 'media.delete',
+      'media.view', 'media.create', 'media.update',
+      'media-folder.view', 'media-folder.create', 'media-folder.update',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -146,7 +152,8 @@ export const ROLES_DATA = [
     permissionSlugs: [
       'marketing.view', 'marketing.create', 'marketing.update', 'marketing.delete',
       'product.view', 'collection.view', 'customer.view',
-      'variant.view', 'product-option.view'
+      'variant.view', 'product-option.view',
+      'media.view', 'media-folder.view'
     ]
   }
 ];

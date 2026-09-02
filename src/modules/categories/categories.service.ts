@@ -290,7 +290,7 @@ export class CategoriesService {
    * 5. Get Category By ID or Slug
    */
   static async getCategoryById(id: string) {
-    const category = await CategoriesRepository.findById(id, { parent: true, children: true });
+    const category = await CategoriesRepository.findById(id, { parent: true, children: true, media: true });
     if (!category) {
       throw { status: 404, code: 'NOT_FOUND', message: 'Category not found' };
     }
@@ -298,7 +298,7 @@ export class CategoriesService {
   }
 
   static async getCategoryBySlug(slug: string, publicOnly: boolean = false) {
-    const category = await CategoriesRepository.findBySlug(slug, { parent: true, children: true });
+    const category = await CategoriesRepository.findBySlug(slug, { parent: true, children: true, media: true });
     if (!category) {
       throw { status: 404, code: 'NOT_FOUND', message: 'Category not found' };
     }
