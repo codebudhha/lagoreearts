@@ -114,7 +114,7 @@ export const ROLES_DATA = [
       'category.view',
       'attribute.view',
       'attribute-value.view',
-      'collection.view', 'collection.update',
+      'collection.view', 'collection.create', 'collection.update',
       'media.view', 'media.create', 'media.update', 'media.delete',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
@@ -525,7 +525,85 @@ export async function runSeed(): Promise<void> {
       }
     }
   }
-  console.log('✓ Seeded category filter mappings for Antiques, Indian Art, and Art');
+  // 7. Seed Initial Curated Collections (Module 5)
+  const INITIAL_COLLECTIONS = [
+    {
+      name: 'The Sanskrit Edit',
+      slug: 'the-sanskrit-edit',
+      shortDescription: 'Sacred typography, epic verses, and Vedic philosophy curated on canvas.',
+      isFeatured: true,
+      sortOrder: 1
+    },
+    {
+      name: 'Antique Treasures',
+      slug: 'antique-treasures',
+      shortDescription: 'Centuries-old bronze deities, ceremonial vessels, and heirloom artifacts.',
+      isFeatured: true,
+      sortOrder: 2
+    },
+    {
+      name: 'Indian Heritage',
+      slug: 'indian-heritage',
+      shortDescription: 'Timeless masterpieces depicting Indian royalty, folklore, and sacred devotion.',
+      isFeatured: true,
+      sortOrder: 3
+    },
+    {
+      name: "Curator's Picks",
+      slug: 'curators-picks',
+      shortDescription: 'Hand-selected highlight acquisitions chosen by our senior atelier curators.',
+      isFeatured: true,
+      sortOrder: 4
+    },
+    {
+      name: 'New Arrivals',
+      slug: 'new-arrivals',
+      shortDescription: 'Freshly archived masterworks, framed prints, and rare brass acquisitions.',
+      isFeatured: false,
+      sortOrder: 5
+    },
+    {
+      name: 'Bestsellers',
+      slug: 'bestsellers',
+      shortDescription: 'Most revered and acquired artistic treasures among discerning patrons.',
+      isFeatured: false,
+      sortOrder: 6
+    },
+    {
+      name: 'Festive Collection',
+      slug: 'festive-collection',
+      shortDescription: 'Auspicious artworks and radiant brass diyas for sacred celebrations.',
+      isFeatured: true,
+      sortOrder: 7
+    },
+    {
+      name: 'Spiritual Art',
+      slug: 'spiritual-art-collection',
+      shortDescription: 'Deep meditative expressions, divine iconography, and sacred temple sanctum motifs.',
+      isFeatured: false,
+      sortOrder: 8
+    }
+  ];
+
+  for (const colDef of INITIAL_COLLECTIONS) {
+    const existing = prisma.collection.findUnique({ where: { slug: colDef.slug } });
+    if (!existing) {
+      prisma.collection.create({
+        data: {
+          name: colDef.name,
+          slug: colDef.slug,
+          shortDescription: colDef.shortDescription,
+          isFeatured: colDef.isFeatured,
+          sortOrder: colDef.sortOrder,
+          status: 'ACTIVE',
+          type: 'MANUAL',
+          metaTitle: colDef.name,
+          ogTitle: colDef.name
+        }
+      });
+    }
+  }
+  console.log(`✓ Seeded ${INITIAL_COLLECTIONS.length} curated editorial collections`);
   console.log('✨ Seeding Completed Successfully!\n');
 }
 

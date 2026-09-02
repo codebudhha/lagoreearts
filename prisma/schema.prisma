@@ -32,6 +32,16 @@ enum AttributeStatus {
   INACTIVE
 }
 
+enum CollectionStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum CollectionType {
+  MANUAL
+  SYSTEM
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -255,4 +265,36 @@ model CategoryAttribute {
   @@index([attributeId])
   @@index([sortOrder])
   @@map("category_attributes")
+}
+
+model Collection {
+  id               String           @id @default(uuid()) @db.VarChar(36)
+  name             String           @db.VarChar(120)
+  slug             String           @unique @db.VarChar(140)
+  shortDescription String?          @map("short_description") @db.VarChar(255)
+  description      String?          @db.Text
+  image            String?          @db.VarChar(255)
+  bannerImage      String?          @map("banner_image") @db.VarChar(255)
+  heroTitle        String?          @map("hero_title") @db.VarChar(150)
+  heroDescription  String?          @map("hero_description") @db.Text
+  status           CollectionStatus @default(ACTIVE)
+  type             CollectionType   @default(MANUAL)
+  isFeatured       Boolean          @default(false) @map("is_featured")
+  sortOrder        Int              @default(0) @map("sort_order")
+  metaTitle        String?          @map("meta_title") @db.VarChar(150)
+  metaDescription  String?          @map("meta_description") @db.Text
+  canonicalUrl     String?          @map("canonical_url") @db.VarChar(255)
+  ogTitle          String?          @map("og_title") @db.VarChar(150)
+  ogDescription    String?          @map("og_description") @db.Text
+  ogImage          String?          @map("og_image") @db.VarChar(255)
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@index([status])
+  @@index([type])
+  @@index([isFeatured])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("collections")
 }

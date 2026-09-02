@@ -197,6 +197,36 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_cat_attr_cat_id ON category_attributes(category_id);
   CREATE INDEX IF NOT EXISTS idx_cat_attr_attr_id ON category_attributes(attribute_id);
   CREATE INDEX IF NOT EXISTS idx_cat_attr_sort_order ON category_attributes(sort_order);
+  CREATE TABLE IF NOT EXISTS collections (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    short_description TEXT,
+    description TEXT,
+    image TEXT,
+    banner_image TEXT,
+    hero_title TEXT,
+    hero_description TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    type TEXT NOT NULL DEFAULT 'MANUAL',
+    is_featured INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    meta_title TEXT,
+    meta_description TEXT,
+    canonical_url TEXT,
+    og_title TEXT,
+    og_description TEXT,
+    og_image TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_collections_slug ON collections(slug);
+  CREATE INDEX IF NOT EXISTS idx_collections_status ON collections(status);
+  CREATE INDEX IF NOT EXISTS idx_collections_type ON collections(type);
+  CREATE INDEX IF NOT EXISTS idx_collections_is_featured ON collections(is_featured);
+  CREATE INDEX IF NOT EXISTS idx_collections_sort_order ON collections(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_collections_created_at ON collections(created_at);
 `);
 
 /**
@@ -644,6 +674,11 @@ export const prisma = {
         userAgent: r.user_agent,
         createdAt: new Date(r.created_at)
       }));
+    },
+
+    findFirst: ({ where }: any = {}) => {
+      const results = prisma.adminAuditLog.findMany({ where, take: 1 });
+      return results.length > 0 ? results[0] : null;
     }
   },
 
@@ -1288,6 +1323,186 @@ export const prisma = {
       if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
       if (where?.attributeId) { sql += ' AND attribute_id = ?'; params.push(where.attributeId); }
       db.prepare(sql).run(...params);
+    }
+  },
+
+  collection: {
+    findUnique: ({ where }: { where: { id?: string; slug?: string } }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM collections WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM collections WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        shortDescription: row.short_description || null,
+        description: row.description || null,
+        image: row.image || null,
+        bannerImage: row.banner_image || null,
+        heroTitle: row.hero_title || null,
+        heroDescription: row.hero_description || null,
+        status: row.status,
+        type: row.type,
+        isFeatured: Boolean(row.is_featured),
+        sortOrder: Number(row.sort_order || 0),
+        metaTitle: row.meta_title || null,
+        metaDescription: row.meta_description || null,
+        canonicalUrl: row.canonical_url || null,
+        ogTitle: row.og_title || null,
+        ogDescription: row.og_description || null,
+        ogImage: row.og_image || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findFirst: ({ where }: any = {}) => {
+      let sql = 'SELECT * FROM collections WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.name) { sql += ' AND LOWER(name) = LOWER(?)'; params.push(where.name); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isFeatured !== undefined) {
+        sql += ' AND is_featured = ?';
+        params.push(where.isFeatured ? 1 : 0);
+      }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.collection.findUnique({ where: { id: row.id } });
+    },
+
+    findMany: ({ where, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM collections WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isFeatured !== undefined) {
+        sql += ' AND is_featured = ?';
+        params.push(where.isFeatured ? 1 : 0);
+      }
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ? OR description LIKE ? OR short_description LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (orderBy) {
+        const field = orderBy.name ? 'name' : orderBy.sortOrder ? 'sort_order' : orderBy.createdAt ? 'created_at' : orderBy.updatedAt ? 'updated_at' : 'sort_order';
+        const dir = (orderBy.name || orderBy.sortOrder || orderBy.createdAt || orderBy.updatedAt || 'asc').toUpperCase();
+        sql += ` ORDER BY ${field} ${dir}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, name ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.collection.findUnique({ where: { id: r.id } }));
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as total FROM collections WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isFeatured !== undefined) {
+        sql += ' AND is_featured = ?';
+        params.push(where.isFeatured ? 1 : 0);
+      }
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ? OR description LIKE ? OR short_description LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      const res: any = db.prepare(sql).get(...params);
+      return res?.total || 0;
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO collections (
+          id, name, slug, short_description, description, image, banner_image,
+          hero_title, hero_description, status, type, is_featured, sort_order,
+          meta_title, meta_description, canonical_url, og_title, og_description, og_image,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.shortDescription || null,
+        data.description || null,
+        data.image || null,
+        data.bannerImage || null,
+        data.heroTitle || null,
+        data.heroDescription || null,
+        data.status || 'ACTIVE',
+        data.type || 'MANUAL',
+        data.isFeatured ? 1 : 0,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.metaTitle || null,
+        data.metaDescription || null,
+        data.canonicalUrl || null,
+        data.ogTitle || null,
+        data.ogDescription || null,
+        data.ogImage || null,
+        now,
+        now
+      );
+      return prisma.collection.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.shortDescription !== undefined) { updates.push('short_description = ?'); params.push(data.shortDescription); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description); }
+      if (data.image !== undefined) { updates.push('image = ?'); params.push(data.image); }
+      if (data.bannerImage !== undefined) { updates.push('banner_image = ?'); params.push(data.bannerImage); }
+      if (data.heroTitle !== undefined) { updates.push('hero_title = ?'); params.push(data.heroTitle); }
+      if (data.heroDescription !== undefined) { updates.push('hero_description = ?'); params.push(data.heroDescription); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.metaTitle !== undefined) { updates.push('meta_title = ?'); params.push(data.metaTitle); }
+      if (data.metaDescription !== undefined) { updates.push('meta_description = ?'); params.push(data.metaDescription); }
+      if (data.canonicalUrl !== undefined) { updates.push('canonical_url = ?'); params.push(data.canonicalUrl); }
+      if (data.ogTitle !== undefined) { updates.push('og_title = ?'); params.push(data.ogTitle); }
+      if (data.ogDescription !== undefined) { updates.push('og_description = ?'); params.push(data.ogDescription); }
+      if (data.ogImage !== undefined) { updates.push('og_image = ?'); params.push(data.ogImage); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE collections SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.collection.findUnique({ where: { id: where.id } });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const coll = prisma.collection.findUnique({ where });
+      db.prepare('DELETE FROM collections WHERE id = ?').run(where.id);
+      return coll;
     }
   }
 };
