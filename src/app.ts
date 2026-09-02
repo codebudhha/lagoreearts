@@ -67,11 +67,35 @@ export function createApp() {
     next();
   });
 
-  // 2. Health & Diagnostic Check
+  // 2. Health & Root Diagnostic Check
+  app.get('/', (req, res) => {
+    return ApiResponse.success(res, {
+      brand: 'Lagoree Arts Luxury E-Commerce Backend',
+      version: '1.0.0',
+      status: 'healthy',
+      endpoints: {
+        health: '/api/v1/admin/health',
+        adminAuth: '/api/v1/admin/auth/login',
+        products: '/api/v1/products',
+        categories: '/api/v1/categories',
+        collections: '/api/v1/collections',
+        attributes: '/api/v1/attributes'
+      },
+      timestamp: new Date().toISOString()
+    }, 200, 'Welcome to Lagoree Arts API');
+  });
+
   app.get('/api/v1/admin/health', (req, res) => {
     return ApiResponse.success(res, {
       status: 'healthy',
-      module: 'Module 2: Admin Authentication & Roles',
+      modules: [
+        'Module 1: Backend Foundation',
+        'Module 2: Admin Authentication & RBAC',
+        'Module 3: Categories & Hierarchy',
+        'Module 4: Attributes & Dynamic Filter Engine',
+        'Module 5: Collections',
+        'Module 6: Product Catalogue Management'
+      ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
     });
