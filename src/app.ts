@@ -9,6 +9,7 @@ import { adminAttributesRoutes, publicAttributesRoutes } from './modules/attribu
 import { adminCategoryFiltersRoutes, publicCategoryFiltersRoutes } from './modules/category-filters/category-filters.routes.ts';
 import { adminCollectionsRoutes, publicCollectionsRoutes } from './modules/collections/collections.routes.ts';
 import { adminProductsRoutes, publicProductsRoutes } from './modules/products/products.routes.ts';
+import { adminProductOptionsRouter, adminProductVariantsRouter } from './modules/product-variants/variants.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -124,7 +125,8 @@ export function createApp() {
         'Module 3: Categories & Hierarchy',
         'Module 4: Attributes & Dynamic Filter Engine',
         'Module 5: Collections',
-        'Module 6: Product Catalogue Management'
+        'Module 6: Product Catalogue Management',
+        'Module 7: Product Variants'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -139,6 +141,8 @@ export function createApp() {
   app.use('/api/v1/admin/categories', adminCategoriesRoutes);
   app.use('/api/v1/admin/attributes', adminAttributesRoutes);
   app.use('/api/v1/admin/collections', adminCollectionsRoutes);
+  app.use('/api/v1/admin/products', adminProductOptionsRouter);
+  app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);
   app.use('/api/v1/categories', publicCategoryFiltersRoutes);
   app.use('/api/v1/categories', publicCategoriesRoutes);

@@ -1,25 +1,46 @@
 import { prisma } from '../../database/prisma.ts';
 
 export class ProductsRepository {
-  static async findById(id: string, include: any = { category: true, collections: true, attributes: true }) {
-    return prisma.product.findUnique({
+  static async findById(id: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true }) {
+    const p = await prisma.product.findUnique({
       where: { id },
       include
     });
+    if (p && include?.options && !p.options) {
+      p.options = await prisma.productOption.findMany({ where: { productId: p.id }, include: { values: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    if (p && include?.variants && !p.variants) {
+      p.variants = await prisma.productVariant.findMany({ where: { productId: p.id }, include: { optionValues: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    return p;
   }
 
-  static async findBySlug(slug: string, include: any = { category: true, collections: true, attributes: true }) {
-    return prisma.product.findUnique({
+  static async findBySlug(slug: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true }) {
+    const p = await prisma.product.findUnique({
       where: { slug },
       include
     });
+    if (p && include?.options && !p.options) {
+      p.options = await prisma.productOption.findMany({ where: { productId: p.id }, include: { values: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    if (p && include?.variants && !p.variants) {
+      p.variants = await prisma.productVariant.findMany({ where: { productId: p.id }, include: { optionValues: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    return p;
   }
 
-  static async findBySku(sku: string, include: any = { category: true, collections: true, attributes: true }) {
-    return prisma.product.findUnique({
-      where: { sku },
+  static async findBySku(sku: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true }) {
+    const p = await prisma.product.findUnique({
+      where: { sku: sku.trim().toUpperCase() },
       include
     });
+    if (p && include?.options && !p.options) {
+      p.options = await prisma.productOption.findMany({ where: { productId: p.id }, include: { values: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    if (p && include?.variants && !p.variants) {
+      p.variants = await prisma.productVariant.findMany({ where: { productId: p.id }, include: { optionValues: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    return p;
   }
 
   static async findByName(name: string) {

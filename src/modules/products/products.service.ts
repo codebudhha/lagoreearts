@@ -1,3 +1,4 @@
+import { prisma } from '../../database/prisma.ts';
 import { ProductsRepository } from './products.repository.ts';
 import { CategoriesRepository } from '../categories/categories.repository.ts';
 import { CollectionsRepository } from '../collections/collections.repository.ts';
@@ -125,6 +126,10 @@ export class ProductsService {
     const existingSku = await ProductsRepository.findBySku(sku);
     if (existingSku) {
       throw { status: 400, code: 'DUPLICATE_SKU', message: `SKU "${sku}" is already in use` };
+    }
+    const existingVariantSku = await prisma.productVariant.findUnique({ where: { sku } });
+    if (existingVariantSku) {
+      throw { status: 400, code: 'DUPLICATE_SKU', message: `SKU "${sku}" is already in use by a product variant` };
     }
 
     // 3. Resolve Unique Slug
@@ -274,6 +279,10 @@ export class ProductsService {
       if (duplicateSku && duplicateSku.id !== id) {
         throw { status: 400, code: 'DUPLICATE_SKU', message: `SKU "${sku}" is already in use` };
       }
+      const duplicateVariantSku = await prisma.productVariant.findUnique({ where: { sku } });
+      if (duplicateVariantSku && duplicateVariantSku.productId !== id) {
+        throw { status: 400, code: 'DUPLICATE_SKU', message: `SKU "${sku}" is already in use by a product variant` };
+      }
       updates.sku = sku;
     }
 
@@ -308,7 +317,15 @@ export class ProductsService {
     if (input.shortDescription !== undefined) updates.shortDescription = input.shortDescription;
     if (input.description !== undefined) updates.description = input.description;
     if (input.status !== undefined) updates.status = input.status;
-    if (input.productType !== undefined) updates.productType = input.productType;
+    if (input.productType !== undefined) {
+      if (input.productType === 'SIMPLE' && existing.productType === 'VARIABLE') {
+        const variantCount = await prisma.productVariant.count({ where: { productId: id } });
+        if (variantCount > 0) {
+          throw { status: 409, code: 'CONFLICT', message: 'Cannot convert product to SIMPLE while variants exist. Please remove all variants first.' };
+        }
+      }
+      updates.productType = input.productType;
+    }
     if (input.currency !== undefined) updates.currency = input.currency;
     if (input.stockQuantity !== undefined) updates.stockQuantity = Math.max(0, Number(input.stockQuantity));
     if (input.lowStockThreshold !== undefined) updates.lowStockThreshold = Math.max(0, Number(input.lowStockThreshold));
@@ -658,7 +675,7 @@ export class ProductsService {
   private static formatPublicProduct(p: any) {
     const inStock = !p.trackInventory || p.stockQuantity > 0 || p.allowBackorder;
 
-    return {
+    const formatted: any = {
       id: p.id,
       name: p.name,
       slug: p.slug,
@@ -709,5 +726,44 @@ export class ProductsService {
       ogDescription: p.ogDescription || p.metaDescription,
       ogImage: p.ogImage || p.image
     };
+
+    if (p.productType === 'VARIABLE') {
+      formatted.options = (p.options || []).map((o: any) => ({
+        id: o.id,
+        name: o.name,
+        slug: o.slug,
+        sortOrder: o.sortOrder,
+        values: (o.values || []).map((v: any) => ({
+          id: v.id,
+          value: v.value,
+          slug: v.slug,
+          sortOrder: v.sortOrder
+        }))
+      }));
+
+      formatted.variants = (p.variants || [])
+        .filter((v: any) => v.status === 'ACTIVE')
+        .map((v: any) => {
+          const optionMap: Record<string, string> = {};
+          (v.optionValues || []).forEach((ov: any) => {
+            if (ov.optionValue && ov.optionValue.option) {
+              optionMap[ov.optionValue.option.slug] = ov.optionValue.slug;
+            }
+          });
+          const varInStock = !v.trackInventory || v.stockQuantity > 0 || v.allowBackorder;
+          return {
+            id: v.id,
+            sku: v.sku,
+            price: v.price !== null ? v.price : p.price,
+            compareAtPrice: v.compareAtPrice !== null ? v.compareAtPrice : p.compareAtPrice,
+            inStock: varInStock,
+            allowBackorder: v.allowBackorder,
+            image: v.image || p.image,
+            options: optionMap
+          };
+        });
+    }
+
+    return formatted;
   }
 }

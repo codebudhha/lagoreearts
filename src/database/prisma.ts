@@ -306,6 +306,72 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_prod_attr_val_prod_id ON product_attribute_values(product_id);
   CREATE INDEX IF NOT EXISTS idx_prod_attr_val_attr_id ON product_attribute_values(attribute_id);
   CREATE INDEX IF NOT EXISTS idx_prod_attr_val_val_id ON product_attribute_values(attribute_value_id);
+
+  CREATE TABLE IF NOT EXISTS product_options (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(product_id, slug),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS product_option_values (
+    id TEXT PRIMARY KEY,
+    product_option_id TEXT NOT NULL,
+    value TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(product_option_id, slug),
+    FOREIGN KEY (product_option_id) REFERENCES product_options(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS product_variants (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    sku TEXT UNIQUE NOT NULL,
+    price REAL,
+    compare_at_price REAL,
+    cost_price REAL,
+    stock_quantity INTEGER NOT NULL DEFAULT 0,
+    low_stock_threshold INTEGER NOT NULL DEFAULT 5,
+    track_inventory INTEGER NOT NULL DEFAULT 1,
+    allow_backorder INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    image TEXT,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS product_variant_option_values (
+    variant_id TEXT NOT NULL,
+    option_value_id TEXT NOT NULL,
+    PRIMARY KEY (variant_id, option_value_id),
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE,
+    FOREIGN KEY (option_value_id) REFERENCES product_option_values(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_prod_opt_prod_id ON product_options(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_opt_sort ON product_options(sort_order);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_opt_val_opt_id ON product_option_values(product_option_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_opt_val_sort ON product_option_values(sort_order);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_var_prod_id ON product_variants(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_var_sku ON product_variants(sku);
+  CREATE INDEX IF NOT EXISTS idx_prod_var_status ON product_variants(status);
+  CREATE INDEX IF NOT EXISTS idx_prod_var_sort ON product_variants(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_prod_var_price ON product_variants(price);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_var_opt_val_var_id ON product_variant_option_values(variant_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_var_opt_val_val_id ON product_variant_option_values(option_value_id);
 `);
 
 /**
@@ -1999,6 +2065,545 @@ export const prisma = {
       if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
       if (where?.attributeId) { sql += ' AND attribute_id = ?'; params.push(where.attributeId); }
       if (where?.attributeValueId) { sql += ' AND attribute_value_id = ?'; params.push(where.attributeValueId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productOption: {
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM product_options WHERE id = ?').get(where.id);
+      } else if (where.productId && where.slug) {
+        row = db.prepare('SELECT * FROM product_options WHERE product_id = ? AND slug = ?').get(where.productId, where.slug);
+      } else if (where.productId_slug) {
+        row = db.prepare('SELECT * FROM product_options WHERE product_id = ? AND slug = ?').get(where.productId_slug.productId, where.productId_slug.slug);
+      }
+      if (!row) return null;
+      const opt: any = {
+        id: row.id,
+        productId: row.product_id,
+        name: row.name,
+        slug: row.slug,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.values) {
+        const valRows = db.prepare('SELECT * FROM product_option_values WHERE product_option_id = ? ORDER BY sort_order ASC, created_at ASC').all(opt.id) as any[];
+        opt.values = valRows.map(v => ({
+          id: v.id,
+          productOptionId: v.product_option_id,
+          value: v.value,
+          slug: v.slug,
+          sortOrder: v.sort_order,
+          createdAt: new Date(v.created_at),
+          updatedAt: new Date(v.updated_at)
+        }));
+      }
+      return opt;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_options WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.slug) { sql += ' AND slug = ?'; params.push(where.slug); }
+      if (where?.name) { sql += ' AND LOWER(name) = LOWER(?)'; params.push(where.name); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      const opt: any = {
+        id: row.id,
+        productId: row.product_id,
+        name: row.name,
+        slug: row.slug,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.values) {
+        const valRows = db.prepare('SELECT * FROM product_option_values WHERE product_option_id = ? ORDER BY sort_order ASC, created_at ASC').all(opt.id) as any[];
+        opt.values = valRows.map(v => ({
+          id: v.id,
+          productOptionId: v.product_option_id,
+          value: v.value,
+          slug: v.slug,
+          sortOrder: v.sort_order,
+          createdAt: new Date(v.created_at),
+          updatedAt: new Date(v.updated_at)
+        }));
+      }
+      return opt;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM product_options WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.id) {
+        if (typeof where.id === 'object' && where.id.in) {
+          sql += ` AND id IN (${where.id.in.map(() => '?').join(',')})`;
+          params.push(...where.id.in);
+        } else {
+          sql += ' AND id = ?';
+          params.push(where.id);
+        }
+      }
+
+      let orderClause = 'ORDER BY sort_order ASC, created_at ASC';
+      if (orderBy?.sortOrder) orderClause = `ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+
+      const rows = db.prepare(`${sql} ${orderClause}`).all(...params) as any[];
+      return rows.map(row => {
+        const opt: any = {
+          id: row.id,
+          productId: row.product_id,
+          name: row.name,
+          slug: row.slug,
+          sortOrder: row.sort_order,
+          createdAt: new Date(row.created_at),
+          updatedAt: new Date(row.updated_at)
+        };
+        if (include?.values) {
+          const valRows = db.prepare('SELECT * FROM product_option_values WHERE product_option_id = ? ORDER BY sort_order ASC, created_at ASC').all(opt.id) as any[];
+          opt.values = valRows.map(v => ({
+            id: v.id,
+            productOptionId: v.product_option_id,
+            value: v.value,
+            slug: v.slug,
+            sortOrder: v.sort_order,
+            createdAt: new Date(v.created_at),
+            updatedAt: new Date(v.updated_at)
+          }));
+        }
+        return opt;
+      });
+    },
+
+    create: ({ data, include }: any) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO product_options (id, product_id, name, slug, sort_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.productId,
+        data.name,
+        data.slug,
+        data.sortOrder ?? 0,
+        now,
+        now
+      );
+
+      return prisma.productOption.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const now = new Date().toISOString();
+      const sets: string[] = ['updated_at = ?'];
+      const params: any[] = [now];
+
+      if (data.name !== undefined) { sets.push('name = ?'); params.push(data.name); }
+      if (data.slug !== undefined) { sets.push('slug = ?'); params.push(data.slug); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(data.sortOrder); }
+
+      params.push(where.id);
+      db.prepare(`UPDATE product_options SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.productOption.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.productOption.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM product_options WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_options WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productOptionValue: {
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM product_option_values WHERE id = ?').get(where.id);
+      } else if (where.productOptionId && where.slug) {
+        row = db.prepare('SELECT * FROM product_option_values WHERE product_option_id = ? AND slug = ?').get(where.productOptionId, where.slug);
+      } else if (where.productOptionId_slug) {
+        row = db.prepare('SELECT * FROM product_option_values WHERE product_option_id = ? AND slug = ?').get(where.productOptionId_slug.productOptionId, where.productOptionId_slug.slug);
+      }
+      if (!row) return null;
+      const val: any = {
+        id: row.id,
+        productOptionId: row.product_option_id,
+        value: row.value,
+        slug: row.slug,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.option) {
+        val.option = prisma.productOption.findUnique({ where: { id: val.productOptionId } });
+      }
+      return val;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_option_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productOptionId) { sql += ' AND product_option_id = ?'; params.push(where.productOptionId); }
+      if (where?.slug) { sql += ' AND slug = ?'; params.push(where.slug); }
+      if (where?.value) { sql += ' AND LOWER(value) = LOWER(?)'; params.push(where.value); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      const val: any = {
+        id: row.id,
+        productOptionId: row.product_option_id,
+        value: row.value,
+        slug: row.slug,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.option) {
+        val.option = prisma.productOption.findUnique({ where: { id: val.productOptionId } });
+      }
+      return val;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM product_option_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productOptionId) {
+        if (typeof where.productOptionId === 'object' && where.productOptionId.in) {
+          sql += ` AND product_option_id IN (${where.productOptionId.in.map(() => '?').join(',')})`;
+          params.push(...where.productOptionId.in);
+        } else {
+          sql += ' AND product_option_id = ?';
+          params.push(where.productOptionId);
+        }
+      }
+      if (where?.id) {
+        if (typeof where.id === 'object' && where.id.in) {
+          sql += ` AND id IN (${where.id.in.map(() => '?').join(',')})`;
+          params.push(...where.id.in);
+        } else {
+          sql += ' AND id = ?';
+          params.push(where.id);
+        }
+      }
+
+      let orderClause = 'ORDER BY sort_order ASC, created_at ASC';
+      if (orderBy?.sortOrder) orderClause = `ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+
+      const rows = db.prepare(`${sql} ${orderClause}`).all(...params) as any[];
+      return rows.map(row => {
+        const val: any = {
+          id: row.id,
+          productOptionId: row.product_option_id,
+          value: row.value,
+          slug: row.slug,
+          sortOrder: row.sort_order,
+          createdAt: new Date(row.created_at),
+          updatedAt: new Date(row.updated_at)
+        };
+        if (include?.option) {
+          val.option = prisma.productOption.findUnique({ where: { id: val.productOptionId } });
+        }
+        return val;
+      });
+    },
+
+    create: ({ data, include }: any) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO product_option_values (id, product_option_id, value, slug, sort_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.productOptionId,
+        data.value,
+        data.slug,
+        data.sortOrder ?? 0,
+        now,
+        now
+      );
+
+      return prisma.productOptionValue.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const now = new Date().toISOString();
+      const sets: string[] = ['updated_at = ?'];
+      const params: any[] = [now];
+
+      if (data.value !== undefined) { sets.push('value = ?'); params.push(data.value); }
+      if (data.slug !== undefined) { sets.push('slug = ?'); params.push(data.slug); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(data.sortOrder); }
+
+      params.push(where.id);
+      db.prepare(`UPDATE product_option_values SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.productOptionValue.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.productOptionValue.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM product_option_values WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_option_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productOptionId) { sql += ' AND product_option_id = ?'; params.push(where.productOptionId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productVariant: {
+    findUnique: ({ where, include }: any) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM product_variants WHERE id = ?').get(where.id);
+      } else if (where.sku) {
+        row = db.prepare('SELECT * FROM product_variants WHERE UPPER(sku) = UPPER(?)').get(where.sku);
+      }
+      if (!row) return null;
+      const v: any = {
+        id: row.id,
+        productId: row.product_id,
+        sku: row.sku,
+        price: row.price !== null ? Number(row.price) : null,
+        compareAtPrice: row.compare_at_price !== null ? Number(row.compare_at_price) : null,
+        costPrice: row.cost_price !== null ? Number(row.cost_price) : null,
+        stockQuantity: row.stock_quantity,
+        lowStockThreshold: row.low_stock_threshold,
+        trackInventory: Boolean(row.track_inventory),
+        allowBackorder: Boolean(row.allow_backorder),
+        status: row.status,
+        image: row.image,
+        sortOrder: row.sort_order,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.optionValues) {
+        const joinRows = db.prepare(`
+          SELECT pvov.variant_id, pvov.option_value_id,
+                 pov.id as pov_id, pov.product_option_id, pov.value, pov.slug as pov_slug, pov.sort_order as pov_sort,
+                 po.name as po_name, po.slug as po_slug, po.sort_order as po_sort
+          FROM product_variant_option_values pvov
+          JOIN product_option_values pov ON pvov.option_value_id = pov.id
+          JOIN product_options po ON pov.product_option_id = po.id
+          WHERE pvov.variant_id = ?
+          ORDER BY po.sort_order ASC, pov.sort_order ASC
+        `).all(v.id) as any[];
+
+        v.optionValues = joinRows.map(j => ({
+          variantId: j.variant_id,
+          optionValueId: j.option_value_id,
+          optionValue: {
+            id: j.pov_id,
+            productOptionId: j.product_option_id,
+            value: j.value,
+            slug: j.pov_slug,
+            sortOrder: j.pov_sort,
+            option: {
+              id: j.product_option_id,
+              productId: v.productId,
+              name: j.po_name,
+              slug: j.po_slug,
+              sortOrder: j.po_sort
+            }
+          }
+        }));
+      }
+
+      if (include?.product) {
+        v.product = prisma.product.findUnique({ where: { id: v.productId } });
+      }
+
+      return v;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_variants WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.sku) { sql += ' AND UPPER(sku) = UPPER(?)'; params.push(where.sku); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.productVariant.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM product_variants WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.sku) { sql += ' AND UPPER(sku) LIKE ?'; params.push(`%${where.sku.toUpperCase()}%`); }
+      if (where?.id) {
+        if (typeof where.id === 'object' && where.id.in) {
+          sql += ` AND id IN (${where.id.in.map(() => '?').join(',')})`;
+          params.push(...where.id.in);
+        } else {
+          sql += ' AND id = ?';
+          params.push(where.id);
+        }
+      }
+
+      let orderClause = 'ORDER BY sort_order ASC, created_at ASC';
+      if (orderBy) {
+        if (Array.isArray(orderBy)) {
+          const parts = orderBy.map(o => {
+            const key = Object.keys(o)[0];
+            const col = key === 'sortOrder' ? 'sort_order' : key === 'createdAt' ? 'created_at' : key;
+            return `${col} ${o[key].toUpperCase()}`;
+          });
+          orderClause = `ORDER BY ${parts.join(', ')}`;
+        } else {
+          const key = Object.keys(orderBy)[0];
+          const col = key === 'sortOrder' ? 'sort_order' : key === 'createdAt' ? 'created_at' : key === 'price' ? 'price' : key;
+          orderClause = `ORDER BY ${col} ${orderBy[key].toUpperCase()}`;
+        }
+      }
+
+      let limitClause = '';
+      if (take !== undefined) {
+        limitClause = `LIMIT ${Number(take)} OFFSET ${Number(skip || 0)}`;
+      }
+
+      const rows = db.prepare(`${sql} ${orderClause} ${limitClause}`).all(...params) as any[];
+      return rows.map(r => prisma.productVariant.findUnique({ where: { id: r.id }, include }));
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as cnt FROM product_variants WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.sku) { sql += ' AND UPPER(sku) LIKE ?'; params.push(`%${where.sku.toUpperCase()}%`); }
+      const res: any = db.prepare(sql).get(...params);
+      return res?.cnt || 0;
+    },
+
+    create: ({ data, include }: any) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO product_variants (
+          id, product_id, sku, price, compare_at_price, cost_price, stock_quantity,
+          low_stock_threshold, track_inventory, allow_backorder, status, image, sort_order,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.productId,
+        data.sku.trim().toUpperCase(),
+        data.price !== undefined && data.price !== null ? Number(data.price) : null,
+        data.compareAtPrice !== undefined && data.compareAtPrice !== null ? Number(data.compareAtPrice) : null,
+        data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
+        data.stockQuantity ?? 0,
+        data.lowStockThreshold ?? 5,
+        data.trackInventory !== undefined ? (data.trackInventory ? 1 : 0) : 1,
+        data.allowBackorder !== undefined ? (data.allowBackorder ? 1 : 0) : 0,
+        data.status || 'ACTIVE',
+        data.image || null,
+        data.sortOrder ?? 0,
+        now,
+        now
+      );
+
+      return prisma.productVariant.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: any) => {
+      const now = new Date().toISOString();
+      const sets: string[] = ['updated_at = ?'];
+      const params: any[] = [now];
+
+      if (data.sku !== undefined) { sets.push('sku = ?'); params.push(data.sku.trim().toUpperCase()); }
+      if (data.price !== undefined) { sets.push('price = ?'); params.push(data.price !== null ? Number(data.price) : null); }
+      if (data.compareAtPrice !== undefined) { sets.push('compare_at_price = ?'); params.push(data.compareAtPrice !== null ? Number(data.compareAtPrice) : null); }
+      if (data.costPrice !== undefined) { sets.push('cost_price = ?'); params.push(data.costPrice !== null ? Number(data.costPrice) : null); }
+      if (data.stockQuantity !== undefined) { sets.push('stock_quantity = ?'); params.push(data.stockQuantity); }
+      if (data.lowStockThreshold !== undefined) { sets.push('low_stock_threshold = ?'); params.push(data.lowStockThreshold); }
+      if (data.trackInventory !== undefined) { sets.push('track_inventory = ?'); params.push(data.trackInventory ? 1 : 0); }
+      if (data.allowBackorder !== undefined) { sets.push('allow_backorder = ?'); params.push(data.allowBackorder ? 1 : 0); }
+      if (data.status !== undefined) { sets.push('status = ?'); params.push(data.status); }
+      if (data.image !== undefined) { sets.push('image = ?'); params.push(data.image || null); }
+      if (data.sortOrder !== undefined) { sets.push('sort_order = ?'); params.push(data.sortOrder); }
+
+      params.push(where.id);
+      db.prepare(`UPDATE product_variants SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.productVariant.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.productVariant.findUnique({ where, include: { optionValues: true } });
+      if (existing) {
+        db.prepare('DELETE FROM product_variant_option_values WHERE variant_id = ?').run(where.id);
+        db.prepare('DELETE FROM product_variants WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_variants WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productVariantOptionValue: {
+    findMany: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_variant_option_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+      if (where?.optionValueId) { sql += ' AND option_value_id = ?'; params.push(where.optionValueId); }
+
+      const rows = db.prepare(sql).all(...params) as any[];
+      return rows.map(r => ({
+        variantId: r.variant_id,
+        optionValueId: r.option_value_id,
+        optionValue: include?.optionValue ? prisma.productOptionValue.findUnique({ where: { id: r.option_value_id }, include: include.optionValue.include }) : undefined
+      }));
+    },
+
+    create: ({ data }: any) => {
+      db.prepare('INSERT OR REPLACE INTO product_variant_option_values (variant_id, option_value_id) VALUES (?, ?)').run(
+        data.variantId,
+        data.optionValueId
+      );
+      return { variantId: data.variantId, optionValueId: data.optionValueId };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_variant_option_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+      if (where?.optionValueId) { sql += ' AND option_value_id = ?'; params.push(where.optionValueId); }
       db.prepare(sql).run(...params);
     }
   }

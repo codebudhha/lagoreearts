@@ -42,6 +42,10 @@ export const PERMISSIONS_DATA = [
   { name: 'Create Variant', slug: 'variant.create', module: 'VARIANTS', description: 'Create framing and size variants' },
   { name: 'Update Variant', slug: 'variant.update', module: 'VARIANTS', description: 'Modify framing and size variants' },
   { name: 'Delete Variant', slug: 'variant.delete', module: 'VARIANTS', description: 'Delete framing and size variants' },
+  { name: 'View Options', slug: 'product-option.view', module: 'VARIANTS', description: 'View product options and values' },
+  { name: 'Create Option', slug: 'product-option.create', module: 'VARIANTS', description: 'Create product options and values' },
+  { name: 'Update Option', slug: 'product-option.update', module: 'VARIANTS', description: 'Modify product options and values' },
+  { name: 'Delete Option', slug: 'product-option.delete', module: 'VARIANTS', description: 'Delete product options and values' },
 
   // MEDIA
   { name: 'View Media Assets', slug: 'media.view', module: 'MEDIA', description: 'View artwork images and digital media' },
@@ -101,6 +105,7 @@ export const ROLES_DATA = [
       'collection.view', 'collection.create', 'collection.update', 'collection.delete',
       'product.view', 'product.create', 'product.update', 'product.delete',
       'variant.view', 'variant.create', 'variant.update', 'variant.delete',
+      'product-option.view', 'product-option.create', 'product-option.update', 'product-option.delete',
       'media.view', 'media.create', 'media.update', 'media.delete',
       'seo.view', 'seo.update'
     ]
@@ -116,6 +121,8 @@ export const ROLES_DATA = [
       'attribute-value.view',
       'collection.view', 'collection.create', 'collection.update',
       'product.view', 'product.create', 'product.update',
+      'variant.view', 'variant.create', 'variant.update',
+      'product-option.view', 'product-option.create', 'product-option.update',
       'media.view', 'media.create', 'media.update', 'media.delete',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
@@ -138,7 +145,8 @@ export const ROLES_DATA = [
     isSystem: true,
     permissionSlugs: [
       'marketing.view', 'marketing.create', 'marketing.update', 'marketing.delete',
-      'product.view', 'collection.view', 'customer.view'
+      'product.view', 'collection.view', 'customer.view',
+      'variant.view', 'product-option.view'
     ]
   }
 ];
@@ -697,7 +705,7 @@ export async function runSeed(): Promise<void> {
       compareAtPrice: 3800,
       costPrice: 1400,
       status: 'ACTIVE',
-      productType: 'SIMPLE',
+      productType: 'VARIABLE',
       stockQuantity: 50,
       lowStockThreshold: 10,
       trackInventory: true,
@@ -711,6 +719,82 @@ export async function runSeed(): Promise<void> {
       attributes: [
         { attrSlug: 'material', valSlug: 'canvas' },
         { attrSlug: 'style', valSlug: 'modern' }
+      ],
+      options: [
+        {
+          name: 'Size',
+          slug: 'size',
+          sortOrder: 1,
+          values: [
+            { value: 'A4', slug: 'a4', sortOrder: 1 },
+            { value: 'A3', slug: 'a3', sortOrder: 2 },
+            { value: 'A2', slug: 'a2', sortOrder: 3 }
+          ]
+        },
+        {
+          name: 'Frame',
+          slug: 'frame',
+          sortOrder: 2,
+          values: [
+            { value: 'Walnut Frame', slug: 'walnut-frame', sortOrder: 1 },
+            { value: 'Black Oak Frame', slug: 'black-oak-frame', sortOrder: 2 },
+            { value: 'Unframed Canvas', slug: 'unframed-canvas', sortOrder: 3 }
+          ]
+        }
+      ],
+      variants: [
+        {
+          sku: 'LA-SAN-0001-A4-WAL',
+          price: 3200,
+          compareAtPrice: 3800,
+          costPrice: 1400,
+          stockQuantity: 20,
+          lowStockThreshold: 5,
+          trackInventory: true,
+          allowBackorder: true,
+          status: 'ACTIVE',
+          sortOrder: 1,
+          optionValues: { size: 'a4', frame: 'walnut-frame' }
+        },
+        {
+          sku: 'LA-SAN-0001-A4-BLK',
+          price: 3200,
+          compareAtPrice: 3800,
+          costPrice: 1400,
+          stockQuantity: 15,
+          lowStockThreshold: 5,
+          trackInventory: true,
+          allowBackorder: true,
+          status: 'ACTIVE',
+          sortOrder: 2,
+          optionValues: { size: 'a4', frame: 'black-oak-frame' }
+        },
+        {
+          sku: 'LA-SAN-0001-A3-WAL',
+          price: 4500,
+          compareAtPrice: 5200,
+          costPrice: 2000,
+          stockQuantity: 10,
+          lowStockThreshold: 3,
+          trackInventory: true,
+          allowBackorder: true,
+          status: 'ACTIVE',
+          sortOrder: 3,
+          optionValues: { size: 'a3', frame: 'walnut-frame' }
+        },
+        {
+          sku: 'LA-SAN-0001-A3-BLK',
+          price: 4500,
+          compareAtPrice: 5200,
+          costPrice: 2000,
+          stockQuantity: 8,
+          lowStockThreshold: 2,
+          trackInventory: true,
+          allowBackorder: true,
+          status: 'ACTIVE',
+          sortOrder: 4,
+          optionValues: { size: 'a3', frame: 'black-oak-frame' }
+        }
       ]
     },
     {
@@ -732,11 +816,11 @@ export async function runSeed(): Promise<void> {
       isNewArrival: false,
       isBestseller: false,
       sortOrder: 5,
-      categorySlug: 'wood-carvings',
-      collectionSlugs: ['antique-treasures'],
+      categorySlug: 'wooden-handicraft',
+      collectionSlugs: ['antique-treasures', 'indian-heritage'],
       attributes: [
-        { attrSlug: 'material', valSlug: 'teak-wood' },
-        { attrSlug: 'style', valSlug: 'vintage' }
+        { attrSlug: 'material', valSlug: 'wood' },
+        { attrSlug: 'style', valSlug: 'traditional' }
       ]
     }
   ];
@@ -744,9 +828,13 @@ export async function runSeed(): Promise<void> {
   for (const prodDef of INITIAL_PRODUCTS) {
     const existing = prisma.product.findUnique({ where: { slug: prodDef.slug } });
     if (!existing) {
-      const cat = prisma.category.findUnique({ where: { slug: prodDef.categorySlug } });
+      let categoryId: string | null = null;
+      if (prodDef.categorySlug) {
+        const cat = prisma.category.findUnique({ where: { slug: prodDef.categorySlug } });
+        if (cat) categoryId = cat.id;
+      }
       const fallbackCat = prisma.category.findUnique({ where: { slug: 'art' } });
-      const categoryId = cat?.id || fallbackCat?.id;
+      categoryId = categoryId || fallbackCat?.id || null;
 
       if (categoryId) {
         const prod = prisma.product.create({
@@ -802,10 +890,69 @@ export async function runSeed(): Promise<void> {
             });
           }
         }
+
+        // Link Options & Variants for VARIABLE products
+        if ((prodDef as any).options) {
+          for (const optDef of (prodDef as any).options) {
+            const opt = prisma.productOption.create({
+              data: {
+                productId: prod.id,
+                name: optDef.name,
+                slug: optDef.slug,
+                sortOrder: optDef.sortOrder
+              }
+            });
+            for (const valDef of optDef.values) {
+              prisma.productOptionValue.create({
+                data: {
+                  productOptionId: opt.id,
+                  value: valDef.value,
+                  slug: valDef.slug,
+                  sortOrder: valDef.sortOrder
+                }
+              });
+            }
+          }
+
+          if ((prodDef as any).variants) {
+            for (const varDef of (prodDef as any).variants) {
+              const variant = prisma.productVariant.create({
+                data: {
+                  productId: prod.id,
+                  sku: varDef.sku,
+                  price: varDef.price,
+                  compareAtPrice: varDef.compareAtPrice,
+                  costPrice: varDef.costPrice,
+                  stockQuantity: varDef.stockQuantity,
+                  lowStockThreshold: varDef.lowStockThreshold,
+                  trackInventory: varDef.trackInventory,
+                  allowBackorder: varDef.allowBackorder,
+                  status: varDef.status || 'ACTIVE',
+                  sortOrder: varDef.sortOrder
+                }
+              });
+
+              for (const [optSlug, valSlug] of Object.entries(varDef.optionValues)) {
+                const opt = prisma.productOption.findUnique({ where: { productId_slug: { productId: prod.id, slug: optSlug } } });
+                if (opt) {
+                  const val = prisma.productOptionValue.findUnique({ where: { productOptionId_slug: { productOptionId: opt.id, slug: valSlug as string } } });
+                  if (val) {
+                    prisma.productVariantOptionValue.create({
+                      data: {
+                        variantId: variant.id,
+                        optionValueId: val.id
+                      }
+                    });
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
-  console.log(`✓ Seeded ${INITIAL_PRODUCTS.length} curated masterwork products`);
+  console.log(`✓ Seeded ${INITIAL_PRODUCTS.length} curated masterwork products (including VARIABLE products)`);
   console.log('✨ Seeding Completed Successfully!\n');
 }
 
