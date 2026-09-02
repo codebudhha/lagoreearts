@@ -258,7 +258,7 @@
         .nav {
             position: sticky;
             top: 0;
-            z-index: 1000;
+            z-index: 100;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -849,7 +849,7 @@
             width: 80%;
             max-width: 320px;
             background: var(--white);
-            z-index: 300;
+            z-index: 1150;
             transform: translateX(100%);
             transition: transform .35s ease;
             padding: 80px 24px 30px;
@@ -870,7 +870,7 @@
             position: fixed;
             inset: 0;
             background: rgba(10, 20, 14, 0.45);
-            z-index: 290;
+            z-index: 1100;
             opacity: 0;
             pointer-events: none;
             transition: opacity .3s ease;
@@ -885,7 +885,7 @@
             bottom: 0;
             width: min(400px, 92vw);
             background: var(--white);
-            z-index: 320;
+            z-index: 1200;
             transform: translateX(100%);
             transition: transform .35s ease;
             display: flex;
@@ -969,7 +969,7 @@
         .search-overlay {
             position: fixed;
             inset: 0;
-            z-index: 310;
+            z-index: 1180;
             background: var(--white);
             display: flex;
             flex-direction: column;
@@ -1022,7 +1022,7 @@
         .modal-wrap {
             position: fixed;
             inset: 0;
-            z-index: 330;
+            z-index: 1300;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -1220,7 +1220,7 @@
   pointer-events: none;
   transform: translateY(10px);
   transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94), visibility 0.25s;
-  z-index: 1000;
+  z-index: 105;
   text-align: left;
 }
 .megamenu::before {
