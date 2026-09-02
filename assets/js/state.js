@@ -57,7 +57,7 @@ function initStickyNavbar() {
       body {
         overflow-x: clip !important;
       }
-      .nav, header.header, header.site-header, header, .site-header, nav.nav {
+      .nav, nav.nav, .site-nav, header.nav {
         position: sticky !important;
         top: 0 !important;
         z-index: 1000 !important;
@@ -67,24 +67,28 @@ function initStickyNavbar() {
         border-bottom: 1px solid rgba(222, 213, 200, 0.7) !important;
         transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, height 0.3s ease !important;
       }
-      .nav.is-scrolled, header.is-scrolled, .site-header.is-scrolled, header.header.is-scrolled {
+      .nav.is-scrolled, nav.nav.is-scrolled, .site-nav.is-scrolled, .nav.solid {
         background: rgba(247, 245, 240, 0.98) !important;
         box-shadow: 0 4px 24px rgba(18, 53, 36, 0.09) !important;
         border-bottom-color: rgba(198, 161, 91, 0.35) !important;
+      }
+      /* Ensure Hero sections scroll normally and never lock at top */
+      .hero, header.hero, .cat-header, header.cat-header, .antiques-hero-section, header.antiques-hero-section {
+        position: relative !important;
+        top: auto !important;
+        z-index: 1 !important;
       }
     `;
     document.head.appendChild(styleEl);
   }
 
   // Scroll listener for elevation shadow
-  const headers = document.querySelectorAll('.nav, header, .site-header, .header, nav');
+  const navbars = document.querySelectorAll('.nav, nav.nav, .site-nav, header.nav');
   function handleScroll() {
     const isScrolled = window.scrollY > 15;
-    headers.forEach(h => {
-      h.classList.toggle('is-scrolled', isScrolled);
-      if (h.classList.contains('nav')) {
-        h.classList.toggle('solid', isScrolled);
-      }
+    navbars.forEach(n => {
+      n.classList.toggle('is-scrolled', isScrolled);
+      n.classList.toggle('solid', isScrolled);
     });
   }
 
