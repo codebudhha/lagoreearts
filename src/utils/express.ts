@@ -1,5 +1,7 @@
 import http from 'node:http';
 import url from 'node:url';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export interface Request extends http.IncomingMessage {
   body?: any;
@@ -16,6 +18,7 @@ export interface Response extends http.ServerResponse {
   json(data: any): Response;
   cookie(name: string, value: string, options?: any): Response;
   clearCookie(name: string, options?: any): Response;
+  sendFile(filePath: string): Response;
 }
 
 export type NextFunction = (err?: any) => void;
@@ -124,6 +127,33 @@ export class ExpressApp extends RouterInstance {
 
       res.clearCookie = function (name: string, options: any = {}) {
         return res.cookie(name, '', { ...options, maxAge: 0 });
+      };
+
+      res.sendFile = function (filePath: string) {
+        if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes: Record<string, string> = {
+            '.html': 'text/html; charset=utf-8',
+            '.css': 'text/css; charset=utf-8',
+            '.js': 'application/javascript; charset=utf-8',
+            '.json': 'application/json; charset=utf-8',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.webp': 'image/webp',
+            '.svg': 'image/svg+xml',
+            '.ico': 'image/x-icon',
+            '.woff': 'font/woff',
+            '.woff2': 'font/woff2',
+            '.ttf': 'font/ttf'
+          };
+          res.setHeader('Content-Type', mimeTypes[ext] || 'text/html; charset=utf-8');
+          fs.createReadStream(filePath).pipe(res);
+        } else {
+          res.statusCode = 404;
+          res.end('File not found');
+        }
+        return res;
       };
 
       // Augment Request
@@ -274,5 +304,18 @@ export function express(): ExpressApp {
 express.Router = () => new Router();
 express.json = () => (req: Request, res: Response, next: NextFunction) => next();
 express.urlencoded = () => (req: Request, res: Response, next: NextFunction) => next();
+express.static = (rootPath: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    const pathname = decodeURIComponent(url.parse(req.url || '').pathname || '');
+    if (!pathname || pathname === '/') return next();
+    const safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
+    const filePath = path.join(rootPath, safePath);
+    if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+      return res.sendFile(filePath);
+    }
+    next();
+  };
+};
 
 export default express;

@@ -11,11 +11,17 @@ import { adminCollectionsRoutes, publicCollectionsRoutes } from './modules/colle
 import { adminProductsRoutes, publicProductsRoutes } from './modules/products/products.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
+import path from 'node:path';
+
 export function createApp() {
   const app = express();
+  const rootDir = process.cwd();
 
   // 1. Security & Standard Middlewares
   app.set('trust proxy', 1);
+
+  // Serve static files (HTML, CSS, JS, images)
+  app.use(express.static(rootDir));
 
   // Parse JSON bodies
   app.use(express.json({ limit: '1mb' }));
@@ -69,10 +75,24 @@ export function createApp() {
 
   // 2. Health & Root Diagnostic Check
   app.get('/', (req, res) => {
+    // If browser requesting HTML, serve homepage
+    const accept = req.headers.accept || '';
+    if (accept.includes('text/html')) {
+      return res.sendFile(path.join(rootDir, 'Lagoree Homepage.html'));
+    }
     return ApiResponse.success(res, {
       brand: 'Lagoree Arts Luxury E-Commerce Backend',
       version: '1.0.0',
       status: 'healthy',
+      storefrontPages: {
+        homepage: '/storefront',
+        category: '/category',
+        product: '/product',
+        cart: '/cart',
+        lookbook: '/lookbook',
+        login: '/login',
+        about: '/about'
+      },
       endpoints: {
         health: '/api/v1/admin/health',
         adminAuth: '/api/v1/admin/auth/login',
@@ -84,6 +104,16 @@ export function createApp() {
       timestamp: new Date().toISOString()
     }, 200, 'Welcome to Lagoree Arts API');
   });
+
+  // Storefront Visual HTML Page Routes
+  app.get('/storefront', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree Homepage.html')));
+  app.get('/home', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree Homepage.html')));
+  app.get('/category', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree Category.html')));
+  app.get('/product', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree_Product Claude.html')));
+  app.get('/cart', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree_Cart claude.html')));
+  app.get('/lookbook', (req, res) => res.sendFile(path.join(rootDir, 'Lookbook - Lagoree Arts.html')));
+  app.get('/login', (req, res) => res.sendFile(path.join(rootDir, 'Login-Register - Lagoree Arts.html')));
+  app.get('/about', (req, res) => res.sendFile(path.join(rootDir, 'About - Lagoree Arts.html')));
 
   app.get('/api/v1/admin/health', (req, res) => {
     return ApiResponse.success(res, {
