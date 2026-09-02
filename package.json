@@ -8,7 +8,13 @@
     "start": "node server/server.js",
     "dev": "node --watch server/server.js",
     "seed": "node server/db/seed.js",
-    "test": "node server/tests/apiTest.js"
+    "test": "node server/tests/apiTest.js",
+    "admin:start": "node --experimental-strip-types src/server.ts",
+    "admin:seed": "node --experimental-strip-types src/prisma/seed.ts",
+    "admin:test": "node --experimental-strip-types src/tests/admin-auth.test.ts",
+    "categories:test": "node --experimental-strip-types src/tests/categories.test.ts",
+    "attributes:test": "node --experimental-strip-types src/tests/attributes.test.ts",
+    "test:all": "node --experimental-strip-types src/tests/admin-auth.test.ts && node --experimental-strip-types src/tests/categories.test.ts && node --experimental-strip-types src/tests/attributes.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

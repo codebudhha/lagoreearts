@@ -1,0 +1,258 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum AttributeType {
+  TEXT
+  SELECT
+  MULTI_SELECT
+  BOOLEAN
+  NUMBER
+  RANGE
+}
+
+enum AttributeStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model AdminUser {
+  id                String       @id @default(uuid()) @db.VarChar(36)
+  name              String       @db.VarChar(191)
+  email             String       @unique @db.VarChar(191)
+  passwordHash      String       @map("password_hash") @db.VarChar(255)
+  status            AdminStatus  @default(ACTIVE)
+  roleId            String       @map("role_id") @db.VarChar(36)
+  lastLoginAt       DateTime?    @map("last_login_at")
+  passwordChangedAt DateTime?    @map("password_changed_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+
+  role              Role         @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  sessions          AdminSession[]
+  passwordResets    AdminPasswordReset[]
+  auditLogs         AdminAuditLog[]
+
+  @@index([email])
+  @@index([status])
+  @@index([roleId])
+  @@map("admin_users")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  name        String           @db.VarChar(100)
+  slug        String           @unique @db.VarChar(100)
+  description String?          @db.Text
+  isSystem    Boolean          @default(false) @map("is_system")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  adminUsers  AdminUser[]
+  permissions RolePermission[]
+
+  @@index([slug])
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  name        String           @db.VarChar(150)
+  slug        String           @unique @db.VarChar(100)
+  description String?          @db.Text
+  module      String           @db.VarChar(50)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  roles       RolePermission[]
+
+  @@index([slug])
+  @@index([module])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.VarChar(36)
+  permissionId String     @map("permission_id") @db.VarChar(36)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+model AdminSession {
+  id               String     @id @default(uuid()) @db.VarChar(36)
+  adminUserId      String     @map("admin_user_id") @db.VarChar(36)
+  refreshTokenHash String     @map("refresh_token_hash") @db.VarChar(255)
+  userAgent        String?    @map("user_agent") @db.Text
+  ipAddress        String?    @map("ip_address") @db.VarChar(45)
+  expiresAt        DateTime   @map("expires_at")
+  revokedAt        DateTime?  @map("revoked_at")
+  createdAt        DateTime   @default(now()) @map("created_at")
+  lastUsedAt       DateTime   @default(now()) @map("last_used_at")
+
+  adminUser        AdminUser  @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([refreshTokenHash])
+  @@index([expiresAt])
+  @@map("admin_sessions")
+}
+
+model AdminPasswordReset {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  adminUserId String    @map("admin_user_id") @db.VarChar(36)
+  tokenHash   String    @map("token_hash") @db.VarChar(255)
+  expiresAt   DateTime  @map("expires_at")
+  usedAt      DateTime? @map("used_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([tokenHash])
+  @@map("admin_password_resets")
+}
+
+model AdminAuditLog {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  adminUserId String?   @map("admin_user_id") @db.VarChar(36)
+  action      String    @db.VarChar(100)
+  module      String    @db.VarChar(50)
+  entityType  String?   @map("entity_type") @db.VarChar(50)
+  entityId    String?   @map("entity_id") @db.VarChar(36)
+  oldValues   Json?     @map("old_values")
+  newValues   Json?     @map("new_values")
+  ipAddress   String?   @map("ip_address") @db.VarChar(45)
+  userAgent   String?   @map("user_agent") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  adminUser   AdminUser? @relation(fields: [adminUserId], references: [id], onDelete: SetNull)
+
+  @@index([adminUserId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+
+model Category {
+  id                 String              @id @default(uuid()) @db.VarChar(36)
+  name               String              @db.VarChar(100)
+  slug               String              @unique @db.VarChar(120)
+  parentId           String?             @map("parent_id") @db.VarChar(36)
+  shortDescription   String?             @map("short_description") @db.VarChar(255)
+  description        String?             @db.Text
+  image              String?             @db.VarChar(255)
+  imageAlt           String?             @map("image_alt") @db.VarChar(150)
+  bannerImage        String?             @map("banner_image") @db.VarChar(255)
+  bannerImageAlt     String?             @map("banner_image_alt") @db.VarChar(150)
+  status             CategoryStatus      @default(ACTIVE)
+  isFeatured         Boolean             @default(false) @map("is_featured")
+  sortOrder          Int                 @default(0) @map("sort_order")
+  metaTitle          String?             @map("meta_title") @db.VarChar(150)
+  metaDescription    String?             @map("meta_description") @db.Text
+  canonicalUrl       String?             @map("canonical_url") @db.VarChar(255)
+  ogTitle            String?             @map("og_title") @db.VarChar(150)
+  ogDescription      String?             @map("og_description") @db.Text
+  ogImage            String?             @map("og_image") @db.VarChar(255)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  parent             Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children           Category[]          @relation("CategoryHierarchy")
+  categoryAttributes CategoryAttribute[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([parentId])
+  @@index([isFeatured])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("categories")
+}
+
+model Attribute {
+  id                 String              @id @default(uuid()) @db.VarChar(36)
+  name               String              @db.VarChar(100)
+  slug               String              @unique @db.VarChar(100)
+  type               AttributeType       @default(MULTI_SELECT)
+  description        String?             @db.Text
+  status             AttributeStatus     @default(ACTIVE)
+  isFilterable       Boolean             @default(true) @map("is_filterable")
+  isRequired         Boolean             @default(false) @map("is_required")
+  isSystem           Boolean             @default(false) @map("is_system")
+  sortOrder          Int                 @default(0) @map("sort_order")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  values             AttributeValue[]
+  categoryAttributes CategoryAttribute[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([isFilterable])
+  @@index([sortOrder])
+  @@map("attributes")
+}
+
+model AttributeValue {
+  id          String          @id @default(uuid()) @db.VarChar(36)
+  attributeId String          @map("attribute_id") @db.VarChar(36)
+  name        String          @db.VarChar(100)
+  slug        String          @db.VarChar(100)
+  description String?         @db.Text
+  sortOrder   Int             @default(0) @map("sort_order")
+  status      AttributeStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+
+  attribute   Attribute       @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([attributeId, slug])
+  @@index([attributeId])
+  @@index([slug])
+  @@index([status])
+  @@index([sortOrder])
+  @@map("attribute_values")
+}
+
+model CategoryAttribute {
+  categoryId  String    @map("category_id") @db.VarChar(36)
+  attributeId String    @map("attribute_id") @db.VarChar(36)
+  sortOrder   Int       @default(0) @map("sort_order")
+  isVisible   Boolean   @default(true) @map("is_visible")
+  isRequired  Boolean   @default(false) @map("is_required")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@id([categoryId, attributeId])
+  @@index([categoryId])
+  @@index([attributeId])
+  @@index([sortOrder])
+  @@map("category_attributes")
+}
