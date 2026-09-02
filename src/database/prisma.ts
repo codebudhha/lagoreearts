@@ -227,6 +227,85 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_collections_is_featured ON collections(is_featured);
   CREATE INDEX IF NOT EXISTS idx_collections_sort_order ON collections(sort_order);
   CREATE INDEX IF NOT EXISTS idx_collections_created_at ON collections(created_at);
+
+  CREATE TABLE IF NOT EXISTS products (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    sku TEXT UNIQUE NOT NULL,
+    short_description TEXT,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'DRAFT',
+    product_type TEXT NOT NULL DEFAULT 'SIMPLE',
+    price REAL NOT NULL,
+    compare_at_price REAL,
+    cost_price REAL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    stock_quantity INTEGER NOT NULL DEFAULT 0,
+    low_stock_threshold INTEGER NOT NULL DEFAULT 5,
+    track_inventory INTEGER NOT NULL DEFAULT 1,
+    allow_backorder INTEGER NOT NULL DEFAULT 0,
+    is_featured INTEGER NOT NULL DEFAULT 0,
+    is_new_arrival INTEGER NOT NULL DEFAULT 0,
+    is_bestseller INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    category_id TEXT NOT NULL,
+    image TEXT,
+    thumbnail TEXT,
+    banner_image TEXT,
+    meta_title TEXT,
+    meta_description TEXT,
+    canonical_url TEXT,
+    og_title TEXT,
+    og_description TEXT,
+    og_image TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
+  );
+
+  CREATE TABLE IF NOT EXISTS product_collections (
+    product_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (product_id, collection_id),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+  );
+
+  CREATE TABLE IF NOT EXISTS product_attribute_values (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    attribute_id TEXT NOT NULL,
+    attribute_value_id TEXT,
+    text_value TEXT,
+    number_value REAL,
+    boolean_value INTEGER,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (attribute_id) REFERENCES attributes(id) ON DELETE CASCADE,
+    FOREIGN KEY (attribute_value_id) REFERENCES attribute_values(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug);
+  CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
+  CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+  CREATE INDEX IF NOT EXISTS idx_products_product_type ON products(product_type);
+  CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+  CREATE INDEX IF NOT EXISTS idx_products_is_featured ON products(is_featured);
+  CREATE INDEX IF NOT EXISTS idx_products_is_new_arrival ON products(is_new_arrival);
+  CREATE INDEX IF NOT EXISTS idx_products_is_bestseller ON products(is_bestseller);
+  CREATE INDEX IF NOT EXISTS idx_products_sort_order ON products(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_products_price ON products(price);
+  CREATE INDEX IF NOT EXISTS idx_products_created_at ON products(created_at);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_coll_prod_id ON product_collections(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_coll_coll_id ON product_collections(collection_id);
+
+  CREATE INDEX IF NOT EXISTS idx_prod_attr_val_prod_id ON product_attribute_values(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_attr_val_attr_id ON product_attribute_values(attribute_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_attr_val_val_id ON product_attribute_values(attribute_value_id);
 `);
 
 /**
@@ -1503,6 +1582,424 @@ export const prisma = {
       const coll = prisma.collection.findUnique({ where });
       db.prepare('DELETE FROM collections WHERE id = ?').run(where.id);
       return coll;
+    }
+  },
+
+  product: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string; sku?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM products WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM products WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      } else if (where.sku) {
+        row = db.prepare('SELECT * FROM products WHERE LOWER(sku) = LOWER(?)').get(where.sku);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        sku: row.sku,
+        shortDescription: row.short_description || null,
+        description: row.description || null,
+        status: row.status,
+        productType: row.product_type,
+        price: Number(row.price),
+        compareAtPrice: row.compare_at_price !== null ? Number(row.compare_at_price) : null,
+        costPrice: row.cost_price !== null ? Number(row.cost_price) : null,
+        currency: row.currency || 'INR',
+        stockQuantity: Number(row.stock_quantity || 0),
+        lowStockThreshold: Number(row.low_stock_threshold || 5),
+        trackInventory: Boolean(row.track_inventory),
+        allowBackorder: Boolean(row.allow_backorder),
+        isFeatured: Boolean(row.is_featured),
+        isNewArrival: Boolean(row.is_new_arrival),
+        isBestseller: Boolean(row.is_bestseller),
+        sortOrder: Number(row.sort_order || 0),
+        categoryId: row.category_id,
+        image: row.image || null,
+        thumbnail: row.thumbnail || null,
+        bannerImage: row.banner_image || null,
+        metaTitle: row.meta_title || null,
+        metaDescription: row.meta_description || null,
+        canonicalUrl: row.canonical_url || null,
+        ogTitle: row.og_title || null,
+        ogDescription: row.og_description || null,
+        ogImage: row.og_image || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.category) {
+        formatted.category = prisma.category.findUnique({ where: { id: row.category_id } });
+      }
+
+      if (include?.collections) {
+        const pColls: any[] = db.prepare('SELECT collection_id FROM product_collections WHERE product_id = ?').all(row.id);
+        formatted.collections = pColls.map(pc => prisma.collection.findUnique({ where: { id: pc.collection_id } })).filter(Boolean);
+      }
+
+      if (include?.attributes) {
+        formatted.attributes = prisma.productAttributeValue.findMany({
+          where: { productId: row.id },
+          include: { attribute: true, attributeValue: true }
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM products WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.sku) { sql += ' AND LOWER(sku) = LOWER(?)'; params.push(where.sku); }
+      if (where?.name) { sql += ' AND LOWER(name) = LOWER(?)'; params.push(where.name); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.product.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT DISTINCT p.* FROM products p';
+      const params: any[] = [];
+      const joins: string[] = [];
+      const conditions: string[] = ['1=1'];
+
+      if (where?.collectionId) {
+        joins.push('INNER JOIN product_collections pc ON p.id = pc.product_id');
+        conditions.push('pc.collection_id = ?');
+        params.push(where.collectionId);
+      }
+
+      if (where?.attributeFilters && Object.keys(where.attributeFilters).length > 0) {
+        let attrIdx = 0;
+        for (const [attrSlug, valSlugOrText] of Object.entries(where.attributeFilters)) {
+          attrIdx++;
+          const aliasPav = `pav_${attrIdx}`;
+          const aliasA = `a_${attrIdx}`;
+          const aliasAv = `av_${attrIdx}`;
+          joins.push(`INNER JOIN product_attribute_values ${aliasPav} ON p.id = ${aliasPav}.product_id`);
+          joins.push(`INNER JOIN attributes ${aliasA} ON ${aliasPav}.attribute_id = ${aliasA}.id`);
+          joins.push(`LEFT JOIN attribute_values ${aliasAv} ON ${aliasPav}.attribute_value_id = ${aliasAv}.id`);
+          conditions.push(`LOWER(${aliasA}.slug) = LOWER(?) AND (LOWER(${aliasAv}.slug) = LOWER(?) OR LOWER(${aliasPav}.text_value) = LOWER(?))`);
+          params.push(attrSlug, String(valSlugOrText), String(valSlugOrText));
+        }
+      }
+
+      if (where?.status) { conditions.push('p.status = ?'); params.push(where.status); }
+      if (where?.productType) { conditions.push('p.product_type = ?'); params.push(where.productType); }
+      if (where?.categoryId) { conditions.push('p.category_id = ?'); params.push(where.categoryId); }
+      if (where?.isFeatured !== undefined) { conditions.push('p.is_featured = ?'); params.push(where.isFeatured ? 1 : 0); }
+      if (where?.isNewArrival !== undefined) { conditions.push('p.is_new_arrival = ?'); params.push(where.isNewArrival ? 1 : 0); }
+      if (where?.isBestseller !== undefined) { conditions.push('p.is_bestseller = ?'); params.push(where.isBestseller ? 1 : 0); }
+
+      if (where?.minPrice !== undefined) { conditions.push('p.price >= ?'); params.push(Number(where.minPrice)); }
+      if (where?.maxPrice !== undefined) { conditions.push('p.price <= ?'); params.push(Number(where.maxPrice)); }
+
+      if (where?.stockState === 'in_stock') {
+        conditions.push('(p.track_inventory = 0 OR p.stock_quantity > 0 OR p.allow_backorder = 1)');
+      } else if (where?.stockState === 'low_stock') {
+        conditions.push('(p.track_inventory = 1 AND p.stock_quantity > 0 AND p.stock_quantity <= p.low_stock_threshold)');
+      } else if (where?.stockState === 'out_of_stock') {
+        conditions.push('(p.track_inventory = 1 AND p.stock_quantity <= 0 AND p.allow_backorder = 0)');
+      }
+
+      if (where?.search) {
+        conditions.push('(p.name LIKE ? OR p.slug LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)');
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (joins.length > 0) {
+        sql += ` ${joins.join(' ')}`;
+      }
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+
+      if (orderBy) {
+        const field = orderBy.name ? 'p.name' : orderBy.price ? 'p.price' : orderBy.sortOrder ? 'p.sort_order' : orderBy.createdAt ? 'p.created_at' : orderBy.updatedAt ? 'p.updated_at' : 'p.sort_order';
+        const dir = (orderBy.name || orderBy.price || orderBy.sortOrder || orderBy.createdAt || orderBy.updatedAt || 'asc').toUpperCase();
+        sql += ` ORDER BY ${field} ${dir}`;
+      } else {
+        sql += ' ORDER BY p.sort_order ASC, p.name ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.product.findUnique({ where: { id: r.id }, include }));
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(DISTINCT p.id) as total FROM products p';
+      const params: any[] = [];
+      const joins: string[] = [];
+      const conditions: string[] = ['1=1'];
+
+      if (where?.collectionId) {
+        joins.push('INNER JOIN product_collections pc ON p.id = pc.product_id');
+        conditions.push('pc.collection_id = ?');
+        params.push(where.collectionId);
+      }
+
+      if (where?.attributeFilters && Object.keys(where.attributeFilters).length > 0) {
+        let attrIdx = 0;
+        for (const [attrSlug, valSlugOrText] of Object.entries(where.attributeFilters)) {
+          attrIdx++;
+          const aliasPav = `pav_${attrIdx}`;
+          const aliasA = `a_${attrIdx}`;
+          const aliasAv = `av_${attrIdx}`;
+          joins.push(`INNER JOIN product_attribute_values ${aliasPav} ON p.id = ${aliasPav}.product_id`);
+          joins.push(`INNER JOIN attributes ${aliasA} ON ${aliasPav}.attribute_id = ${aliasA}.id`);
+          joins.push(`LEFT JOIN attribute_values ${aliasAv} ON ${aliasPav}.attribute_value_id = ${aliasAv}.id`);
+          conditions.push(`LOWER(${aliasA}.slug) = LOWER(?) AND (LOWER(${aliasAv}.slug) = LOWER(?) OR LOWER(${aliasPav}.text_value) = LOWER(?))`);
+          params.push(attrSlug, String(valSlugOrText), String(valSlugOrText));
+        }
+      }
+
+      if (where?.status) { conditions.push('p.status = ?'); params.push(where.status); }
+      if (where?.productType) { conditions.push('p.product_type = ?'); params.push(where.productType); }
+      if (where?.categoryId) { conditions.push('p.category_id = ?'); params.push(where.categoryId); }
+      if (where?.isFeatured !== undefined) { conditions.push('p.is_featured = ?'); params.push(where.isFeatured ? 1 : 0); }
+      if (where?.isNewArrival !== undefined) { conditions.push('p.is_new_arrival = ?'); params.push(where.isNewArrival ? 1 : 0); }
+      if (where?.isBestseller !== undefined) { conditions.push('p.is_bestseller = ?'); params.push(where.isBestseller ? 1 : 0); }
+      if (where?.minPrice !== undefined) { conditions.push('p.price >= ?'); params.push(Number(where.minPrice)); }
+      if (where?.maxPrice !== undefined) { conditions.push('p.price <= ?'); params.push(Number(where.maxPrice)); }
+
+      if (where?.stockState === 'in_stock') {
+        conditions.push('(p.track_inventory = 0 OR p.stock_quantity > 0 OR p.allow_backorder = 1)');
+      } else if (where?.stockState === 'low_stock') {
+        conditions.push('(p.track_inventory = 1 AND p.stock_quantity > 0 AND p.stock_quantity <= p.low_stock_threshold)');
+      } else if (where?.stockState === 'out_of_stock') {
+        conditions.push('(p.track_inventory = 1 AND p.stock_quantity <= 0 AND p.allow_backorder = 0)');
+      }
+
+      if (where?.search) {
+        conditions.push('(p.name LIKE ? OR p.slug LIKE ? OR p.sku LIKE ? OR p.description LIKE ?)');
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (joins.length > 0) {
+        sql += ` ${joins.join(' ')}`;
+      }
+      sql += ` WHERE ${conditions.join(' AND ')}`;
+
+      const res: any = db.prepare(sql).get(...params);
+      return res?.total || 0;
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO products (
+          id, name, slug, sku, short_description, description, status, product_type,
+          price, compare_at_price, cost_price, currency, stock_quantity, low_stock_threshold,
+          track_inventory, allow_backorder, is_featured, is_new_arrival, is_bestseller,
+          sort_order, category_id, image, thumbnail, banner_image,
+          meta_title, meta_description, canonical_url, og_title, og_description, og_image,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.sku.trim(),
+        data.shortDescription || null,
+        data.description || null,
+        data.status || 'DRAFT',
+        data.productType || 'SIMPLE',
+        Number(data.price),
+        data.compareAtPrice !== undefined && data.compareAtPrice !== null ? Number(data.compareAtPrice) : null,
+        data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
+        data.currency || 'INR',
+        data.stockQuantity !== undefined ? Number(data.stockQuantity) : 0,
+        data.lowStockThreshold !== undefined ? Number(data.lowStockThreshold) : 5,
+        data.trackInventory !== undefined ? (data.trackInventory ? 1 : 0) : 1,
+        data.allowBackorder ? 1 : 0,
+        data.isFeatured ? 1 : 0,
+        data.isNewArrival ? 1 : 0,
+        data.isBestseller ? 1 : 0,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.categoryId,
+        data.image || null,
+        data.thumbnail || null,
+        data.bannerImage || null,
+        data.metaTitle || null,
+        data.metaDescription || null,
+        data.canonicalUrl || null,
+        data.ogTitle || null,
+        data.ogDescription || null,
+        data.ogImage || null,
+        now,
+        now
+      );
+
+      return prisma.product.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.sku !== undefined) { updates.push('sku = ?'); params.push(data.sku.trim()); }
+      if (data.shortDescription !== undefined) { updates.push('short_description = ?'); params.push(data.shortDescription); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.productType !== undefined) { updates.push('product_type = ?'); params.push(data.productType); }
+      if (data.price !== undefined) { updates.push('price = ?'); params.push(Number(data.price)); }
+      if (data.compareAtPrice !== undefined) { updates.push('compare_at_price = ?'); params.push(data.compareAtPrice !== null ? Number(data.compareAtPrice) : null); }
+      if (data.costPrice !== undefined) { updates.push('cost_price = ?'); params.push(data.costPrice !== null ? Number(data.costPrice) : null); }
+      if (data.currency !== undefined) { updates.push('currency = ?'); params.push(data.currency); }
+      if (data.stockQuantity !== undefined) { updates.push('stock_quantity = ?'); params.push(Number(data.stockQuantity)); }
+      if (data.lowStockThreshold !== undefined) { updates.push('low_stock_threshold = ?'); params.push(Number(data.lowStockThreshold)); }
+      if (data.trackInventory !== undefined) { updates.push('track_inventory = ?'); params.push(data.trackInventory ? 1 : 0); }
+      if (data.allowBackorder !== undefined) { updates.push('allow_backorder = ?'); params.push(data.allowBackorder ? 1 : 0); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.isNewArrival !== undefined) { updates.push('is_new_arrival = ?'); params.push(data.isNewArrival ? 1 : 0); }
+      if (data.isBestseller !== undefined) { updates.push('is_bestseller = ?'); params.push(data.isBestseller ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.categoryId !== undefined) { updates.push('category_id = ?'); params.push(data.categoryId); }
+      if (data.image !== undefined) { updates.push('image = ?'); params.push(data.image); }
+      if (data.thumbnail !== undefined) { updates.push('thumbnail = ?'); params.push(data.thumbnail); }
+      if (data.bannerImage !== undefined) { updates.push('banner_image = ?'); params.push(data.bannerImage); }
+      if (data.metaTitle !== undefined) { updates.push('meta_title = ?'); params.push(data.metaTitle); }
+      if (data.metaDescription !== undefined) { updates.push('meta_description = ?'); params.push(data.metaDescription); }
+      if (data.canonicalUrl !== undefined) { updates.push('canonical_url = ?'); params.push(data.canonicalUrl); }
+      if (data.ogTitle !== undefined) { updates.push('og_title = ?'); params.push(data.ogTitle); }
+      if (data.ogDescription !== undefined) { updates.push('og_description = ?'); params.push(data.ogDescription); }
+      if (data.ogImage !== undefined) { updates.push('og_image = ?'); params.push(data.ogImage); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE products SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.product.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true } });
+      db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
+      return prod;
+    }
+  },
+
+  productCollection: {
+    findMany: ({ where }: any = {}) => {
+      let sql = 'SELECT * FROM product_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => ({
+        productId: r.product_id,
+        collectionId: r.collection_id,
+        createdAt: new Date(r.created_at)
+      }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR IGNORE INTO product_collections (product_id, collection_id, created_at)
+        VALUES (?, ?, ?)
+      `).run(data.productId, data.collectionId, now);
+      return { productId: data.productId, collectionId: data.collectionId, createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  productAttributeValue: {
+    findMany: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_attribute_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.attributeId) { sql += ' AND attribute_id = ?'; params.push(where.attributeId); }
+      if (where?.attributeValueId) { sql += ' AND attribute_value_id = ?'; params.push(where.attributeValueId); }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          id: r.id,
+          productId: r.product_id,
+          attributeId: r.attribute_id,
+          attributeValueId: r.attribute_value_id || null,
+          textValue: r.text_value || null,
+          numberValue: r.number_value !== null ? Number(r.number_value) : null,
+          booleanValue: r.boolean_value !== null ? Boolean(r.boolean_value) : null,
+          createdAt: new Date(r.created_at),
+          updatedAt: new Date(r.updated_at)
+        };
+
+        if (include?.attribute) {
+          item.attribute = prisma.attribute.findUnique({ where: { id: r.attribute_id } });
+        }
+        if (include?.attributeValue && r.attribute_value_id) {
+          item.attributeValue = prisma.attributeValue.findUnique({ where: { id: r.attribute_value_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO product_attribute_values (
+          id, product_id, attribute_id, attribute_value_id, text_value, number_value, boolean_value, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.productId,
+        data.attributeId,
+        data.attributeValueId || null,
+        data.textValue || null,
+        data.numberValue !== undefined && data.numberValue !== null ? Number(data.numberValue) : null,
+        data.booleanValue !== undefined && data.booleanValue !== null ? (data.booleanValue ? 1 : 0) : null,
+        now,
+        now
+      );
+
+      return {
+        id,
+        productId: data.productId,
+        attributeId: data.attributeId,
+        attributeValueId: data.attributeValueId || null,
+        textValue: data.textValue || null,
+        numberValue: data.numberValue !== undefined && data.numberValue !== null ? Number(data.numberValue) : null,
+        booleanValue: data.booleanValue !== undefined && data.booleanValue !== null ? Boolean(data.booleanValue) : null,
+        createdAt: new Date(now),
+        updatedAt: new Date(now)
+      };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_attribute_values WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.attributeId) { sql += ' AND attribute_id = ?'; params.push(where.attributeId); }
+      if (where?.attributeValueId) { sql += ' AND attribute_value_id = ?'; params.push(where.attributeValueId); }
+      db.prepare(sql).run(...params);
     }
   }
 };

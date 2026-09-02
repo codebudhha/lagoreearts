@@ -8,6 +8,7 @@ import { adminCategoriesRoutes, publicCategoriesRoutes } from './modules/categor
 import { adminAttributesRoutes, publicAttributesRoutes } from './modules/attributes/attributes.routes.ts';
 import { adminCategoryFiltersRoutes, publicCategoryFiltersRoutes } from './modules/category-filters/category-filters.routes.ts';
 import { adminCollectionsRoutes, publicCollectionsRoutes } from './modules/collections/collections.routes.ts';
+import { adminProductsRoutes, publicProductsRoutes } from './modules/products/products.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 export function createApp() {
@@ -84,10 +85,12 @@ export function createApp() {
   app.use('/api/v1/admin/categories', adminCategoriesRoutes);
   app.use('/api/v1/admin/attributes', adminAttributesRoutes);
   app.use('/api/v1/admin/collections', adminCollectionsRoutes);
+  app.use('/api/v1/admin/products', adminProductsRoutes);
   app.use('/api/v1/categories', publicCategoryFiltersRoutes);
   app.use('/api/v1/categories', publicCategoriesRoutes);
   app.use('/api/v1/attributes', publicAttributesRoutes);
   app.use('/api/v1/collections', publicCollectionsRoutes);
+  app.use('/api/v1/products', publicProductsRoutes);
 
   // 4. Fallback 404 Handler for undefined admin endpoints
   app.use('/api/v1/admin/*', (req, res) => {

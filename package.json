@@ -15,7 +15,8 @@
     "categories:test": "node --experimental-strip-types src/tests/categories.test.ts",
     "attributes:test": "node --experimental-strip-types src/tests/attributes.test.ts",
     "collections:test": "node --experimental-strip-types src/tests/collections.test.ts",
-    "test:all": "node --experimental-strip-types src/tests/admin-auth.test.ts && node --experimental-strip-types src/tests/categories.test.ts && node --experimental-strip-types src/tests/attributes.test.ts && node --experimental-strip-types src/tests/collections.test.ts"
+    "products:test": "node --experimental-strip-types src/tests/products.test.ts",
+    "test:all": "node --experimental-strip-types src/tests/admin-auth.test.ts && node --experimental-strip-types src/tests/categories.test.ts && node --experimental-strip-types src/tests/attributes.test.ts && node --experimental-strip-types src/tests/collections.test.ts && node --experimental-strip-types src/tests/products.test.ts"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

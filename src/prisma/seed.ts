@@ -115,6 +115,7 @@ export const ROLES_DATA = [
       'attribute.view',
       'attribute-value.view',
       'collection.view', 'collection.create', 'collection.update',
+      'product.view', 'product.create', 'product.update',
       'media.view', 'media.create', 'media.update', 'media.delete',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
@@ -604,6 +605,207 @@ export async function runSeed(): Promise<void> {
     }
   }
   console.log(`✓ Seeded ${INITIAL_COLLECTIONS.length} curated editorial collections`);
+
+  // 8. Seed Initial Curated Products (Module 6)
+  const INITIAL_PRODUCTS = [
+    {
+      name: 'Pichwai Lotus Painting',
+      slug: 'pichwai-lotus-painting',
+      sku: 'LA-PIC-0001',
+      shortDescription: 'Hand-painted sacred Pichwai depicting blossoming lotuses and miniature holy cows in Shrinathji sanctum.',
+      description: 'An exquisite Pichwai masterwork handcrafted on pure organic cotton fabric using natural stone pigments and 24K pure gold leaf detailing.',
+      price: 14500,
+      compareAtPrice: 16500,
+      costPrice: 8000,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 12,
+      lowStockThreshold: 3,
+      trackInventory: true,
+      allowBackorder: false,
+      isFeatured: true,
+      isNewArrival: true,
+      isBestseller: true,
+      sortOrder: 1,
+      categorySlug: 'pichwai-painting',
+      collectionSlugs: ['the-sanskrit-edit', 'curators-picks'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'canvas' },
+        { attrSlug: 'style', valSlug: 'traditional' },
+        { attrSlug: 'theme', valSlug: 'pichwai' }
+      ]
+    },
+    {
+      name: 'Brass Antique Diya',
+      slug: 'brass-antique-diya',
+      sku: 'LA-ANT-0001',
+      shortDescription: 'Centuries-inspired solid cast brass ceremonial temple oil lamp with peacock finial.',
+      description: 'A stately brass diya cast using lost-wax casting (Dhokra / Cire Perdue) technique with deep oil reservoir for auspicious rituals.',
+      price: 4800,
+      compareAtPrice: 5500,
+      costPrice: 2200,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 25,
+      lowStockThreshold: 5,
+      trackInventory: true,
+      allowBackorder: true,
+      isFeatured: true,
+      isNewArrival: false,
+      isBestseller: true,
+      sortOrder: 2,
+      categorySlug: 'antiques',
+      collectionSlugs: ['antique-treasures', 'festive-collection'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'brass' },
+        { attrSlug: 'style', valSlug: 'antique' }
+      ]
+    },
+    {
+      name: 'Traditional Tanjore Gold Art',
+      slug: 'traditional-tanjore-gold-art',
+      sku: 'LA-TAN-0001',
+      shortDescription: 'Magnificent South Indian Tanjore icon with 22K gold foil and Jaipur semi-precious stones.',
+      description: 'Preserved classical Thanjavur artwork mounted on seasoned teakwood panel showcasing divine gopuram embellishments.',
+      price: 28000,
+      compareAtPrice: 32000,
+      costPrice: 15000,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 4,
+      lowStockThreshold: 2,
+      trackInventory: true,
+      allowBackorder: false,
+      isFeatured: true,
+      isNewArrival: true,
+      isBestseller: false,
+      sortOrder: 3,
+      categorySlug: 'tanjore-painting',
+      collectionSlugs: ['indian-heritage'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'gold-foil' },
+        { attrSlug: 'style', valSlug: 'traditional' }
+      ]
+    },
+    {
+      name: 'Sanskrit Quote Canvas',
+      slug: 'sanskrit-quote-canvas',
+      sku: 'LA-SAN-0001',
+      shortDescription: 'Vedic hymn canvas print capturing timeless wisdom in refined Devanagari calligraphy.',
+      description: 'Archival museum-grade canvas print rendering sacred verses with minimalist gold accents.',
+      price: 3200,
+      compareAtPrice: 3800,
+      costPrice: 1400,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 50,
+      lowStockThreshold: 10,
+      trackInventory: true,
+      allowBackorder: true,
+      isFeatured: false,
+      isNewArrival: true,
+      isBestseller: false,
+      sortOrder: 4,
+      categorySlug: 'sanskrit-typography',
+      collectionSlugs: ['the-sanskrit-edit'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'canvas' },
+        { attrSlug: 'style', valSlug: 'modern' }
+      ]
+    },
+    {
+      name: 'Vintage Wooden Jharokha',
+      slug: 'vintage-wooden-jharokha',
+      sku: 'LA-WOO-0001',
+      shortDescription: 'Hand-carved Rajasthani architectural window panel in distressed antique finish.',
+      description: 'Reclaimed teakwood lattice wall arch inspired by royal haveli palace balconies of Jodhpur.',
+      price: 9500,
+      compareAtPrice: 11000,
+      costPrice: 4500,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 7,
+      lowStockThreshold: 2,
+      trackInventory: true,
+      allowBackorder: false,
+      isFeatured: false,
+      isNewArrival: false,
+      isBestseller: false,
+      sortOrder: 5,
+      categorySlug: 'wood-carvings',
+      collectionSlugs: ['antique-treasures'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'teak-wood' },
+        { attrSlug: 'style', valSlug: 'vintage' }
+      ]
+    }
+  ];
+
+  for (const prodDef of INITIAL_PRODUCTS) {
+    const existing = prisma.product.findUnique({ where: { slug: prodDef.slug } });
+    if (!existing) {
+      const cat = prisma.category.findUnique({ where: { slug: prodDef.categorySlug } });
+      const fallbackCat = prisma.category.findUnique({ where: { slug: 'art' } });
+      const categoryId = cat?.id || fallbackCat?.id;
+
+      if (categoryId) {
+        const prod = prisma.product.create({
+          data: {
+            name: prodDef.name,
+            slug: prodDef.slug,
+            sku: prodDef.sku,
+            shortDescription: prodDef.shortDescription,
+            description: prodDef.description,
+            price: prodDef.price,
+            compareAtPrice: prodDef.compareAtPrice,
+            costPrice: prodDef.costPrice,
+            status: prodDef.status,
+            productType: prodDef.productType,
+            stockQuantity: prodDef.stockQuantity,
+            lowStockThreshold: prodDef.lowStockThreshold,
+            trackInventory: prodDef.trackInventory,
+            allowBackorder: prodDef.allowBackorder,
+            isFeatured: prodDef.isFeatured,
+            isNewArrival: prodDef.isNewArrival,
+            isBestseller: prodDef.isBestseller,
+            sortOrder: prodDef.sortOrder,
+            categoryId,
+            metaTitle: prodDef.name,
+            ogTitle: prodDef.name
+          }
+        });
+
+        // Link Collections
+        for (const colSlug of prodDef.collectionSlugs) {
+          const col = prisma.collection.findUnique({ where: { slug: colSlug } });
+          if (col) {
+            prisma.productCollection.create({
+              data: { productId: prod.id, collectionId: col.id }
+            });
+          }
+        }
+
+        // Link Attributes
+        for (const attrPair of prodDef.attributes) {
+          const attr = prisma.attribute.findUnique({ where: { slug: attrPair.attrSlug } });
+          if (attr) {
+            const val = prisma.attributeValue.findUnique({
+              where: { attributeId_slug: { attributeId: attr.id, slug: attrPair.valSlug } }
+            });
+            prisma.productAttributeValue.create({
+              data: {
+                productId: prod.id,
+                attributeId: attr.id,
+                attributeValueId: val?.id || null,
+                textValue: val ? null : attrPair.valSlug
+              }
+            });
+          }
+        }
+      }
+    }
+  }
+  console.log(`✓ Seeded ${INITIAL_PRODUCTS.length} curated masterwork products`);
   console.log('✨ Seeding Completed Successfully!\n');
 }
 

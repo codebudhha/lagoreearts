@@ -42,6 +42,18 @@ enum CollectionType {
   SYSTEM
 }
 
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ProductType {
+  SIMPLE
+  VARIABLE
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -193,6 +205,7 @@ model Category {
   parent             Category?           @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children           Category[]          @relation("CategoryHierarchy")
   categoryAttributes CategoryAttribute[]
+  products           Product[]
 
   @@index([slug])
   @@index([status])
@@ -204,21 +217,22 @@ model Category {
 }
 
 model Attribute {
-  id                 String              @id @default(uuid()) @db.VarChar(36)
-  name               String              @db.VarChar(100)
-  slug               String              @unique @db.VarChar(100)
-  type               AttributeType       @default(MULTI_SELECT)
-  description        String?             @db.Text
-  status             AttributeStatus     @default(ACTIVE)
-  isFilterable       Boolean             @default(true) @map("is_filterable")
-  isRequired         Boolean             @default(false) @map("is_required")
-  isSystem           Boolean             @default(false) @map("is_system")
-  sortOrder          Int                 @default(0) @map("sort_order")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
+  id                     String                  @id @default(uuid()) @db.VarChar(36)
+  name                   String                  @db.VarChar(100)
+  slug                   String                  @unique @db.VarChar(100)
+  type                   AttributeType           @default(MULTI_SELECT)
+  description            String?                 @db.Text
+  status                 AttributeStatus         @default(ACTIVE)
+  isFilterable           Boolean                 @default(true) @map("is_filterable")
+  isRequired             Boolean                 @default(false) @map("is_required")
+  isSystem               Boolean                 @default(false) @map("is_system")
+  sortOrder              Int                     @default(0) @map("sort_order")
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
-  values             AttributeValue[]
-  categoryAttributes CategoryAttribute[]
+  values                 AttributeValue[]
+  categoryAttributes     CategoryAttribute[]
+  productAttributeValues ProductAttributeValue[]
 
   @@index([slug])
   @@index([status])
@@ -228,17 +242,18 @@ model Attribute {
 }
 
 model AttributeValue {
-  id          String          @id @default(uuid()) @db.VarChar(36)
-  attributeId String          @map("attribute_id") @db.VarChar(36)
-  name        String          @db.VarChar(100)
-  slug        String          @db.VarChar(100)
-  description String?         @db.Text
-  sortOrder   Int             @default(0) @map("sort_order")
-  status      AttributeStatus @default(ACTIVE)
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
+  id                     String                  @id @default(uuid()) @db.VarChar(36)
+  attributeId            String                  @map("attribute_id") @db.VarChar(36)
+  name                   String                  @db.VarChar(100)
+  slug                   String                  @db.VarChar(100)
+  description            String?                 @db.Text
+  sortOrder              Int                     @default(0) @map("sort_order")
+  status                 AttributeStatus         @default(ACTIVE)
+  createdAt              DateTime                @default(now()) @map("created_at")
+  updatedAt              DateTime                @updatedAt @map("updated_at")
 
-  attribute   Attribute       @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  attribute              Attribute               @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  productAttributeValues ProductAttributeValue[]
 
   @@unique([attributeId, slug])
   @@index([attributeId])
@@ -268,27 +283,29 @@ model CategoryAttribute {
 }
 
 model Collection {
-  id               String           @id @default(uuid()) @db.VarChar(36)
-  name             String           @db.VarChar(120)
-  slug             String           @unique @db.VarChar(140)
-  shortDescription String?          @map("short_description") @db.VarChar(255)
-  description      String?          @db.Text
-  image            String?          @db.VarChar(255)
-  bannerImage      String?          @map("banner_image") @db.VarChar(255)
-  heroTitle        String?          @map("hero_title") @db.VarChar(150)
-  heroDescription  String?          @map("hero_description") @db.Text
-  status           CollectionStatus @default(ACTIVE)
-  type             CollectionType   @default(MANUAL)
-  isFeatured       Boolean          @default(false) @map("is_featured")
-  sortOrder        Int              @default(0) @map("sort_order")
-  metaTitle        String?          @map("meta_title") @db.VarChar(150)
-  metaDescription  String?          @map("meta_description") @db.Text
-  canonicalUrl     String?          @map("canonical_url") @db.VarChar(255)
-  ogTitle          String?          @map("og_title") @db.VarChar(150)
-  ogDescription    String?          @map("og_description") @db.Text
-  ogImage          String?          @map("og_image") @db.VarChar(255)
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+  id                 String              @id @default(uuid()) @db.VarChar(36)
+  name               String              @db.VarChar(120)
+  slug               String              @unique @db.VarChar(140)
+  shortDescription   String?             @map("short_description") @db.VarChar(255)
+  description        String?             @db.Text
+  image              String?             @db.VarChar(255)
+  bannerImage        String?             @map("banner_image") @db.VarChar(255)
+  heroTitle          String?             @map("hero_title") @db.VarChar(150)
+  heroDescription    String?             @map("hero_description") @db.Text
+  status             CollectionStatus    @default(ACTIVE)
+  type               CollectionType      @default(MANUAL)
+  isFeatured         Boolean             @default(false) @map("is_featured")
+  sortOrder          Int                 @default(0) @map("sort_order")
+  metaTitle          String?             @map("meta_title") @db.VarChar(150)
+  metaDescription    String?             @map("meta_description") @db.Text
+  canonicalUrl       String?             @map("canonical_url") @db.VarChar(255)
+  ogTitle            String?             @map("og_title") @db.VarChar(150)
+  ogDescription      String?             @map("og_description") @db.Text
+  ogImage            String?             @map("og_image") @db.VarChar(255)
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+
+  productCollections ProductCollection[]
 
   @@index([slug])
   @@index([status])
@@ -297,4 +314,91 @@ model Collection {
   @@index([sortOrder])
   @@index([createdAt])
   @@map("collections")
+}
+
+model Product {
+  id                String                  @id @default(uuid()) @db.VarChar(36)
+  name              String                  @db.VarChar(150)
+  slug              String                  @unique @db.VarChar(180)
+  sku               String                  @unique @db.VarChar(80)
+  shortDescription  String?                 @map("short_description") @db.VarChar(255)
+  description       String?                 @db.Text
+  status            ProductStatus           @default(DRAFT)
+  productType       ProductType             @default(SIMPLE) @map("product_type")
+  price             Decimal                 @db.Decimal(10, 2)
+  compareAtPrice    Decimal?                @map("compare_at_price") @db.Decimal(10, 2)
+  costPrice         Decimal?                @map("cost_price") @db.Decimal(10, 2)
+  currency          String                  @default("INR") @db.VarChar(3)
+  stockQuantity     Int                     @default(0) @map("stock_quantity")
+  lowStockThreshold Int                     @default(5) @map("low_stock_threshold")
+  trackInventory    Boolean                 @default(true) @map("track_inventory")
+  allowBackorder    Boolean                 @default(false) @map("allow_backorder")
+  isFeatured        Boolean                 @default(false) @map("is_featured")
+  isNewArrival      Boolean                 @default(false) @map("is_new_arrival")
+  isBestseller      Boolean                 @default(false) @map("is_bestseller")
+  sortOrder         Int                     @default(0) @map("sort_order")
+  categoryId        String                  @map("category_id") @db.VarChar(36)
+  image             String?                 @db.VarChar(255)
+  thumbnail         String?                 @db.VarChar(255)
+  bannerImage       String?                 @map("banner_image") @db.VarChar(255)
+  metaTitle         String?                 @map("meta_title") @db.VarChar(150)
+  metaDescription   String?                 @map("meta_description") @db.Text
+  canonicalUrl      String?                 @map("canonical_url") @db.VarChar(255)
+  ogTitle           String?                 @map("og_title") @db.VarChar(150)
+  ogDescription     String?                 @map("og_description") @db.Text
+  ogImage           String?                 @map("og_image") @db.VarChar(255)
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+
+  category          Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  collections       ProductCollection[]
+  attributes        ProductAttributeValue[]
+
+  @@index([slug])
+  @@index([sku])
+  @@index([status])
+  @@index([productType])
+  @@index([categoryId])
+  @@index([isFeatured])
+  @@index([isNewArrival])
+  @@index([isBestseller])
+  @@index([sortOrder])
+  @@index([price])
+  @@index([createdAt])
+  @@map("products")
+}
+
+model ProductCollection {
+  productId    String     @map("product_id") @db.VarChar(36)
+  collectionId String     @map("collection_id") @db.VarChar(36)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([productId, collectionId])
+  @@index([productId])
+  @@index([collectionId])
+  @@map("product_collections")
+}
+
+model ProductAttributeValue {
+  id               String          @id @default(uuid()) @db.VarChar(36)
+  productId        String          @map("product_id") @db.VarChar(36)
+  attributeId      String          @map("attribute_id") @db.VarChar(36)
+  attributeValueId String?         @map("attribute_value_id") @db.VarChar(36)
+  textValue        String?         @map("text_value") @db.Text
+  numberValue      Decimal?        @map("number_value") @db.Decimal(10, 2)
+  booleanValue     Boolean?        @map("boolean_value")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+
+  product          Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attribute        Attribute       @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  attributeValue   AttributeValue? @relation(fields: [attributeValueId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([attributeId])
+  @@index([attributeValueId])
+  @@map("product_attribute_values")
 }
