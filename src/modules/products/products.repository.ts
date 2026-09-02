@@ -1,7 +1,7 @@
 import { prisma } from '../../database/prisma.ts';
 
 export class ProductsRepository {
-  static async findById(id: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true }) {
+  static async findById(id: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true, antiqueProfile: true }) {
     const p = await prisma.product.findUnique({
       where: { id },
       include
@@ -15,10 +15,13 @@ export class ProductsRepository {
     if (p && include?.media && !p.media) {
       p.media = await prisma.productMedia.findMany({ where: { productId: p.id }, include: { media: true }, orderBy: { sortOrder: 'asc' } });
     }
+    if (p && include?.antiqueProfile && !p.antiqueProfile) {
+      p.antiqueProfile = await prisma.antiqueProfile.findUnique({ where: { productId: p.id } });
+    }
     return p;
   }
 
-  static async findBySlug(slug: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true }) {
+  static async findBySlug(slug: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true, antiqueProfile: true }) {
     const p = await prisma.product.findUnique({
       where: { slug },
       include
@@ -32,10 +35,13 @@ export class ProductsRepository {
     if (p && include?.media && !p.media) {
       p.media = await prisma.productMedia.findMany({ where: { productId: p.id }, include: { media: true }, orderBy: { sortOrder: 'asc' } });
     }
+    if (p && include?.antiqueProfile && !p.antiqueProfile) {
+      p.antiqueProfile = await prisma.antiqueProfile.findUnique({ where: { productId: p.id } });
+    }
     return p;
   }
 
-  static async findBySku(sku: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true }) {
+  static async findBySku(sku: string, include: any = { category: true, collections: true, attributes: true, options: true, variants: true, media: true, antiqueProfile: true }) {
     const p = await prisma.product.findUnique({
       where: { sku: sku.trim().toUpperCase() },
       include
@@ -48,6 +54,9 @@ export class ProductsRepository {
     }
     if (p && include?.media && !p.media) {
       p.media = await prisma.productMedia.findMany({ where: { productId: p.id }, include: { media: true }, orderBy: { sortOrder: 'asc' } });
+    }
+    if (p && include?.antiqueProfile && !p.antiqueProfile) {
+      p.antiqueProfile = await prisma.antiqueProfile.findUnique({ where: { productId: p.id } });
     }
     return p;
   }

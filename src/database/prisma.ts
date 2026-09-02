@@ -481,6 +481,58 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_col_media_media_id ON collection_media(media_id);
   CREATE INDEX IF NOT EXISTS idx_col_media_primary ON collection_media(is_primary);
   CREATE INDEX IF NOT EXISTS idx_col_media_sort ON collection_media(sort_order);
+
+  CREATE TABLE IF NOT EXISTS antique_profiles (
+    id TEXT PRIMARY KEY,
+    product_id TEXT UNIQUE NOT NULL,
+    era TEXT,
+    period TEXT,
+    approximate_age_from INTEGER,
+    approximate_age_to INTEGER,
+    age_description TEXT,
+    origin TEXT,
+    region TEXT,
+    country_of_origin TEXT,
+    artist_maker TEXT,
+    attribution TEXT,
+    school_or_tradition TEXT,
+    material TEXT,
+    technique TEXT,
+    condition TEXT,
+    condition_notes TEXT,
+    restoration_status TEXT NOT NULL DEFAULT 'UNKNOWN',
+    restoration_notes TEXT,
+    provenance TEXT,
+    provenance_notes TEXT,
+    authenticity_status TEXT NOT NULL DEFAULT 'UNKNOWN',
+    authenticity_notes TEXT,
+    acquisition_source TEXT,
+    acquisition_notes TEXT,
+    dimensions_description TEXT,
+    height REAL,
+    width REAL,
+    depth REAL,
+    diameter REAL,
+    dimension_unit TEXT NOT NULL DEFAULT 'CM',
+    weight REAL,
+    weight_unit TEXT NOT NULL DEFAULT 'KG',
+    is_one_of_a_kind INTEGER NOT NULL DEFAULT 1,
+    is_certified INTEGER NOT NULL DEFAULT 0,
+    certificate_number TEXT,
+    certificate_issuer TEXT,
+    certificate_date TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_prod_id ON antique_profiles(product_id);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_era ON antique_profiles(era);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_origin ON antique_profiles(origin);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_condition ON antique_profiles(condition);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_restoration ON antique_profiles(restoration_status);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_authenticity ON antique_profiles(authenticity_status);
+  CREATE INDEX IF NOT EXISTS idx_antique_prof_one_of_a_kind ON antique_profiles(is_one_of_a_kind);
 `);
 
 /**
@@ -894,7 +946,7 @@ export const prisma = {
         id,
         data.adminUserId || null,
         data.action,
-        data.module,
+        data.module || data.entityType || 'SYSTEM',
         data.entityType || null,
         data.entityId || null,
         data.oldValues ? JSON.stringify(data.oldValues) : null,
@@ -1859,6 +1911,10 @@ export const prisma = {
         });
       }
 
+      if (include?.antiqueProfile) {
+        formatted.antiqueProfile = prisma.antiqueProfile.findUnique({ where: { productId: row.id } });
+      }
+
       return formatted;
     },
 
@@ -2102,7 +2158,8 @@ export const prisma = {
     },
 
     delete: ({ where }: { where: { id: string } }) => {
-      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true } });
+      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true } });
+      db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -3626,6 +3683,290 @@ export const prisma = {
       if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
       if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
       db.prepare(sql).run(...params);
+    }
+  },
+
+  antiqueProfile: {
+    findUnique: ({ where, include }: { where: { id?: string; productId?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM antique_profiles WHERE id = ?').get(where.id);
+      } else if (where.productId) {
+        row = db.prepare('SELECT * FROM antique_profiles WHERE product_id = ?').get(where.productId);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        productId: row.product_id,
+        era: row.era || null,
+        period: row.period || null,
+        approximateAgeFrom: row.approximate_age_from !== null ? Number(row.approximate_age_from) : null,
+        approximateAgeTo: row.approximate_age_to !== null ? Number(row.approximate_age_to) : null,
+        ageDescription: row.age_description || null,
+        origin: row.origin || null,
+        region: row.region || null,
+        countryOfOrigin: row.country_of_origin || null,
+        artistMaker: row.artist_maker || null,
+        attribution: row.attribution || null,
+        schoolOrTradition: row.school_or_tradition || null,
+        material: row.material || null,
+        technique: row.technique || null,
+        condition: row.condition || null,
+        conditionNotes: row.condition_notes || null,
+        restorationStatus: row.restoration_status || 'UNKNOWN',
+        restorationNotes: row.restoration_notes || null,
+        provenance: row.provenance || null,
+        provenanceNotes: row.provenance_notes || null,
+        authenticityStatus: row.authenticity_status || 'UNKNOWN',
+        authenticityNotes: row.authenticity_notes || null,
+        acquisitionSource: row.acquisition_source || null,
+        acquisitionNotes: row.acquisition_notes || null,
+        dimensionsDescription: row.dimensions_description || null,
+        height: row.height !== null ? Number(row.height) : null,
+        width: row.width !== null ? Number(row.width) : null,
+        depth: row.depth !== null ? Number(row.depth) : null,
+        diameter: row.diameter !== null ? Number(row.diameter) : null,
+        dimensionUnit: row.dimension_unit || 'CM',
+        weight: row.weight !== null ? Number(row.weight) : null,
+        weightUnit: row.weight_unit || 'KG',
+        isOneOfAKind: Boolean(row.is_one_of_a_kind),
+        isCertified: Boolean(row.is_certified),
+        certificateNumber: row.certificate_number || null,
+        certificateIssuer: row.certificate_issuer || null,
+        certificateDate: row.certificate_date ? new Date(row.certificate_date) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.product) {
+        formatted.product = prisma.product.findUnique({ where: { id: row.product_id } });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM antique_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.era) { sql += ' AND era = ?'; params.push(where.era); }
+      if (where?.origin) { sql += ' AND origin = ?'; params.push(where.origin); }
+      if (where?.condition) { sql += ' AND condition = ?'; params.push(where.condition); }
+      if (where?.restorationStatus) { sql += ' AND restoration_status = ?'; params.push(where.restorationStatus); }
+      if (where?.authenticityStatus) { sql += ' AND authenticity_status = ?'; params.push(where.authenticityStatus); }
+      if (where?.isOneOfAKind !== undefined) { sql += ' AND is_one_of_a_kind = ?'; params.push(where.isOneOfAKind ? 1 : 0); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.antiqueProfile.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM antique_profiles WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.era) { sql += ' AND LOWER(era) = LOWER(?)'; params.push(where.era); }
+      if (where?.origin) { sql += ' AND LOWER(origin) = LOWER(?)'; params.push(where.origin); }
+      if (where?.condition) { sql += ' AND condition = ?'; params.push(where.condition); }
+      if (where?.restorationStatus) { sql += ' AND restoration_status = ?'; params.push(where.restorationStatus); }
+      if (where?.authenticityStatus) { sql += ' AND authenticity_status = ?'; params.push(where.authenticityStatus); }
+      if (where?.isOneOfAKind !== undefined) { sql += ' AND is_one_of_a_kind = ?'; params.push(where.isOneOfAKind ? 1 : 0); }
+      if (where?.isCertified !== undefined) { sql += ' AND is_certified = ?'; params.push(where.isCertified ? 1 : 0); }
+
+      if (where?.search) {
+        sql += ' AND (artist_maker LIKE ? OR attribution LIKE ? OR school_or_tradition LIKE ? OR provenance LIKE ? OR age_description LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (orderBy) {
+        const field = orderBy.createdAt ? 'created_at' : orderBy.updatedAt ? 'updated_at' : 'created_at';
+        const dir = (orderBy.createdAt || orderBy.updatedAt || 'desc').toUpperCase();
+        sql += ` ORDER BY ${field} ${dir}`;
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.antiqueProfile.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+
+      let certDate: string | null = null;
+      if (data.certificateDate) {
+        certDate = data.certificateDate instanceof Date ? data.certificateDate.toISOString() : new Date(data.certificateDate).toISOString();
+      }
+
+      db.prepare(`
+        INSERT INTO antique_profiles (
+          id, product_id, era, period, approximate_age_from, approximate_age_to,
+          age_description, origin, region, country_of_origin, artist_maker, attribution,
+          school_or_tradition, material, technique, condition, condition_notes,
+          restoration_status, restoration_notes, provenance, provenance_notes,
+          authenticity_status, authenticity_notes, acquisition_source, acquisition_notes,
+          dimensions_description, height, width, depth, diameter, dimension_unit,
+          weight, weight_unit, is_one_of_a_kind, is_certified, certificate_number,
+          certificate_issuer, certificate_date, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?
+        )
+      `).run(
+        id,
+        data.productId,
+        data.era || null,
+        data.period || null,
+        data.approximateAgeFrom !== undefined && data.approximateAgeFrom !== null ? Number(data.approximateAgeFrom) : null,
+        data.approximateAgeTo !== undefined && data.approximateAgeTo !== null ? Number(data.approximateAgeTo) : null,
+        data.ageDescription || null,
+        data.origin || null,
+        data.region || null,
+        data.countryOfOrigin || null,
+        data.artistMaker || null,
+        data.attribution || null,
+        data.schoolOrTradition || null,
+        data.material || null,
+        data.technique || null,
+        data.condition || null,
+        data.conditionNotes || null,
+        data.restorationStatus || 'UNKNOWN',
+        data.restorationNotes || null,
+        data.provenance || null,
+        data.provenanceNotes || null,
+        data.authenticityStatus || 'UNKNOWN',
+        data.authenticityNotes || null,
+        data.acquisitionSource || null,
+        data.acquisitionNotes || null,
+        data.dimensionsDescription || null,
+        data.height !== undefined && data.height !== null ? Number(data.height) : null,
+        data.width !== undefined && data.width !== null ? Number(data.width) : null,
+        data.depth !== undefined && data.depth !== null ? Number(data.depth) : null,
+        data.diameter !== undefined && data.diameter !== null ? Number(data.diameter) : null,
+        data.dimensionUnit || 'CM',
+        data.weight !== undefined && data.weight !== null ? Number(data.weight) : null,
+        data.weightUnit || 'KG',
+        data.isOneOfAKind !== undefined ? (data.isOneOfAKind ? 1 : 0) : 1,
+        data.isCertified !== undefined ? (data.isCertified ? 1 : 0) : 0,
+        data.certificateNumber || null,
+        data.certificateIssuer || null,
+        certDate,
+        now,
+        now
+      );
+
+      return prisma.antiqueProfile.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; productId?: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.era !== undefined) { updates.push('era = ?'); params.push(data.era ? String(data.era).trim() : null); }
+      if (data.period !== undefined) { updates.push('period = ?'); params.push(data.period ? String(data.period).trim() : null); }
+      if (data.approximateAgeFrom !== undefined) { updates.push('approximate_age_from = ?'); params.push(data.approximateAgeFrom !== null ? Number(data.approximateAgeFrom) : null); }
+      if (data.approximateAgeTo !== undefined) { updates.push('approximate_age_to = ?'); params.push(data.approximateAgeTo !== null ? Number(data.approximateAgeTo) : null); }
+      if (data.ageDescription !== undefined) { updates.push('age_description = ?'); params.push(data.ageDescription ? String(data.ageDescription).trim() : null); }
+      if (data.origin !== undefined) { updates.push('origin = ?'); params.push(data.origin ? String(data.origin).trim() : null); }
+      if (data.region !== undefined) { updates.push('region = ?'); params.push(data.region ? String(data.region).trim() : null); }
+      if (data.countryOfOrigin !== undefined) { updates.push('country_of_origin = ?'); params.push(data.countryOfOrigin ? String(data.countryOfOrigin).trim() : null); }
+      if (data.artistMaker !== undefined) { updates.push('artist_maker = ?'); params.push(data.artistMaker ? String(data.artistMaker).trim() : null); }
+      if (data.attribution !== undefined) { updates.push('attribution = ?'); params.push(data.attribution ? String(data.attribution).trim() : null); }
+      if (data.schoolOrTradition !== undefined) { updates.push('school_or_tradition = ?'); params.push(data.schoolOrTradition ? String(data.schoolOrTradition).trim() : null); }
+      if (data.material !== undefined) { updates.push('material = ?'); params.push(data.material ? String(data.material).trim() : null); }
+      if (data.technique !== undefined) { updates.push('technique = ?'); params.push(data.technique ? String(data.technique).trim() : null); }
+      if (data.condition !== undefined) { updates.push('condition = ?'); params.push(data.condition || null); }
+      if (data.conditionNotes !== undefined) { updates.push('condition_notes = ?'); params.push(data.conditionNotes || null); }
+      if (data.restorationStatus !== undefined) { updates.push('restoration_status = ?'); params.push(data.restorationStatus || 'UNKNOWN'); }
+      if (data.restorationNotes !== undefined) { updates.push('restoration_notes = ?'); params.push(data.restorationNotes || null); }
+      if (data.provenance !== undefined) { updates.push('provenance = ?'); params.push(data.provenance || null); }
+      if (data.provenanceNotes !== undefined) { updates.push('provenance_notes = ?'); params.push(data.provenanceNotes || null); }
+      if (data.authenticityStatus !== undefined) { updates.push('authenticity_status = ?'); params.push(data.authenticityStatus || 'UNKNOWN'); }
+      if (data.authenticityNotes !== undefined) { updates.push('authenticity_notes = ?'); params.push(data.authenticityNotes || null); }
+      if (data.acquisitionSource !== undefined) { updates.push('acquisition_source = ?'); params.push(data.acquisitionSource || null); }
+      if (data.acquisitionNotes !== undefined) { updates.push('acquisition_notes = ?'); params.push(data.acquisitionNotes || null); }
+      if (data.dimensionsDescription !== undefined) { updates.push('dimensions_description = ?'); params.push(data.dimensionsDescription || null); }
+      if (data.height !== undefined) { updates.push('height = ?'); params.push(data.height !== null ? Number(data.height) : null); }
+      if (data.width !== undefined) { updates.push('width = ?'); params.push(data.width !== null ? Number(data.width) : null); }
+      if (data.depth !== undefined) { updates.push('depth = ?'); params.push(data.depth !== null ? Number(data.depth) : null); }
+      if (data.diameter !== undefined) { updates.push('diameter = ?'); params.push(data.diameter !== null ? Number(data.diameter) : null); }
+      if (data.dimensionUnit !== undefined) { updates.push('dimension_unit = ?'); params.push(data.dimensionUnit || 'CM'); }
+      if (data.weight !== undefined) { updates.push('weight = ?'); params.push(data.weight !== null ? Number(data.weight) : null); }
+      if (data.weightUnit !== undefined) { updates.push('weight_unit = ?'); params.push(data.weightUnit || 'KG'); }
+      if (data.isOneOfAKind !== undefined) { updates.push('is_one_of_a_kind = ?'); params.push(data.isOneOfAKind ? 1 : 0); }
+      if (data.isCertified !== undefined) { updates.push('is_certified = ?'); params.push(data.isCertified ? 1 : 0); }
+      if (data.certificateNumber !== undefined) { updates.push('certificate_number = ?'); params.push(data.certificateNumber || null); }
+      if (data.certificateIssuer !== undefined) { updates.push('certificate_issuer = ?'); params.push(data.certificateIssuer || null); }
+      if (data.certificateDate !== undefined) {
+        const certDate = data.certificateDate ? (data.certificateDate instanceof Date ? data.certificateDate.toISOString() : new Date(data.certificateDate).toISOString()) : null;
+        updates.push('certificate_date = ?');
+        params.push(certDate);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let whereClause = '';
+      if (where.id) {
+        whereClause = 'id = ?';
+        params.push(where.id);
+      } else if (where.productId) {
+        whereClause = 'product_id = ?';
+        params.push(where.productId);
+      }
+
+      db.prepare(`UPDATE antique_profiles SET ${updates.join(', ')} WHERE ${whereClause}`).run(...params);
+      return prisma.antiqueProfile.findUnique({ where, include });
+    },
+
+    delete: ({ where }: { where: { id?: string; productId?: string } }) => {
+      const existing = prisma.antiqueProfile.findUnique({ where });
+      if (existing) {
+        if (where.id) {
+          db.prepare('DELETE FROM antique_profiles WHERE id = ?').run(where.id);
+        } else if (where.productId) {
+          db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.productId);
+        }
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM antique_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM antique_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.era) { sql += ' AND LOWER(era) = LOWER(?)'; params.push(where.era); }
+      if (where?.origin) { sql += ' AND LOWER(origin) = LOWER(?)'; params.push(where.origin); }
+      if (where?.condition) { sql += ' AND condition = ?'; params.push(where.condition); }
+      if (where?.restorationStatus) { sql += ' AND restoration_status = ?'; params.push(where.restorationStatus); }
+      if (where?.authenticityStatus) { sql += ' AND authenticity_status = ?'; params.push(where.authenticityStatus); }
+      if (where?.isOneOfAKind !== undefined) { sql += ' AND is_one_of_a_kind = ?'; params.push(where.isOneOfAKind ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
     }
   },
 

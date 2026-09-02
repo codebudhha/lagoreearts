@@ -72,6 +72,44 @@ enum MediaRole {
   OG
 }
 
+enum AntiqueCondition {
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+  POOR
+  RESTORED
+  FOR_RESTORATION
+}
+
+enum AntiqueRestorationStatus {
+  ORIGINAL
+  PARTIALLY_RESTORED
+  FULLY_RESTORED
+  UNKNOWN
+}
+
+enum AntiqueAuthenticityStatus {
+  UNKNOWN
+  UNVERIFIED
+  VERIFIED
+}
+
+enum DimensionUnit {
+  MM
+  CM
+  M
+  IN
+  FT
+}
+
+enum WeightUnit {
+  G
+  KG
+  OZ
+  LB
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -376,6 +414,7 @@ model Product {
   options           ProductOption[]
   variants          ProductVariant[]
   media             ProductMedia[]
+  antiqueProfile    AntiqueProfile?
 
   @@index([slug])
   @@index([sku])
@@ -389,6 +428,61 @@ model Product {
   @@index([price])
   @@index([createdAt])
   @@map("products")
+}
+
+model AntiqueProfile {
+  id                    String                    @id @default(uuid()) @db.VarChar(36)
+  productId             String                    @unique @map("product_id") @db.VarChar(36)
+  era                   String?                   @db.VarChar(100)
+  period                String?                   @db.VarChar(100)
+  approximateAgeFrom    Int?                      @map("approximate_age_from")
+  approximateAgeTo      Int?                      @map("approximate_age_to")
+  ageDescription        String?                   @map("age_description") @db.VarChar(255)
+  origin                String?                   @db.VarChar(150)
+  region                String?                   @db.VarChar(100)
+  countryOfOrigin       String?                   @map("country_of_origin") @db.VarChar(100)
+  artistMaker           String?                   @map("artist_maker") @db.VarChar(150)
+  attribution           String?                   @db.VarChar(150)
+  schoolOrTradition     String?                   @map("school_or_tradition") @db.VarChar(150)
+  material              String?                   @db.VarChar(255)
+  technique             String?                   @db.VarChar(255)
+  condition             AntiqueCondition?
+  conditionNotes        String?                   @map("condition_notes") @db.Text
+  restorationStatus     AntiqueRestorationStatus  @default(UNKNOWN) @map("restoration_status")
+  restorationNotes      String?                   @map("restoration_notes") @db.Text
+  provenance            String?                   @db.Text
+  provenanceNotes       String?                   @map("provenance_notes") @db.Text
+  authenticityStatus    AntiqueAuthenticityStatus @default(UNKNOWN) @map("authenticity_status")
+  authenticityNotes     String?                   @map("authenticity_notes") @db.Text
+  acquisitionSource     String?                   @map("acquisition_source") @db.VarChar(255)
+  acquisitionNotes      String?                   @map("acquisition_notes") @db.Text
+  dimensionsDescription String?                   @map("dimensions_description") @db.VarChar(255)
+  height                Decimal?                  @db.Decimal(10, 2)
+  width                 Decimal?                  @db.Decimal(10, 2)
+  depth                 Decimal?                  @db.Decimal(10, 2)
+  diameter              Decimal?                  @db.Decimal(10, 2)
+  dimensionUnit         DimensionUnit             @default(CM) @map("dimension_unit")
+  weight                Decimal?                  @db.Decimal(10, 2)
+  weightUnit            WeightUnit                @default(KG) @map("weight_unit")
+  isOneOfAKind          Boolean                   @default(true) @map("is_one_of_a_kind")
+  isCertified           Boolean                   @default(false) @map("is_certified")
+  certificateNumber     String?                   @map("certificate_number") @db.VarChar(100)
+  certificateIssuer     String?                   @map("certificate_issuer") @db.VarChar(150)
+  certificateDate       DateTime?                 @map("certificate_date")
+  createdAt             DateTime                  @default(now()) @map("created_at")
+  updatedAt             DateTime                  @updatedAt @map("updated_at")
+
+  product               Product                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([era])
+  @@index([origin])
+  @@index([condition])
+  @@index([restorationStatus])
+  @@index([authenticityStatus])
+  @@index([isOneOfAKind])
+  @@index([createdAt])
+  @@map("antique_profiles")
 }
 
 model ProductCollection {

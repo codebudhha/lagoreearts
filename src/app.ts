@@ -17,6 +17,11 @@ import {
   adminCategoryMediaRouter,
   adminCollectionMediaRouter
 } from './modules/media/media.routes.ts';
+import {
+  adminAntiqueProfileRouter,
+  adminAntiquesRouter,
+  publicAntiquesRouter
+} from './modules/antiques/antiques.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -134,7 +139,8 @@ export function createApp() {
         'Module 5: Collections',
         'Module 6: Product Catalogue Management',
         'Module 7: Product Variants',
-        'Module 8: Media Library & Asset Management'
+        'Module 8: Media Library & Asset Management',
+        'Module 9: Antiques & Collectibles Catalogue Management'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -162,6 +168,7 @@ export function createApp() {
   app.use('/api/v1/admin/users', adminUsersRoutes);
   app.use('/api/v1/admin/roles', adminRolesRoutes);
   app.use('/api/v1/admin/media', adminMediaRouter);
+  app.use('/api/v1/admin/antiques', adminAntiquesRouter);
   app.use('/api/v1/admin/categories', adminCategoryMediaRouter);
   app.use('/api/v1/admin/categories', adminCategoryFiltersRoutes);
   app.use('/api/v1/admin/categories', adminCategoriesRoutes);
@@ -170,6 +177,7 @@ export function createApp() {
   app.use('/api/v1/admin/collections', adminCollectionsRoutes);
   app.use('/api/v1/admin/products', adminProductMediaRouter);
   app.use('/api/v1/admin/products', adminVariantMediaRouter);
+  app.use('/api/v1/admin/products', adminAntiqueProfileRouter);
   app.use('/api/v1/admin/products', adminProductOptionsRouter);
   app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);
@@ -178,6 +186,7 @@ export function createApp() {
   app.use('/api/v1/attributes', publicAttributesRoutes);
   app.use('/api/v1/collections', publicCollectionsRoutes);
   app.use('/api/v1/products', publicProductsRoutes);
+  app.use('/api/v1/antiques', publicAntiquesRouter);
 
   // 4. Fallback 404 Handler for undefined admin endpoints
   app.use('/api/v1/admin/*', (req, res) => {

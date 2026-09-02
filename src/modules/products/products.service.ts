@@ -326,7 +326,24 @@ export class ProductsService {
       }
       updates.productType = input.productType;
     }
-    if (input.currency !== undefined) updates.currency = input.currency;
+    // Antique One-of-a-kind checks
+    if (existing.antiqueProfile?.isOneOfAKind) {
+      if (input.stockQuantity !== undefined && Number(input.stockQuantity) > 1) {
+        throw {
+          status: 400,
+          code: 'ONE_OF_A_KIND_STOCK_LIMIT',
+          message: 'This is a one-of-a-kind antique product. Stock quantity cannot exceed 1.'
+        };
+      }
+      if (input.allowBackorder === true) {
+        throw {
+          status: 400,
+          code: 'ONE_OF_A_KIND_BACKORDER_NOT_ALLOWED',
+          message: 'This is a one-of-a-kind antique product. Backorders cannot be enabled.'
+        };
+      }
+    }
+
     if (input.stockQuantity !== undefined) updates.stockQuantity = Math.max(0, Number(input.stockQuantity));
     if (input.lowStockThreshold !== undefined) updates.lowStockThreshold = Math.max(0, Number(input.lowStockThreshold));
     if (input.trackInventory !== undefined) updates.trackInventory = Boolean(input.trackInventory);
@@ -807,6 +824,51 @@ export class ProductsService {
             options: optionMap
           };
         });
+    }
+
+    if (p.antiqueProfile) {
+      formatted.antique = {
+        era: p.antiqueProfile.era || null,
+        period: p.antiqueProfile.period || null,
+        approximateAgeFrom: p.antiqueProfile.approximateAgeFrom !== null && p.antiqueProfile.approximateAgeFrom !== undefined ? Number(p.antiqueProfile.approximateAgeFrom) : null,
+        approximateAgeTo: p.antiqueProfile.approximateAgeTo !== null && p.antiqueProfile.approximateAgeTo !== undefined ? Number(p.antiqueProfile.approximateAgeTo) : null,
+        ageDescription: p.antiqueProfile.ageDescription || null,
+        origin: p.antiqueProfile.origin || null,
+        region: p.antiqueProfile.region || null,
+        countryOfOrigin: p.antiqueProfile.countryOfOrigin || null,
+        artistMaker: p.antiqueProfile.artistMaker || null,
+        attribution: p.antiqueProfile.attribution || null,
+        schoolOrTradition: p.antiqueProfile.schoolOrTradition || null,
+        material: p.antiqueProfile.material || null,
+        technique: p.antiqueProfile.technique || null,
+        condition: p.antiqueProfile.condition || null,
+        conditionNotes: p.antiqueProfile.conditionNotes || null,
+        restorationStatus: p.antiqueProfile.restorationStatus || 'UNKNOWN',
+        restorationNotes: p.antiqueProfile.restorationNotes || null,
+        provenance: p.antiqueProfile.provenance || null,
+        provenanceNotes: p.antiqueProfile.provenanceNotes || null,
+        authenticityStatus: p.antiqueProfile.authenticityStatus || 'UNKNOWN',
+        authenticityNotes: p.antiqueProfile.authenticityNotes || null,
+        dimensions: {
+          height: p.antiqueProfile.height !== null && p.antiqueProfile.height !== undefined ? Number(p.antiqueProfile.height) : null,
+          width: p.antiqueProfile.width !== null && p.antiqueProfile.width !== undefined ? Number(p.antiqueProfile.width) : null,
+          depth: p.antiqueProfile.depth !== null && p.antiqueProfile.depth !== undefined ? Number(p.antiqueProfile.depth) : null,
+          diameter: p.antiqueProfile.diameter !== null && p.antiqueProfile.diameter !== undefined ? Number(p.antiqueProfile.diameter) : null,
+          unit: p.antiqueProfile.dimensionUnit || 'CM',
+          description: p.antiqueProfile.dimensionsDescription || null
+        },
+        weight: {
+          value: p.antiqueProfile.weight !== null && p.antiqueProfile.weight !== undefined ? Number(p.antiqueProfile.weight) : null,
+          unit: p.antiqueProfile.weightUnit || 'KG'
+        },
+        isOneOfAKind: Boolean(p.antiqueProfile.isOneOfAKind),
+        certification: {
+          isCertified: Boolean(p.antiqueProfile.isCertified),
+          certificateNumber: p.antiqueProfile.certificateNumber || null,
+          certificateIssuer: p.antiqueProfile.certificateIssuer || null,
+          certificateDate: p.antiqueProfile.certificateDate ? (p.antiqueProfile.certificateDate instanceof Date ? p.antiqueProfile.certificateDate.toISOString() : p.antiqueProfile.certificateDate) : null
+        }
+      };
     }
 
     return formatted;

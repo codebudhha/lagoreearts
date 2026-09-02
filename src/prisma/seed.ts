@@ -81,6 +81,12 @@ export const PERMISSIONS_DATA = [
   { name: 'View SEO Settings', slug: 'seo.view', module: 'SEO', description: 'View meta tags and SEO configs' },
   { name: 'Update SEO Settings', slug: 'seo.update', module: 'SEO', description: 'Modify meta tags and structured data' },
 
+  // ANTIQUES & COLLECTIBLES (MODULE 9)
+  { name: 'View Antique Profiles', slug: 'antique.view', module: 'ANTIQUES', description: 'View antique and collectible profiles' },
+  { name: 'Create Antique Profile', slug: 'antique.create', module: 'ANTIQUES', description: 'Create antique metadata profile' },
+  { name: 'Update Antique Profile', slug: 'antique.update', module: 'ANTIQUES', description: 'Modify antique metadata profile' },
+  { name: 'Delete Antique Profile', slug: 'antique.delete', module: 'ANTIQUES', description: 'Delete antique metadata profile' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -112,6 +118,7 @@ export const ROLES_DATA = [
       'product-option.view', 'product-option.create', 'product-option.update', 'product-option.delete',
       'media.view', 'media.create', 'media.update', 'media.delete',
       'media-folder.view', 'media-folder.create', 'media-folder.update', 'media-folder.delete',
+      'antique.view', 'antique.create', 'antique.update', 'antique.delete',
       'seo.view', 'seo.update'
     ]
   },
@@ -130,6 +137,7 @@ export const ROLES_DATA = [
       'product-option.view', 'product-option.create', 'product-option.update',
       'media.view', 'media.create', 'media.update',
       'media-folder.view', 'media-folder.create', 'media-folder.update',
+      'antique.view', 'antique.create', 'antique.update',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -153,7 +161,8 @@ export const ROLES_DATA = [
       'marketing.view', 'marketing.create', 'marketing.update', 'marketing.delete',
       'product.view', 'collection.view', 'customer.view',
       'variant.view', 'product-option.view',
-      'media.view', 'media-folder.view'
+      'media.view', 'media-folder.view',
+      'antique.view'
     ]
   }
 ];
@@ -829,11 +838,76 @@ export async function runSeed(): Promise<void> {
         { attrSlug: 'material', valSlug: 'wood' },
         { attrSlug: 'style', valSlug: 'traditional' }
       ]
+    },
+    {
+      name: '19th Century Antique Tanjore Royal Saraswati',
+      slug: 'antique-19th-century-tanjore-saraswati',
+      sku: 'LA-ANT-0001',
+      shortDescription: 'Museum-grade 19th Century Tanjore painting adorned with 22K gold foil and uncut Burmese rubies on teak panel.',
+      description: 'An extraordinary heirloom Tanjore masterpiece created in late 19th Century Thanjavur court style. Depicts Goddess Saraswati seated on a carved lotus pedestal with veena, flanked by celestial attendants.',
+      price: 185000,
+      compareAtPrice: 220000,
+      costPrice: 95000,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 1,
+      lowStockThreshold: 1,
+      trackInventory: true,
+      allowBackorder: false,
+      isFeatured: true,
+      isNewArrival: false,
+      isBestseller: true,
+      sortOrder: 6,
+      categorySlug: 'tanjore-painting',
+      collectionSlugs: ['antique-treasures', 'curators-picks', 'the-sanskrit-edit'],
+      attributes: [
+        { attrSlug: 'material', valSlug: 'canvas' },
+        { attrSlug: 'style', valSlug: 'traditional' },
+        { attrSlug: 'theme', valSlug: 'devotional' }
+      ],
+      antique: {
+        era: '19th Century',
+        period: 'Maratha-Tanjore Period',
+        approximateAgeFrom: 1870,
+        approximateAgeTo: 1895,
+        ageDescription: 'Circa 1880 CE',
+        origin: 'Thanjavur, Tamil Nadu',
+        region: 'South India',
+        countryOfOrigin: 'India',
+        artistMaker: 'Master Artisan of Thanjavur Royal Court',
+        attribution: 'Attributed to the lineage of Raja Serfoji II court atelier',
+        schoolOrTradition: 'Tanjore Royal School',
+        material: '22K Gold Foil, Burma Rubies, Jaipur Gemstones, Natural Pigments on Seasoned Teak Panel',
+        technique: 'Traditional Gesso Relief with Embossed Gold Leaf and Gemstone Setting',
+        condition: 'VERY_GOOD',
+        conditionNotes: 'Exceptional preservation of gold leaf relief and mineral pigmentation. Minor natural age-patina on antique teakwood backing.',
+        restorationStatus: 'ORIGINAL',
+        restorationNotes: 'Completely original state with unretouched 22K gold foil and authentic gemstone mounts.',
+        provenance: 'Acquired from the private estate of a distinguished Chettiar heritage collector, Karaikudi.',
+        provenanceNotes: 'Preserved in family sanctuary across four generations since initial acquisition in 1892.',
+        authenticityStatus: 'VERIFIED',
+        authenticityNotes: 'Physical examination and material spectroscopic analysis verified 22K gold composition and period gesso preparation.',
+        acquisitionSource: 'Heritage Private Collection, Karaikudi',
+        acquisitionNotes: 'Purchased directly through registered antiquity heritage transfer.',
+        dimensionsDescription: 'Mounted in original 19th Century hand-carved rosewood sanctum frame with brass fittings',
+        height: 76.2,
+        width: 60.9,
+        depth: 6.5,
+        diameter: null,
+        dimensionUnit: 'CM',
+        weight: 12.8,
+        weightUnit: 'KG',
+        isOneOfAKind: true,
+        isCertified: true,
+        certificateNumber: 'LA-ANT-CERT-2026-0042',
+        certificateIssuer: 'Lagoree Heritage Antiquities Board & Archaeological Council',
+        certificateDate: '2026-01-15T10:00:00.000Z'
+      }
     }
   ];
 
   for (const prodDef of INITIAL_PRODUCTS) {
-    const existing = prisma.product.findUnique({ where: { slug: prodDef.slug } });
+    const existing = prisma.product.findUnique({ where: { slug: prodDef.slug } }) || prisma.product.findUnique({ where: { sku: prodDef.sku } });
     if (!existing) {
       let categoryId: string | null = null;
       if (prodDef.categorySlug) {
@@ -893,6 +967,19 @@ export async function runSeed(): Promise<void> {
                 attributeId: attr.id,
                 attributeValueId: val?.id || null,
                 textValue: val ? null : attrPair.valSlug
+              }
+            });
+          }
+        }
+
+        // Link AntiqueProfile if defined
+        if ((prodDef as any).antique) {
+          const existingProfile = prisma.antiqueProfile.findUnique({ where: { productId: prod.id } });
+          if (!existingProfile) {
+            prisma.antiqueProfile.create({
+              data: {
+                productId: prod.id,
+                ...(prodDef as any).antique
               }
             });
           }
