@@ -22,6 +22,11 @@ import {
   adminAntiquesRouter,
   publicAntiquesRouter
 } from './modules/antiques/antiques.routes.ts';
+import {
+  adminSanskritEditProfileRouter,
+  adminSanskritEditRouter,
+  publicSanskritEditRouter
+} from './modules/sanskrit-edit/sanskrit-edit.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -140,7 +145,8 @@ export function createApp() {
         'Module 6: Product Catalogue Management',
         'Module 7: Product Variants',
         'Module 8: Media Library & Asset Management',
-        'Module 9: Antiques & Collectibles Catalogue Management'
+        'Module 9: Antiques & Collectibles Catalogue Management',
+        'Module 10: The Sanskrit Edit Catalogue & Editorial Layer'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -169,6 +175,7 @@ export function createApp() {
   app.use('/api/v1/admin/roles', adminRolesRoutes);
   app.use('/api/v1/admin/media', adminMediaRouter);
   app.use('/api/v1/admin/antiques', adminAntiquesRouter);
+  app.use('/api/v1/admin/sanskrit-edit', adminSanskritEditRouter);
   app.use('/api/v1/admin/categories', adminCategoryMediaRouter);
   app.use('/api/v1/admin/categories', adminCategoryFiltersRoutes);
   app.use('/api/v1/admin/categories', adminCategoriesRoutes);
@@ -178,6 +185,7 @@ export function createApp() {
   app.use('/api/v1/admin/products', adminProductMediaRouter);
   app.use('/api/v1/admin/products', adminVariantMediaRouter);
   app.use('/api/v1/admin/products', adminAntiqueProfileRouter);
+  app.use('/api/v1/admin/products', adminSanskritEditProfileRouter);
   app.use('/api/v1/admin/products', adminProductOptionsRouter);
   app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);
@@ -187,6 +195,7 @@ export function createApp() {
   app.use('/api/v1/collections', publicCollectionsRoutes);
   app.use('/api/v1/products', publicProductsRoutes);
   app.use('/api/v1/antiques', publicAntiquesRouter);
+  app.use('/api/v1/sanskrit-edit', publicSanskritEditRouter);
 
   // 4. Fallback 404 Handler for undefined admin endpoints
   app.use('/api/v1/admin/*', (req, res) => {

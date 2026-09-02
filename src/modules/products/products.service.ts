@@ -871,6 +871,27 @@ export class ProductsService {
       };
     }
 
+    if (p.sanskritEditProfile && p.sanskritEditProfile.isPublished) {
+      formatted.sanskritEdit = {
+        sanskritTitle: p.sanskritEditProfile.sanskritTitle || null,
+        devanagariText: p.sanskritEditProfile.devanagariText || null,
+        transliteration: p.sanskritEditProfile.transliteration || null,
+        translation: p.sanskritEditProfile.translation || null,
+        meaning: p.sanskritEditProfile.meaning || null,
+        pronunciation: p.sanskritEditProfile.pronunciation || null,
+        pronunciationGuide: p.sanskritEditProfile.pronunciationGuide || null,
+        source: p.sanskritEditProfile.source || null,
+        sourceReference: p.sanskritEditProfile.sourceReference || null,
+        theme: p.sanskritEditProfile.theme || null,
+        context: p.sanskritEditProfile.context || null,
+        editorialContent: p.sanskritEditProfile.editorialContent || null,
+        featuredExcerpt: p.sanskritEditProfile.featuredExcerpt || null,
+        featuredExcerptTranslation: p.sanskritEditProfile.featuredExcerptTranslation || null,
+        displayOrder: Number(p.sanskritEditProfile.displayOrder || 0),
+        isFeatured: Boolean(p.sanskritEditProfile.isFeatured)
+      };
+    }
+
     return formatted;
   }
 }

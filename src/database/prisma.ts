@@ -533,6 +533,39 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_antique_prof_restoration ON antique_profiles(restoration_status);
   CREATE INDEX IF NOT EXISTS idx_antique_prof_authenticity ON antique_profiles(authenticity_status);
   CREATE INDEX IF NOT EXISTS idx_antique_prof_one_of_a_kind ON antique_profiles(is_one_of_a_kind);
+
+  CREATE TABLE IF NOT EXISTS sanskrit_edit_profiles (
+    id TEXT PRIMARY KEY,
+    product_id TEXT UNIQUE NOT NULL,
+    sanskrit_title TEXT,
+    devanagari_text TEXT,
+    transliteration TEXT,
+    translation TEXT,
+    meaning TEXT,
+    pronunciation TEXT,
+    pronunciation_guide TEXT,
+    source TEXT,
+    source_reference TEXT,
+    theme TEXT,
+    context TEXT,
+    editorial_content TEXT,
+    featured_excerpt TEXT,
+    featured_excerpt_translation TEXT,
+    editorial_note TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_featured INTEGER NOT NULL DEFAULT 0,
+    is_published INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_prod_id ON sanskrit_edit_profiles(product_id);
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_published ON sanskrit_edit_profiles(is_published);
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_featured ON sanskrit_edit_profiles(is_featured);
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_display_order ON sanskrit_edit_profiles(display_order);
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_theme ON sanskrit_edit_profiles(theme);
+  CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_source ON sanskrit_edit_profiles(source);
 `);
 
 /**
@@ -1915,6 +1948,10 @@ export const prisma = {
         formatted.antiqueProfile = prisma.antiqueProfile.findUnique({ where: { productId: row.id } });
       }
 
+      if (include?.sanskritEditProfile) {
+        formatted.sanskritEditProfile = prisma.sanskritEditProfile.findUnique({ where: { productId: row.id } });
+      }
+
       return formatted;
     },
 
@@ -2158,8 +2195,9 @@ export const prisma = {
     },
 
     delete: ({ where }: { where: { id: string } }) => {
-      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true } });
+      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true, sanskritEditProfile: true } });
       db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
+      db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -3965,6 +4003,233 @@ export const prisma = {
       if (where?.restorationStatus) { sql += ' AND restoration_status = ?'; params.push(where.restorationStatus); }
       if (where?.authenticityStatus) { sql += ' AND authenticity_status = ?'; params.push(where.authenticityStatus); }
       if (where?.isOneOfAKind !== undefined) { sql += ' AND is_one_of_a_kind = ?'; params.push(where.isOneOfAKind ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  sanskritEditProfile: {
+    findUnique: ({ where, include }: { where: { id?: string; productId?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM sanskrit_edit_profiles WHERE id = ?').get(where.id);
+      } else if (where.productId) {
+        row = db.prepare('SELECT * FROM sanskrit_edit_profiles WHERE product_id = ?').get(where.productId);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        productId: row.product_id,
+        sanskritTitle: row.sanskrit_title || null,
+        devanagariText: row.devanagari_text || null,
+        transliteration: row.transliteration || null,
+        translation: row.translation || null,
+        meaning: row.meaning || null,
+        pronunciation: row.pronunciation || null,
+        pronunciationGuide: row.pronunciation_guide || null,
+        source: row.source || null,
+        sourceReference: row.source_reference || null,
+        theme: row.theme || null,
+        context: row.context || null,
+        editorialContent: row.editorial_content || null,
+        featuredExcerpt: row.featured_excerpt || null,
+        featuredExcerptTranslation: row.featured_excerpt_translation || null,
+        editorialNote: row.editorial_note || null,
+        displayOrder: Number(row.display_order || 0),
+        isFeatured: Boolean(row.is_featured),
+        isPublished: Boolean(row.is_published),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.product) {
+        formatted.product = prisma.product.findUnique({ where: { id: row.product_id } });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM sanskrit_edit_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.theme) { sql += ' AND LOWER(theme) = LOWER(?)'; params.push(where.theme); }
+      if (where?.source) { sql += ' AND LOWER(source) = LOWER(?)'; params.push(where.source); }
+      if (where?.isPublished !== undefined) { sql += ' AND is_published = ?'; params.push(where.isPublished ? 1 : 0); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.sanskritEditProfile.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM sanskrit_edit_profiles WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.theme) { sql += ' AND LOWER(theme) = LOWER(?)'; params.push(where.theme); }
+      if (where?.source) { sql += ' AND LOWER(source) = LOWER(?)'; params.push(where.source); }
+      if (where?.isPublished !== undefined) { sql += ' AND is_published = ?'; params.push(where.isPublished ? 1 : 0); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+
+      if (where?.search) {
+        sql += ' AND (sanskrit_title LIKE ? OR devanagari_text LIKE ? OR transliteration LIKE ? OR translation LIKE ? OR meaning LIKE ? OR source LIKE ? OR theme LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (orderBy) {
+        const field = orderBy.displayOrder ? 'display_order' : orderBy.createdAt ? 'created_at' : orderBy.updatedAt ? 'updated_at' : 'display_order';
+        const dir = (orderBy.displayOrder || orderBy.createdAt || orderBy.updatedAt || 'asc').toUpperCase();
+        sql += ` ORDER BY ${field} ${dir}`;
+      } else {
+        sql += ' ORDER BY display_order ASC, created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.sanskritEditProfile.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO sanskrit_edit_profiles (
+          id, product_id, sanskrit_title, devanagari_text, transliteration,
+          translation, meaning, pronunciation, pronunciation_guide, source,
+          source_reference, theme, context, editorial_content, featured_excerpt,
+          featured_excerpt_translation, editorial_note, display_order, is_featured,
+          is_published, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?
+        )
+      `).run(
+        id,
+        data.productId,
+        data.sanskritTitle || null,
+        data.devanagariText || null,
+        data.transliteration || null,
+        data.translation || null,
+        data.meaning || null,
+        data.pronunciation || null,
+        data.pronunciationGuide || null,
+        data.source || null,
+        data.sourceReference || null,
+        data.theme || null,
+        data.context || null,
+        data.editorialContent || null,
+        data.featuredExcerpt || null,
+        data.featuredExcerptTranslation || null,
+        data.editorialNote || null,
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        data.isFeatured !== undefined ? (data.isFeatured ? 1 : 0) : 0,
+        data.isPublished !== undefined ? (data.isPublished ? 1 : 0) : 0,
+        now,
+        now
+      );
+
+      return prisma.sanskritEditProfile.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; productId?: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.sanskritTitle !== undefined) { updates.push('sanskrit_title = ?'); params.push(data.sanskritTitle ? String(data.sanskritTitle).trim() : null); }
+      if (data.devanagariText !== undefined) { updates.push('devanagari_text = ?'); params.push(data.devanagariText || null); }
+      if (data.transliteration !== undefined) { updates.push('transliteration = ?'); params.push(data.transliteration || null); }
+      if (data.translation !== undefined) { updates.push('translation = ?'); params.push(data.translation || null); }
+      if (data.meaning !== undefined) { updates.push('meaning = ?'); params.push(data.meaning || null); }
+      if (data.pronunciation !== undefined) { updates.push('pronunciation = ?'); params.push(data.pronunciation || null); }
+      if (data.pronunciationGuide !== undefined) { updates.push('pronunciation_guide = ?'); params.push(data.pronunciationGuide || null); }
+      if (data.source !== undefined) { updates.push('source = ?'); params.push(data.source ? String(data.source).trim() : null); }
+      if (data.sourceReference !== undefined) { updates.push('source_reference = ?'); params.push(data.sourceReference ? String(data.sourceReference).trim() : null); }
+      if (data.theme !== undefined) { updates.push('theme = ?'); params.push(data.theme ? String(data.theme).trim() : null); }
+      if (data.context !== undefined) { updates.push('context = ?'); params.push(data.context || null); }
+      if (data.editorialContent !== undefined) { updates.push('editorial_content = ?'); params.push(data.editorialContent || null); }
+      if (data.featuredExcerpt !== undefined) { updates.push('featured_excerpt = ?'); params.push(data.featuredExcerpt || null); }
+      if (data.featuredExcerptTranslation !== undefined) { updates.push('featured_excerpt_translation = ?'); params.push(data.featuredExcerptTranslation || null); }
+      if (data.editorialNote !== undefined) { updates.push('editorial_note = ?'); params.push(data.editorialNote || null); }
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.isPublished !== undefined) { updates.push('is_published = ?'); params.push(data.isPublished ? 1 : 0); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let whereClause = '';
+      if (where.id) {
+        whereClause = 'id = ?';
+        params.push(where.id);
+      } else if (where.productId) {
+        whereClause = 'product_id = ?';
+        params.push(where.productId);
+      }
+
+      db.prepare(`UPDATE sanskrit_edit_profiles SET ${updates.join(', ')} WHERE ${whereClause}`).run(...params);
+      return prisma.sanskritEditProfile.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: { where?: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.isPublished !== undefined) { updates.push('is_published = ?'); params.push(data.isPublished ? 1 : 0); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let sql = `UPDATE sanskrit_edit_profiles SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { id?: string; productId?: string } }) => {
+      const existing = prisma.sanskritEditProfile.findUnique({ where });
+      if (existing) {
+        if (where.id) {
+          db.prepare('DELETE FROM sanskrit_edit_profiles WHERE id = ?').run(where.id);
+        } else if (where.productId) {
+          db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.productId);
+        }
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM sanskrit_edit_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM sanskrit_edit_profiles WHERE 1=1';
+      const params: any[] = [];
+      if (where?.theme) { sql += ' AND LOWER(theme) = LOWER(?)'; params.push(where.theme); }
+      if (where?.source) { sql += ' AND LOWER(source) = LOWER(?)'; params.push(where.source); }
+      if (where?.isPublished !== undefined) { sql += ' AND is_published = ?'; params.push(where.isPublished ? 1 : 0); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }

@@ -415,6 +415,7 @@ model Product {
   variants          ProductVariant[]
   media             ProductMedia[]
   antiqueProfile    AntiqueProfile?
+  sanskritEditProfile SanskritEditProfile?
 
   @@index([slug])
   @@index([sku])
@@ -483,6 +484,42 @@ model AntiqueProfile {
   @@index([isOneOfAKind])
   @@index([createdAt])
   @@map("antique_profiles")
+}
+
+model SanskritEditProfile {
+  id                         String    @id @default(uuid()) @db.VarChar(36)
+  productId                  String    @unique @map("product_id") @db.VarChar(36)
+  sanskritTitle              String?   @map("sanskrit_title") @db.VarChar(255)
+  devanagariText             String?   @map("devanagari_text") @db.Text
+  transliteration            String?   @db.Text
+  translation                String?   @db.Text
+  meaning                    String?   @db.Text
+  pronunciation              String?   @db.VarChar(255)
+  pronunciationGuide         String?   @map("pronunciation_guide") @db.Text
+  source                     String?   @db.VarChar(255)
+  sourceReference            String?   @map("source_reference") @db.VarChar(255)
+  theme                      String?   @db.VarChar(100)
+  context                    String?   @db.Text
+  editorialContent           String?   @map("editorial_content") @db.Text
+  featuredExcerpt            String?   @map("featured_excerpt") @db.Text
+  featuredExcerptTranslation String?   @map("featured_excerpt_translation") @db.Text
+  editorialNote              String?   @map("editorial_note") @db.Text
+  displayOrder               Int       @default(0) @map("display_order")
+  isFeatured                 Boolean   @default(false) @map("is_featured")
+  isPublished                Boolean   @default(false) @map("is_published")
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  product                    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([isPublished])
+  @@index([isFeatured])
+  @@index([displayOrder])
+  @@index([theme])
+  @@index([source])
+  @@index([createdAt])
+  @@map("sanskrit_edit_profiles")
 }
 
 model ProductCollection {

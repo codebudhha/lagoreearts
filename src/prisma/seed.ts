@@ -87,6 +87,12 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Antique Profile', slug: 'antique.update', module: 'ANTIQUES', description: 'Modify antique metadata profile' },
   { name: 'Delete Antique Profile', slug: 'antique.delete', module: 'ANTIQUES', description: 'Delete antique metadata profile' },
 
+  // THE SANSKRIT EDIT (MODULE 10)
+  { name: 'View Sanskrit Edit Profiles', slug: 'sanskrit-edit.view', module: 'SANSKRIT_EDIT', description: 'View curated Sanskrit Edit profiles and metadata' },
+  { name: 'Create Sanskrit Edit Profile', slug: 'sanskrit-edit.create', module: 'SANSKRIT_EDIT', description: 'Create curated Sanskrit Edit profile' },
+  { name: 'Update Sanskrit Edit Profile', slug: 'sanskrit-edit.update', module: 'SANSKRIT_EDIT', description: 'Modify Sanskrit Edit profile and publishing status' },
+  { name: 'Delete Sanskrit Edit Profile', slug: 'sanskrit-edit.delete', module: 'SANSKRIT_EDIT', description: 'Delete Sanskrit Edit profile' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -119,6 +125,7 @@ export const ROLES_DATA = [
       'media.view', 'media.create', 'media.update', 'media.delete',
       'media-folder.view', 'media-folder.create', 'media-folder.update', 'media-folder.delete',
       'antique.view', 'antique.create', 'antique.update', 'antique.delete',
+      'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update', 'sanskrit-edit.delete',
       'seo.view', 'seo.update'
     ]
   },
@@ -138,6 +145,7 @@ export const ROLES_DATA = [
       'media.view', 'media.create', 'media.update',
       'media-folder.view', 'media-folder.create', 'media-folder.update',
       'antique.view', 'antique.create', 'antique.update',
+      'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -162,7 +170,8 @@ export const ROLES_DATA = [
       'product.view', 'collection.view', 'customer.view',
       'variant.view', 'product-option.view',
       'media.view', 'media-folder.view',
-      'antique.view'
+      'antique.view',
+      'sanskrit-edit.view'
     ]
   }
 ];
@@ -903,6 +912,51 @@ export async function runSeed(): Promise<void> {
         certificateIssuer: 'Lagoree Heritage Antiquities Board & Archaeological Council',
         certificateDate: '2026-01-15T10:00:00.000Z'
       }
+    },
+    {
+      name: 'Dharmachakra Pravartana Sacred Brass Wall Panel',
+      slug: 'dharmachakra-pravartana-sacred-brass-wall-panel',
+      sku: 'LA-SAN-0001',
+      shortDescription: 'Sacred brass Indic panel depicting the turning of the wheel of righteousness with classical Sanskrit verses.',
+      description: 'An authoritative heirloom piece celebrating eternal cosmic order and righteous duty, hand-embossed in high-purity brass with Devanagari verse inscriptions.',
+      price: 125000,
+      compareAtPrice: 150000,
+      costPrice: 55000,
+      status: 'ACTIVE',
+      productType: 'SIMPLE',
+      stockQuantity: 5,
+      lowStockThreshold: 1,
+      trackInventory: true,
+      allowBackorder: false,
+      isFeatured: true,
+      isNewArrival: true,
+      isBestseller: true,
+      sortOrder: 1,
+      categorySlug: 'sculptures',
+      collectionSlugs: ['divine-pantheon', 'temple-heritage'],
+      attributes: [
+        { attributeSlug: 'material', valueSlug: 'brass' }
+      ],
+      sanskritEdit: {
+        sanskritTitle: 'धर्मचक्रप्रवर्तनम्',
+        devanagariText: 'धर्मो रक्षति रक्षितः। सत्यमेव जयते नानृतम्॥',
+        transliteration: 'dharmo rakṣati rakṣitaḥ | satyameva jayate nānṛtam ||',
+        translation: 'Dharma protects those who protect Dharma. Truth alone triumphs, not untruth.',
+        meaning: 'The eternal cosmic order and righteous duty uphold harmony in the universe when upheld by individuals with integrity.',
+        pronunciation: 'Dhar-mo Rak-sha-ti Rak-shi-tah',
+        pronunciationGuide: 'Short "a" pronounced like "u" in cup; "ṣ" is retroflex sh.',
+        source: 'Mahabharata & Mundaka Upanishad',
+        sourceReference: 'Vana Parva 313.128 & Mundaka 3.1.6',
+        theme: 'Dharma',
+        context: 'Traditional Vedic and Epic philosophical maxims celebrating truth, justice, and spiritual duty in everyday life.',
+        editorialContent: 'Crafted with exquisite devotion, this brass artifact embodies the sacred wheel of righteousness and the cosmic triumph of truth.',
+        featuredExcerpt: 'सत्यमेव जयते नानृतम्',
+        featuredExcerptTranslation: 'Truth alone triumphs, not untruth',
+        editorialNote: 'Masterpiece verified by Sanskrit editorial panel for prime exhibition.',
+        displayOrder: 1,
+        isFeatured: true,
+        isPublished: true
+      }
     }
   ];
 
@@ -980,6 +1034,19 @@ export async function runSeed(): Promise<void> {
               data: {
                 productId: prod.id,
                 ...(prodDef as any).antique
+              }
+            });
+          }
+        }
+
+        // Link SanskritEditProfile if defined
+        if ((prodDef as any).sanskritEdit) {
+          const existingSanskrit = prisma.sanskritEditProfile.findUnique({ where: { productId: prod.id } });
+          if (!existingSanskrit) {
+            prisma.sanskritEditProfile.create({
+              data: {
+                productId: prod.id,
+                ...(prodDef as any).sanskritEdit
               }
             });
           }
