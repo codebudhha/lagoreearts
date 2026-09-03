@@ -4,8 +4,8 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   // Check auth
-  if (!window.LagoreeAPI.auth.isLoggedIn()) {
-    window.location.href = '/login';
+  if (!window.LagoreeAPI?.auth?.isLoggedIn()) {
+    window.location.href = 'Login-Register - Lagoree Arts.html';
     return;
   }
 
@@ -16,24 +16,42 @@ document.addEventListener('DOMContentLoaded', async () => {
   const totalWishlistEl = document.getElementById('totalWishlistCount');
 
   async function loadDashboard() {
-    const res = await window.LagoreeAPI.auth.getMe();
-    if (!res.success || !res.user) {
+    let res;
+    try {
+      res = await window.LagoreeAPI.auth.getMe();
+    } catch (e) {
+      console.warn('Could not fetch current customer:', e);
+    }
+
+    const user = res?.user || window.LagoreeAPI.auth.getUser();
+    if (!user) {
       window.LagoreeAPI.auth.logout();
       return;
     }
 
-    const user = res.user;
-    if (profileNameEl) profileNameEl.textContent = user.name;
-    if (profileEmailEl) profileEmailEl.textContent = user.email;
+    const fullName = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.name || user.email || 'Connoisseur');
+
+    // Update welcome banner & sidebar profile info
+    const welcomeEl = document.querySelector('.welcome, .account-header .welcome');
+    if (welcomeEl) welcomeEl.textContent = `Welcome back, ${user.firstName || fullName}`;
+
+    const sidebarNameEl = document.querySelector('.account-sidebar .name, .profile .name');
+    if (sidebarNameEl) sidebarNameEl.textContent = fullName;
+
+    const sidebarEmailEl = document.querySelector('.account-sidebar .email, .profile .email');
+    if (sidebarEmailEl) sidebarEmailEl.textContent = user.email || '';
+
+    if (profileNameEl) profileNameEl.textContent = fullName;
+    if (profileEmailEl) profileEmailEl.textContent = user.email || '';
     if (profilePhoneEl) profilePhoneEl.textContent = user.phone || 'Not provided';
 
     const editNameInput = document.querySelector('input[name="profileName"]');
     const editPhoneInput = document.querySelector('input[name="profilePhone"]');
-    if (editNameInput) editNameInput.value = user.name || '';
+    if (editNameInput) editNameInput.value = fullName;
     if (editPhoneInput) editPhoneInput.value = user.phone || '';
 
-    if (totalOrdersEl) totalOrdersEl.textContent = res.stats.totalOrders;
-    if (totalWishlistEl) totalWishlistEl.textContent = res.stats.wishlistCount;
+    if (totalOrdersEl) totalOrdersEl.textContent = res?.stats?.totalOrders || 0;
+    if (totalWishlistEl) totalWishlistEl.textContent = res?.stats?.wishlistCount || 0;
 
     loadOrders();
     loadAddresses();
@@ -115,12 +133,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (profileForm) {
     profileForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = profileForm.querySelector('[name="profileName"]').value;
-      const phone = profileForm.querySelector('[name="profilePhone"]').value;
+      const name = (profileForm.querySelector('[name="profileName"]') || document.getElementById('editFullName'))?.value || '';
+      const phone = (profileForm.querySelector('[name="profilePhone"]') || document.getElementById('editPhone'))?.value || '';
 
-      const res = await window.LagoreeAPI.auth.updateProfile({ name, phone });
+      const parts = name.trim().split(' ');
+      const firstName = parts[0] || 'Connoisseur';
+      const lastName = parts.slice(1).join(' ') || '';
+
+      const res = await window.LagoreeAPI.auth.updateProfile({ firstName, lastName, phone });
       if (res.success) {
-        window.LagoreeToast.show(res.message, 'success');
+        window.LagoreeToast.show(res.message || 'Profile updated successfully', 'success');
         loadDashboard();
       }
     });
@@ -136,7 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const res = await window.LagoreeAPI.auth.changePassword({ currentPassword, newPassword });
       if (res.success) {
-        window.LagoreeToast.show(res.message, 'success');
+        window.LagoreeToast.show(res.message || 'Password changed successfully', 'success');
         passwordForm.reset();
       }
     });
@@ -148,21 +170,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     addAddressForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(addAddressForm);
+      const rawName = (formData.get('fullName') || '').toString().trim();
+      const nameParts = rawName.split(' ');
       const addressData = {
-        fullName: formData.get('fullName'),
+        firstName: nameParts[0] || 'Patron',
+        lastName: nameParts.slice(1).join(' ') || 'Address',
         phone: formData.get('phone'),
-        street: formData.get('street'),
-        apartment: formData.get('apartment') || '',
+        addressLine1: formData.get('street'),
+        addressLine2: formData.get('apartment') || '',
         city: formData.get('city'),
         state: formData.get('state'),
         postalCode: formData.get('postalCode'),
-        country: formData.get('country') || 'India',
-        isDefault: addAddressForm.querySelector('[name="isDefault"]')?.checked ? 1 : 0
+        country: formData.get('country') || 'INDIA',
+        isDefaultShipping: Boolean(addAddressForm.querySelector('[name="isDefault"]')?.checked)
       };
 
       const res = await window.LagoreeAPI.auth.addAddress(addressData);
       if (res.success) {
-        window.LagoreeToast.show(res.message, 'success');
+        window.LagoreeToast.show(res.message || 'Address saved successfully', 'success');
         addAddressForm.reset();
         loadAddresses();
       }

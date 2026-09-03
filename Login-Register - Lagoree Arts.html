@@ -2396,17 +2396,33 @@ footer {
 
       if (!valid) return;
 
-      // Simulate Authentication Progress
+      // Real Customer Authentication
       submitBtn.disabled = true;
       submitBtn.innerHTML = '<span>Verifying Credentials…</span>';
       toast('Verifying credentials with Lagoree Atelier…');
 
-      setTimeout(function() {
-        toast('✓ Welcome back, Connoisseur');
-        setTimeout(function() {
-          window.location.href = 'My Account Lagoree Arts.html';
-        }, 900);
-      }, 1000);
+      (async function() {
+        try {
+          var res = await window.LagoreeAPI.auth.login({ email: emailVal, password: pwdVal });
+          if (res.success) {
+            toast('✓ Welcome back, ' + (res.user?.firstName || 'Connoisseur'));
+            setTimeout(function() {
+              window.location.href = 'My Account Lagoree Arts.html';
+            }, 600);
+          } else {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>Sign In to Account</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+            passwordError.textContent = res.error?.message || res.message || 'Invalid email or password.';
+            loginPassword.classList.add('has-error');
+            passwordError.classList.add('show');
+          }
+        } catch (err) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>Sign In to Account</span>';
+          passwordError.textContent = err.message || 'Failed to authenticate.';
+          passwordError.classList.add('show');
+        }
+      })();
     });
 
     // Real-time error clearance
@@ -2599,17 +2615,39 @@ footer {
 
       if (!valid) return;
 
-      // Simulate Registration
+      // Real Customer Registration
       regSubmitBtn.disabled = true;
       regSubmitBtn.innerHTML = '<span>Creating Connoisseur Portfolio…</span>';
       toast('Establishing your private patron account…');
 
-      setTimeout(function() {
-        toast('✓ Welcome to the Circle of Lagoree Patrons');
-        setTimeout(function() {
-          window.location.href = 'My Account Lagoree Arts.html';
-        }, 1000);
-      }, 1200);
+      (async function() {
+        try {
+          var res = await window.LagoreeAPI.auth.register({
+            firstName: firstName.value.trim(),
+            lastName: lastName.value.trim(),
+            email: regEmail.value.trim(),
+            password: regPassword.value,
+            phone: document.getElementById('regPhone') ? document.getElementById('regPhone').value.trim() : ''
+          });
+          if (res.success) {
+            toast('✓ Welcome to the Circle of Lagoree Patrons');
+            setTimeout(function() {
+              window.location.href = 'My Account Lagoree Arts.html';
+            }, 600);
+          } else {
+            regSubmitBtn.disabled = false;
+            regSubmitBtn.innerHTML = '<span>Create Connoisseur Account</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>';
+            regEmailError.textContent = res.error?.message || res.message || 'Registration failed.';
+            regEmail.classList.add('has-error');
+            regEmailError.classList.add('show');
+          }
+        } catch (err) {
+          regSubmitBtn.disabled = false;
+          regSubmitBtn.innerHTML = '<span>Create Connoisseur Account</span>';
+          regEmailError.textContent = err.message || 'Registration failed.';
+          regEmailError.classList.add('show');
+        }
+      })();
     });
 
     ['firstName', 'lastName', 'regEmail', 'regConfirmPassword'].forEach(function(id) {
