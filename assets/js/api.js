@@ -134,58 +134,75 @@ export const API = {
   // Authentication
   auth: {
     async register(userData) {
-      const res = await request('/auth/register', { method: 'POST', body: JSON.stringify(userData) });
-      if (res.success && res.token) {
-        localStorage.setItem('lagoree_token', res.token);
-        localStorage.setItem('lagoree_user', JSON.stringify(res.user));
-        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: res.user }));
+      const res = await request('/v1/auth/customer/register', { method: 'POST', body: JSON.stringify(userData) });
+      const payload = res.data || res;
+      const token = payload.accessToken || payload.token;
+      const user = payload.customer || payload.user;
+      if (res.success && token) {
+        localStorage.setItem('lagoree_token', token);
+        if (user) localStorage.setItem('lagoree_user', JSON.stringify(user));
+        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: user }));
       }
-      return res;
+      return { success: res.success, user, token, ...res };
     },
     async login(credentials) {
-      const res = await request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) });
-      if (res.success && res.token) {
-        localStorage.setItem('lagoree_token', res.token);
-        localStorage.setItem('lagoree_user', JSON.stringify(res.user));
-        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: res.user }));
+      const res = await request('/v1/auth/customer/login', { method: 'POST', body: JSON.stringify(credentials) });
+      const payload = res.data || res;
+      const token = payload.accessToken || payload.token;
+      const user = payload.customer || payload.user;
+      if (res.success && token) {
+        localStorage.setItem('lagoree_token', token);
+        if (user) localStorage.setItem('lagoree_user', JSON.stringify(user));
+        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: user }));
       }
-      return res;
+      return { success: res.success, user, token, ...res };
     },
     async getMe() {
-      const res = await request('/auth/me', { method: 'GET', showToast: false });
-      if (res.success && res.user) {
-        localStorage.setItem('lagoree_user', JSON.stringify(res.user));
+      const res = await request('/v1/auth/customer/me', { method: 'GET', showToast: false });
+      const payload = res.data || res;
+      const user = payload.customer || payload;
+      if (res.success && user) {
+        localStorage.setItem('lagoree_user', JSON.stringify(user));
       }
-      return res;
+      return { success: res.success, user, ...res };
     },
     async updateProfile(profileData) {
-      const res = await request('/auth/profile', { method: 'PUT', body: JSON.stringify(profileData) });
-      if (res.success && res.user) {
-        localStorage.setItem('lagoree_user', JSON.stringify(res.user));
-        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: res.user }));
+      const res = await request('/v1/customer/profile', { method: 'PATCH', body: JSON.stringify(profileData) });
+      const payload = res.data || res;
+      const user = payload.customer || payload;
+      if (res.success && user) {
+        localStorage.setItem('lagoree_user', JSON.stringify(user));
+        window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: user }));
       }
-      return res;
+      return { success: res.success, user, ...res };
     },
     async changePassword(passwords) {
-      return request('/auth/change-password', { method: 'PUT', body: JSON.stringify(passwords) });
+      return request('/v1/auth/customer/change-password', { method: 'POST', body: JSON.stringify(passwords) });
     },
     async getAddresses() {
-      return request('/auth/addresses', { method: 'GET' });
+      const res = await request('/v1/customer/addresses', { method: 'GET' });
+      return { success: res.success, addresses: res.data || [], ...res };
     },
     async addAddress(address) {
-      return request('/auth/addresses', { method: 'POST', body: JSON.stringify(address) });
+      return request('/v1/customer/addresses', { method: 'POST', body: JSON.stringify(address) });
     },
     async updateAddress(id, address) {
-      return request(`/auth/addresses/${id}`, { method: 'PUT', body: JSON.stringify(address) });
+      return request(`/v1/customer/addresses/${id}`, { method: 'PATCH', body: JSON.stringify(address) });
     },
     async deleteAddress(id) {
-      return request(`/auth/addresses/${id}`, { method: 'DELETE' });
+      return request(`/v1/customer/addresses/${id}`, { method: 'DELETE' });
+    },
+    async setDefaultShipping(id) {
+      return request(`/v1/customer/addresses/${id}/default-shipping`, { method: 'POST' });
+    },
+    async setDefaultBilling(id) {
+      return request(`/v1/customer/addresses/${id}/default-billing`, { method: 'POST' });
     },
     logout() {
       localStorage.removeItem('lagoree_token');
       localStorage.removeItem('lagoree_user');
       window.dispatchEvent(new CustomEvent('lagoree:auth-changed', { detail: null }));
-      window.location.href = '/login';
+      window.location.href = 'Login-Register - Lagoree Arts.html';
     },
     getUser() {
       try {

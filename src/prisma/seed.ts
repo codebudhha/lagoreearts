@@ -458,6 +458,51 @@ export async function runSeed(): Promise<void> {
     console.log(`✓ Super Admin (${defaultAdminEmail}) already initialized`);
   }
 
+  // 3b. Seed Default Demo Customer Patrons
+  const defaultCustomerPassword = 'LagoreeArtPass@2026';
+  const defaultCustomerHash = await hashPassword(defaultCustomerPassword);
+
+  const demoCustomers = [
+    {
+      email: 'aarav@example.com',
+      firstName: 'Aarav',
+      lastName: 'Mehta',
+      phone: '+91 98765 43210'
+    },
+    {
+      email: 'rohan.sharma@lagoreearts.com',
+      firstName: 'Rohan',
+      lastName: 'Sharma',
+      phone: '+91 98765 12345'
+    },
+    {
+      email: 'meera.kapoor@example.com',
+      firstName: 'Meera',
+      lastName: 'Kapoor',
+      phone: '+91 98201 45678'
+    }
+  ];
+
+  for (const c of demoCustomers) {
+    const norm = c.email.toLowerCase().trim();
+    const existing = prisma.customer.findUnique({ where: { normalizedEmail: norm } });
+    if (!existing) {
+      prisma.customer.create({
+        data: {
+          email: c.email,
+          normalizedEmail: norm,
+          passwordHash: defaultCustomerHash,
+          firstName: c.firstName,
+          lastName: c.lastName,
+          phone: c.phone,
+          status: 'ACTIVE',
+          emailVerifiedAt: new Date()
+        }
+      });
+      console.log(`✓ Seeded demo patron customer (${c.email})`);
+    }
+  }
+
   // 4. Seed Initial Heritage Categories
   const rootArt = prisma.category.findUnique({ where: { slug: 'art' } }) || prisma.category.create({
     data: {
