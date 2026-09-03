@@ -933,6 +933,157 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_jpm_role ON journal_post_media(role);
   CREATE INDEX IF NOT EXISTS idx_jpm_sort_order ON journal_post_media(sort_order);
   CREATE INDEX IF NOT EXISTS idx_jpm_is_primary ON journal_post_media(is_primary);
+
+  CREATE TABLE IF NOT EXISTS lookbooks (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    short_description TEXT,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'DRAFT',
+    featured INTEGER NOT NULL DEFAULT 0,
+    cover_media_id TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    published_at TEXT,
+    seo_title TEXT,
+    seo_description TEXT,
+    seo_keywords TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (cover_media_id) REFERENCES media_assets(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_slug ON lookbooks(slug);
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_status ON lookbooks(status);
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_featured ON lookbooks(featured);
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_display_order ON lookbooks(display_order);
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_published_at ON lookbooks(published_at);
+  CREATE INDEX IF NOT EXISTS idx_lookbooks_created_at ON lookbooks(created_at);
+
+  CREATE TABLE IF NOT EXISTS lookbook_sections (
+    id TEXT PRIMARY KEY,
+    lookbook_id TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'EDITORIAL',
+    title TEXT,
+    subtitle TEXT,
+    body TEXT,
+    cta_label TEXT,
+    cta_url TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_visible INTEGER NOT NULL DEFAULT 1,
+    layout TEXT,
+    config TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (lookbook_id) REFERENCES lookbooks(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lb_sections_lookbook_id ON lookbook_sections(lookbook_id);
+  CREATE INDEX IF NOT EXISTS idx_lb_sections_type ON lookbook_sections(type);
+  CREATE INDEX IF NOT EXISTS idx_lb_sections_display_order ON lookbook_sections(display_order);
+  CREATE INDEX IF NOT EXISTS idx_lb_sections_is_visible ON lookbook_sections(is_visible);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_products (
+    lookbook_section_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, product_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsp_section_id ON lookbook_section_products(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsp_product_id ON lookbook_section_products(product_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsp_display_order ON lookbook_section_products(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_collections (
+    lookbook_section_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, collection_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsc_section_id ON lookbook_section_collections(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsc_collection_id ON lookbook_section_collections(collection_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsc_display_order ON lookbook_section_collections(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_artists (
+    lookbook_section_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, artist_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsa_section_id ON lookbook_section_artists(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsa_artist_id ON lookbook_section_artists(artist_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsa_display_order ON lookbook_section_artists(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_categories (
+    lookbook_section_id TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, category_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsk_section_id ON lookbook_section_categories(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsk_category_id ON lookbook_section_categories(category_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsk_display_order ON lookbook_section_categories(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_journals (
+    lookbook_section_id TEXT NOT NULL,
+    journal_post_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, journal_post_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsj_section_id ON lookbook_section_journals(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsj_journal_id ON lookbook_section_journals(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsj_display_order ON lookbook_section_journals(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_sanskrit_edits (
+    lookbook_section_id TEXT NOT NULL,
+    sanskrit_edit_profile_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, sanskrit_edit_profile_id),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (sanskrit_edit_profile_id) REFERENCES sanskrit_edit_profiles(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbss_section_id ON lookbook_section_sanskrit_edits(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbss_sanskrit_id ON lookbook_section_sanskrit_edits(sanskrit_edit_profile_id);
+  CREATE INDEX IF NOT EXISTS idx_lbss_display_order ON lookbook_section_sanskrit_edits(display_order);
+
+  CREATE TABLE IF NOT EXISTS lookbook_section_media (
+    lookbook_section_id TEXT NOT NULL,
+    media_asset_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'GALLERY',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (lookbook_section_id, media_asset_id, role),
+    FOREIGN KEY (lookbook_section_id) REFERENCES lookbook_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_asset_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_lbsm_section_id ON lookbook_section_media(lookbook_section_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsm_media_id ON lookbook_section_media(media_asset_id);
+  CREATE INDEX IF NOT EXISTS idx_lbsm_role ON lookbook_section_media(role);
+  CREATE INDEX IF NOT EXISTS idx_lbsm_sort_order ON lookbook_section_media(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_lbsm_is_primary ON lookbook_section_media(is_primary);
 `);
 
 /**
@@ -1604,6 +1755,7 @@ export const prisma = {
         db.prepare('DELETE FROM category_media WHERE category_id = ?').run(where.id);
         db.prepare('DELETE FROM category_attributes WHERE category_id = ?').run(where.id);
         db.prepare('DELETE FROM homepage_section_categories WHERE category_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_categories WHERE category_id = ?').run(where.id);
         db.prepare('UPDATE categories SET parent_id = NULL WHERE parent_id = ?').run(where.id);
         const prods: any[] = db.prepare('SELECT id FROM products WHERE category_id = ?').all(where.id);
         for (const p of prods) {
@@ -2234,6 +2386,7 @@ export const prisma = {
       const coll = prisma.collection.findUnique({ where });
       db.prepare('DELETE FROM homepage_section_collections WHERE collection_id = ?').run(where.id);
       db.prepare('DELETE FROM journal_post_collections WHERE collection_id = ?').run(where.id);
+      db.prepare('DELETE FROM lookbook_section_collections WHERE collection_id = ?').run(where.id);
       db.prepare('DELETE FROM collections WHERE id = ?').run(where.id);
       return coll;
     }
@@ -2501,14 +2654,14 @@ export const prisma = {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
-        data.name.trim(),
-        data.slug.toLowerCase().trim(),
-        data.sku.trim(),
+        (data.name || data.title || '').trim(),
+        (data.slug || '').toLowerCase().trim(),
+        (data.sku || '').trim(),
         data.shortDescription || null,
         data.description || null,
         data.status || 'DRAFT',
         data.productType || 'SIMPLE',
-        Number(data.price),
+        Number(data.price ?? data.basePrice ?? 0),
         data.compareAtPrice !== undefined && data.compareAtPrice !== null ? Number(data.compareAtPrice) : null,
         data.costPrice !== undefined && data.costPrice !== null ? Number(data.costPrice) : null,
         data.currency || 'INR',
@@ -2587,6 +2740,7 @@ export const prisma = {
       db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM homepage_section_products WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM journal_post_products WHERE product_id = ?').run(where.id);
+      db.prepare('DELETE FROM lookbook_section_products WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -3625,6 +3779,13 @@ export const prisma = {
         db.prepare('DELETE FROM product_variant_media').run();
         db.prepare('DELETE FROM category_media').run();
         db.prepare('DELETE FROM collection_media').run();
+        db.prepare('DELETE FROM artist_media').run();
+        db.prepare('DELETE FROM homepage_section_media').run();
+        db.prepare('DELETE FROM journal_post_media').run();
+        db.prepare('DELETE FROM lookbook_section_media').run();
+        db.prepare('UPDATE lookbooks SET cover_media_id = NULL').run();
+        db.prepare('UPDATE homepages SET og_image_id = NULL').run();
+        db.prepare('UPDATE journal_authors SET avatar_media_id = NULL').run();
         db.prepare('DELETE FROM media_assets').run();
         return;
       }
@@ -4596,6 +4757,7 @@ export const prisma = {
       const existing = prisma.sanskritEditProfile.findUnique({ where });
       if (existing) {
         db.prepare('DELETE FROM journal_post_sanskrit_edits WHERE sanskrit_edit_profile_id = ?').run(existing.id);
+        db.prepare('DELETE FROM lookbook_section_sanskrit_edits WHERE sanskrit_edit_profile_id = ?').run(existing.id);
         if (where.id) {
           db.prepare('DELETE FROM sanskrit_edit_profiles WHERE id = ?').run(where.id);
         } else if (where.productId) {
@@ -4842,6 +5004,7 @@ export const prisma = {
         db.prepare('DELETE FROM artist_media WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM homepage_section_artists WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM journal_post_artists WHERE artist_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_artists WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM artists WHERE id = ?').run(where.id);
       }
       return existing;
@@ -6619,6 +6782,7 @@ export const prisma = {
         db.prepare('DELETE FROM journal_post_sanskrit_edits WHERE journal_post_id = ?').run(where.id);
         db.prepare('DELETE FROM journal_post_related_posts WHERE journal_post_id = ? OR related_post_id = ?').run(where.id, where.id);
         db.prepare('DELETE FROM journal_post_media WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_journals WHERE journal_post_id = ?').run(where.id);
         db.prepare('DELETE FROM journal_posts WHERE id = ?').run(where.id);
       }
       return existing;
@@ -7053,6 +7217,811 @@ export const prisma = {
       let sql = 'SELECT COUNT(*) as count FROM journal_post_media WHERE 1=1';
       const params: any[] = [];
       if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  lookbook: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM lookbooks WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM lookbooks WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        shortDescription: row.short_description || null,
+        description: row.description || null,
+        status: row.status,
+        featured: Boolean(row.featured),
+        coverMediaId: row.cover_media_id || null,
+        displayOrder: Number(row.display_order || 0),
+        publishedAt: row.published_at ? new Date(row.published_at) : null,
+        seoTitle: row.seo_title || null,
+        seoDescription: row.seo_description || null,
+        seoKeywords: row.seo_keywords || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.coverMedia && row.cover_media_id) {
+        formatted.coverMedia = prisma.mediaAsset.findUnique({ where: { id: row.cover_media_id } });
+      }
+      if (include?.sections) {
+        const secInclude = typeof include.sections === 'object' ? include.sections.include : undefined;
+        formatted.sections = prisma.lookbookSection.findMany({
+          where: { lookbookId: row.id },
+          include: secInclude || {
+            products: { include: { product: true } },
+            collections: { include: { collection: true } },
+            artists: { include: { artist: true } },
+            categories: { include: { category: true } },
+            journals: { include: { journalPost: true } },
+            sanskritEdits: { include: { sanskritEditProfile: true } },
+            media: { include: { media: true } }
+          },
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM lookbooks WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.featured !== undefined) { sql += ' AND featured = ?'; params.push(where.featured ? 1 : 0); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.lookbook.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM lookbooks WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) {
+        sql += ' AND status = ?';
+        params.push(where.status);
+      }
+      if (where?.featured !== undefined) {
+        sql += ' AND featured = ?';
+        params.push(where.featured ? 1 : 0);
+      }
+      if (where?.publishedAtLTE) {
+        sql += ' AND published_at <= ?';
+        params.push(new Date(where.publishedAtLTE).toISOString());
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(title) LIKE LOWER(?) OR LOWER(short_description) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (orderBy?.publishedAt) {
+        sql += ` ORDER BY published_at ${orderBy.publishedAt.toUpperCase()}, created_at DESC`;
+      } else if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}, title ASC`;
+      } else if (orderBy?.title) {
+        sql += ` ORDER BY title ${orderBy.title.toUpperCase()}`;
+      } else if (orderBy?.updatedAt) {
+        sql += ` ORDER BY updated_at ${orderBy.updatedAt.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC, title ASC, created_at DESC';
+      }
+
+      if (take !== undefined) sql += ` LIMIT ${take}`;
+      if (skip !== undefined) sql += ` OFFSET ${skip}`;
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.lookbook.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      const publishedAt = data.publishedAt ? new Date(data.publishedAt).toISOString() : (data.status === 'PUBLISHED' ? now : null);
+
+      db.prepare(`
+        INSERT INTO lookbooks (
+          id, title, slug, short_description, description, status, featured,
+          cover_media_id, display_order, published_at, seo_title, seo_description, seo_keywords,
+          created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?
+        )
+      `).run(
+        id,
+        data.title.trim(),
+        data.slug.trim(),
+        data.shortDescription || null,
+        data.description || null,
+        data.status || 'DRAFT',
+        data.featured ? 1 : 0,
+        data.coverMediaId || null,
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        publishedAt,
+        data.seoTitle || null,
+        data.seoDescription || null,
+        data.seoKeywords || null,
+        now,
+        now
+      );
+
+      return prisma.lookbook.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.lookbook.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.title !== undefined) { updates.push('title = ?'); params.push(data.title.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.trim()); }
+      if (data.shortDescription !== undefined) { updates.push('short_description = ?'); params.push(data.shortDescription || null); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description || null); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.featured !== undefined) { updates.push('featured = ?'); params.push(data.featured ? 1 : 0); }
+      if (data.coverMediaId !== undefined) { updates.push('cover_media_id = ?'); params.push(data.coverMediaId || null); }
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.publishedAt !== undefined) {
+        updates.push('published_at = ?');
+        params.push(data.publishedAt ? new Date(data.publishedAt).toISOString() : null);
+      }
+      if (data.seoTitle !== undefined) { updates.push('seo_title = ?'); params.push(data.seoTitle || null); }
+      if (data.seoDescription !== undefined) { updates.push('seo_description = ?'); params.push(data.seoDescription || null); }
+      if (data.seoKeywords !== undefined) { updates.push('seo_keywords = ?'); params.push(data.seoKeywords || null); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE lookbooks SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.lookbook.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.lookbook.findUnique({ where, include: { sections: true } });
+      if (existing) {
+        const sections: any[] = db.prepare('SELECT id FROM lookbook_sections WHERE lookbook_id = ?').all(where.id);
+        for (const s of sections) {
+          prisma.lookbookSection.delete({ where: { id: s.id } });
+        }
+        db.prepare('DELETE FROM lookbooks WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbooks WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM lookbooks WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.featured !== undefined) { sql += ' AND featured = ?'; params.push(where.featured ? 1 : 0); }
+      if (where?.publishedAtLTE) {
+        sql += ' AND published_at <= ?';
+        params.push(new Date(where.publishedAtLTE).toISOString());
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(title) LIKE LOWER(?) OR LOWER(short_description) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  lookbookSection: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM lookbook_sections WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        lookbookId: row.lookbook_id,
+        type: row.type,
+        title: row.title || null,
+        subtitle: row.subtitle || null,
+        body: row.body || null,
+        ctaLabel: row.cta_label || null,
+        ctaUrl: row.cta_url || null,
+        displayOrder: Number(row.display_order || 0),
+        isVisible: Boolean(row.is_visible),
+        layout: row.layout || null,
+        config: row.config || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.lookbook) {
+        formatted.lookbook = prisma.lookbook.findUnique({ where: { id: row.lookbook_id } });
+      }
+      if (include?.products) {
+        formatted.products = prisma.lookbookSectionProduct.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { product: true }
+        });
+      }
+      if (include?.collections) {
+        formatted.collections = prisma.lookbookSectionCollection.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { collection: true }
+        });
+      }
+      if (include?.artists) {
+        formatted.artists = prisma.lookbookSectionArtist.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { artist: true }
+        });
+      }
+      if (include?.categories) {
+        formatted.categories = prisma.lookbookSectionCategory.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { category: true }
+        });
+      }
+      if (include?.journals) {
+        formatted.journals = prisma.lookbookSectionJournal.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { journalPost: true }
+        });
+      }
+      if (include?.sanskritEdits) {
+        formatted.sanskritEdits = prisma.lookbookSectionSanskritEdit.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { sanskritEditProfile: true }
+        });
+      }
+      if (include?.media) {
+        formatted.media = prisma.lookbookSectionMedia.findMany({
+          where: { lookbookSectionId: row.id },
+          include: { media: true }
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.lookbookId) { sql += ' AND lookbook_id = ?'; params.push(where.lookbookId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.lookbookSection.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookId) { sql += ' AND lookbook_id = ?'; params.push(where.lookbookId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}, created_at ASC`;
+      } else {
+        sql += ' ORDER BY display_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.lookbookSection.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      const configStr = data.config ? (typeof data.config === 'string' ? data.config : JSON.stringify(data.config)) : null;
+
+      db.prepare(`
+        INSERT INTO lookbook_sections (
+          id, lookbook_id, type, title, subtitle, body, cta_label, cta_url,
+          display_order, is_visible, layout, config, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?
+        )
+      `).run(
+        id,
+        data.lookbookId,
+        data.type || 'EDITORIAL',
+        data.title ? data.title.trim() : null,
+        data.subtitle ? data.subtitle.trim() : null,
+        data.body || null,
+        data.ctaLabel ? data.ctaLabel.trim() : null,
+        data.ctaUrl ? data.ctaUrl.trim() : null,
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        data.isVisible !== undefined ? (data.isVisible ? 1 : 0) : 1,
+        data.layout || null,
+        configStr,
+        now,
+        now
+      );
+
+      return prisma.lookbookSection.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.lookbookSection.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.title !== undefined) { updates.push('title = ?'); params.push(data.title ? data.title.trim() : null); }
+      if (data.subtitle !== undefined) { updates.push('subtitle = ?'); params.push(data.subtitle ? data.subtitle.trim() : null); }
+      if (data.body !== undefined) { updates.push('body = ?'); params.push(data.body || null); }
+      if (data.ctaLabel !== undefined) { updates.push('cta_label = ?'); params.push(data.ctaLabel ? data.ctaLabel.trim() : null); }
+      if (data.ctaUrl !== undefined) { updates.push('cta_url = ?'); params.push(data.ctaUrl ? data.ctaUrl.trim() : null); }
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.isVisible !== undefined) { updates.push('is_visible = ?'); params.push(data.isVisible ? 1 : 0); }
+      if (data.layout !== undefined) { updates.push('layout = ?'); params.push(data.layout || null); }
+      if (data.config !== undefined) {
+        updates.push('config = ?');
+        params.push(data.config ? (typeof data.config === 'string' ? data.config : JSON.stringify(data.config)) : null);
+      }
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE lookbook_sections SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.lookbookSection.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.lookbookSection.findUnique({
+        where,
+        include: { products: true, collections: true, artists: true, categories: true, journals: true, sanskritEdits: true, media: true }
+      });
+      if (existing) {
+        db.prepare('DELETE FROM lookbook_section_products WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_collections WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_artists WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_categories WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_journals WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_sanskrit_edits WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_section_media WHERE lookbook_section_id = ?').run(where.id);
+        db.prepare('DELETE FROM lookbook_sections WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.lookbookId) { sql += ' AND lookbook_id = ?'; params.push(where.lookbookId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM lookbook_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookId) { sql += ' AND lookbook_id = ?'; params.push(where.lookbookId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  lookbookSectionProduct: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          productId: r.product_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.product) {
+          item.product = prisma.product.findUnique({
+            where: { id: r.product_id },
+            include: { category: true, media: true, antiqueProfile: true, sanskritEditProfile: true, artists: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_products (lookbook_section_id, product_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.productId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, productId: data.productId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionCollection: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          collectionId: r.collection_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.collection) {
+          item.collection = prisma.collection.findUnique({
+            where: { id: r.collection_id },
+            include: { media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_collections (lookbook_section_id, collection_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.collectionId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, collectionId: data.collectionId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionArtist: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          artistId: r.artist_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.artist) {
+          item.artist = prisma.artist.findUnique({
+            where: { id: r.artist_id },
+            include: { media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_artists (lookbook_section_id, artist_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.artistId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, artistId: data.artistId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionCategory: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          categoryId: r.category_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.category) {
+          item.category = prisma.category.findUnique({
+            where: { id: r.category_id },
+            include: { media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_categories (lookbook_section_id, category_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.categoryId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, categoryId: data.categoryId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionJournal: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_journals WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          journalPostId: r.journal_post_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.journalPost) {
+          item.journalPost = prisma.journalPost.findUnique({
+            where: { id: r.journal_post_id },
+            include: { author: true, category: true, media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_journals (lookbook_section_id, journal_post_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.journalPostId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, journalPostId: data.journalPostId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_journals WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionSanskritEdit: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_sanskrit_edits WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.sanskritEditProfileId) { sql += ' AND sanskrit_edit_profile_id = ?'; params.push(where.sanskritEditProfileId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          sanskritEditProfileId: r.sanskrit_edit_profile_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.sanskritEditProfile) {
+          item.sanskritEditProfile = prisma.sanskritEditProfile.findUnique({
+            where: { id: r.sanskrit_edit_profile_id },
+            include: { product: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_sanskrit_edits (lookbook_section_id, sanskrit_edit_profile_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.lookbookSectionId, data.sanskritEditProfileId, Number(data.displayOrder || 0), now);
+      return { lookbookSectionId: data.lookbookSectionId, sanskritEditProfileId: data.sanskritEditProfileId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_sanskrit_edits WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.sanskritEditProfileId) { sql += ' AND sanskrit_edit_profile_id = ?'; params.push(where.sanskritEditProfileId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  lookbookSectionMedia: {
+    findUnique: ({ where, include }: { where: { lookbookSectionId_mediaAssetId_role: { lookbookSectionId: string; mediaAssetId: string; role: string } }; include?: any }) => {
+      const target = where.lookbookSectionId_mediaAssetId_role;
+      const r: any = db.prepare('SELECT * FROM lookbook_section_media WHERE lookbook_section_id = ? AND media_asset_id = ? AND role = ?').get(target.lookbookSectionId, target.mediaAssetId, target.role);
+      if (!r) return null;
+      const formatted: any = {
+        lookbookSectionId: r.lookbook_section_id,
+        mediaAssetId: r.media_asset_id,
+        role: r.role,
+        sortOrder: Number(r.sort_order || 0),
+        isPrimary: Boolean(r.is_primary),
+        createdAt: new Date(r.created_at)
+      };
+      if (include?.media || include?.mediaAsset) {
+        formatted.media = prisma.mediaAsset.findUnique({ where: { id: r.media_asset_id } });
+        formatted.mediaAsset = formatted.media;
+      }
+      return formatted;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM lookbook_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          lookbookSectionId: r.lookbook_section_id,
+          mediaAssetId: r.media_asset_id,
+          role: r.role,
+          sortOrder: Number(r.sort_order || 0),
+          isPrimary: Boolean(r.is_primary),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.media || include?.mediaAsset) {
+          item.media = prisma.mediaAsset.findUnique({ where: { id: r.media_asset_id } });
+          item.mediaAsset = item.media;
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO lookbook_section_media (lookbook_section_id, media_asset_id, role, sort_order, is_primary, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.lookbookSectionId,
+        data.mediaAssetId,
+        data.role || 'GALLERY',
+        Number(data.sortOrder || 0),
+        data.isPrimary ? 1 : 0,
+        now
+      );
+      return prisma.lookbookSectionMedia.findUnique({
+        where: { lookbookSectionId_mediaAssetId_role: { lookbookSectionId: data.lookbookSectionId, mediaAssetId: data.mediaAssetId, role: data.role || 'GALLERY' } }
+      });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (updates.length === 0) return;
+
+      let sql = `UPDATE lookbook_section_media SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { lookbookSectionId_mediaAssetId_role: { lookbookSectionId: string; mediaAssetId: string; role: string } } }) => {
+      const target = where.lookbookSectionId_mediaAssetId_role;
+      const existing = prisma.lookbookSectionMedia.findUnique({ where });
+      db.prepare('DELETE FROM lookbook_section_media WHERE lookbook_section_id = ? AND media_asset_id = ? AND role = ?').run(target.lookbookSectionId, target.mediaAssetId, target.role);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM lookbook_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM lookbook_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
       if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
       if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
       const res: any = db.prepare(sql).get(...params);

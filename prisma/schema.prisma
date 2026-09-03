@@ -345,6 +345,7 @@ model Category {
   products           Product[]
   media              CategoryMedia[]
   homepageSections   HomepageSectionCategory[]
+  lookbookSections   LookbookSectionCategory[]
 
   @@index([slug])
   @@index([status])
@@ -448,6 +449,7 @@ model Collection {
   media              CollectionMedia[]
   homepageSections   HomepageSectionCollection[]
   journalPosts       JournalPostCollection[]
+  lookbookSections   LookbookSectionCollection[]
 
   @@index([slug])
   @@index([status])
@@ -503,6 +505,7 @@ model Product {
   artists           ProductArtist[]
   homepageSections  HomepageSectionProduct[]
   journalPosts      JournalPostProduct[]
+  lookbookSections  LookbookSectionProduct[]
 
   @@index([slug])
   @@index([sku])
@@ -599,6 +602,7 @@ model SanskritEditProfile {
 
   product                    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
   journalPosts               JournalPostSanskritEdit[]
+  lookbookSections           LookbookSectionSanskritEdit[]
 
   @@index([productId])
   @@index([isPublished])
@@ -770,6 +774,8 @@ model MediaAsset {
   homepages        Homepage[]
   journalPostMedia JournalPostMedia[]
   journalAuthors   JournalAuthor[]
+  lookbookCovers   Lookbook[]
+  lookbookSectionMedia LookbookSectionMedia[]
 
   @@index([storageKey])
   @@index([mimeType])
@@ -884,6 +890,7 @@ model Artist {
   media           ArtistMedia[]
   homepageSections HomepageSectionArtist[]
   journalPosts    JournalPostArtist[]
+  lookbookSections LookbookSectionArtist[]
 
   @@index([name])
   @@index([slug])
@@ -1159,6 +1166,7 @@ model JournalPost {
   relatedPosts   JournalPostRelatedPost[]   @relation("SourceJournalPost")
   referencedBy   JournalPostRelatedPost[]   @relation("TargetJournalPost")
   media          JournalPostMedia[]
+  lookbookSections LookbookSectionJournal[]
 
   @@index([slug])
   @@index([status])
@@ -1284,6 +1292,211 @@ model JournalPostMedia {
   @@index([sortOrder])
   @@index([isPrimary])
   @@map("journal_post_media")
+}
+
+enum LookbookStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LookbookSectionType {
+  HERO
+  EDITORIAL
+  PRODUCTS
+  COLLECTIONS
+  ARTISTS
+  CATEGORIES
+  JOURNAL
+  SANSKRIT_EDIT
+  GALLERY
+  MIXED
+}
+
+enum LookbookSectionMediaRole {
+  PRIMARY
+  BACKGROUND
+  GALLERY
+  MOBILE
+  DESKTOP
+  OG
+}
+
+model Lookbook {
+  id               String            @id @default(uuid()) @db.VarChar(36)
+  title            String            @db.VarChar(255)
+  slug             String            @unique @db.VarChar(255)
+  shortDescription String?           @map("short_description") @db.VarChar(500)
+  description      String?           @db.Text
+  status           LookbookStatus    @default(DRAFT)
+  featured         Boolean           @default(false)
+  coverMediaId     String?           @map("cover_media_id") @db.VarChar(36)
+  displayOrder     Int               @default(0) @map("display_order")
+  publishedAt      DateTime?         @map("published_at")
+  seoTitle         String?           @map("seo_title") @db.VarChar(255)
+  seoDescription   String?           @map("seo_description") @db.Text
+  seoKeywords      String?           @map("seo_keywords") @db.VarChar(255)
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  coverMedia       MediaAsset?       @relation(fields: [coverMediaId], references: [id], onDelete: SetNull)
+  sections         LookbookSection[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([featured])
+  @@index([displayOrder])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@map("lookbooks")
+}
+
+model LookbookSection {
+  id            String                       @id @default(uuid()) @db.VarChar(36)
+  lookbookId    String                       @map("lookbook_id") @db.VarChar(36)
+  type          LookbookSectionType          @default(EDITORIAL)
+  title         String?                      @db.VarChar(255)
+  subtitle      String?                      @db.VarChar(255)
+  body          String?                      @db.Text
+  ctaLabel      String?                      @map("cta_label") @db.VarChar(100)
+  ctaUrl        String?                      @map("cta_url") @db.VarChar(255)
+  displayOrder  Int                          @default(0) @map("display_order")
+  isVisible     Boolean                      @default(true) @map("is_visible")
+  layout        String?                      @db.VarChar(100)
+  config        String?                      @db.Text
+  createdAt     DateTime                     @default(now()) @map("created_at")
+  updatedAt     DateTime                     @updatedAt @map("updated_at")
+
+  lookbook      Lookbook                     @relation(fields: [lookbookId], references: [id], onDelete: Cascade)
+  products      LookbookSectionProduct[]
+  collections   LookbookSectionCollection[]
+  artists       LookbookSectionArtist[]
+  categories    LookbookSectionCategory[]
+  journals      LookbookSectionJournal[]
+  sanskritEdits LookbookSectionSanskritEdit[]
+  media         LookbookSectionMedia[]
+
+  @@index([lookbookId])
+  @@index([type])
+  @@index([displayOrder])
+  @@index([isVisible])
+  @@map("lookbook_sections")
+}
+
+model LookbookSectionProduct {
+  lookbookSectionId String          @map("lookbook_section_id") @db.VarChar(36)
+  productId         String          @map("product_id") @db.VarChar(36)
+  displayOrder      Int             @default(0) @map("display_order")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  product           Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, productId])
+  @@index([lookbookSectionId])
+  @@index([productId])
+  @@index([displayOrder])
+  @@map("lookbook_section_products")
+}
+
+model LookbookSectionCollection {
+  lookbookSectionId String          @map("lookbook_section_id") @db.VarChar(36)
+  collectionId      String          @map("collection_id") @db.VarChar(36)
+  displayOrder      Int             @default(0) @map("display_order")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  collection        Collection      @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, collectionId])
+  @@index([lookbookSectionId])
+  @@index([collectionId])
+  @@index([displayOrder])
+  @@map("lookbook_section_collections")
+}
+
+model LookbookSectionArtist {
+  lookbookSectionId String          @map("lookbook_section_id") @db.VarChar(36)
+  artistId          String          @map("artist_id") @db.VarChar(36)
+  displayOrder      Int             @default(0) @map("display_order")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  artist            Artist          @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, artistId])
+  @@index([lookbookSectionId])
+  @@index([artistId])
+  @@index([displayOrder])
+  @@map("lookbook_section_artists")
+}
+
+model LookbookSectionCategory {
+  lookbookSectionId String          @map("lookbook_section_id") @db.VarChar(36)
+  categoryId        String          @map("category_id") @db.VarChar(36)
+  displayOrder      Int             @default(0) @map("display_order")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  category          Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, categoryId])
+  @@index([lookbookSectionId])
+  @@index([categoryId])
+  @@index([displayOrder])
+  @@map("lookbook_section_categories")
+}
+
+model LookbookSectionJournal {
+  lookbookSectionId String          @map("lookbook_section_id") @db.VarChar(36)
+  journalPostId     String          @map("journal_post_id") @db.VarChar(36)
+  displayOrder      Int             @default(0) @map("display_order")
+  createdAt         DateTime        @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  journalPost       JournalPost     @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, journalPostId])
+  @@index([lookbookSectionId])
+  @@index([journalPostId])
+  @@index([displayOrder])
+  @@map("lookbook_section_journals")
+}
+
+model LookbookSectionSanskritEdit {
+  lookbookSectionId     String              @map("lookbook_section_id") @db.VarChar(36)
+  sanskritEditProfileId String              @map("sanskrit_edit_profile_id") @db.VarChar(36)
+  displayOrder          Int                 @default(0) @map("display_order")
+  createdAt             DateTime            @default(now()) @map("created_at")
+
+  lookbookSection       LookbookSection     @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  sanskritEditProfile   SanskritEditProfile @relation(fields: [sanskritEditProfileId], references: [id], onDelete: Cascade)
+
+  @@id([lookbookSectionId, sanskritEditProfileId])
+  @@index([lookbookSectionId])
+  @@index([sanskritEditProfileId])
+  @@index([displayOrder])
+  @@map("lookbook_section_sanskrit_edits")
+}
+
+model LookbookSectionMedia {
+  lookbookSectionId String                   @map("lookbook_section_id") @db.VarChar(36)
+  mediaAssetId      String                   @map("media_asset_id") @db.VarChar(36)
+  role              LookbookSectionMediaRole @default(GALLERY)
+  sortOrder         Int                      @default(0) @map("sort_order")
+  isPrimary         Boolean                  @default(false) @map("is_primary")
+  createdAt         DateTime                 @default(now()) @map("created_at")
+
+  lookbookSection   LookbookSection          @relation(fields: [lookbookSectionId], references: [id], onDelete: Cascade)
+  mediaAsset        MediaAsset               @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([lookbookSectionId, mediaAssetId, role])
+  @@index([lookbookSectionId])
+  @@index([mediaAssetId])
+  @@index([role])
+  @@index([sortOrder])
+  @@index([isPrimary])
+  @@map("lookbook_section_media")
 }
 
 

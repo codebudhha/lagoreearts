@@ -125,6 +125,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Journal Tag', slug: 'journal-tag.update', module: 'JOURNAL', description: 'Modify journal tag' },
   { name: 'Delete Journal Tag', slug: 'journal-tag.delete', module: 'JOURNAL', description: 'Delete journal tag' },
 
+  // LOOKBOOK (MODULE 14)
+  { name: 'View Lookbooks', slug: 'lookbook.view', module: 'LOOKBOOK', description: 'View lookbooks, editorial sections, and assets' },
+  { name: 'Create Lookbook', slug: 'lookbook.create', module: 'LOOKBOOK', description: 'Create lookbooks and sections' },
+  { name: 'Update Lookbook', slug: 'lookbook.update', module: 'LOOKBOOK', description: 'Modify lookbooks, reorder sections, attach entities and media' },
+  { name: 'Delete Lookbook', slug: 'lookbook.delete', module: 'LOOKBOOK', description: 'Delete lookbooks and sections' },
+  { name: 'Publish Lookbook', slug: 'lookbook.publish', module: 'LOOKBOOK', description: 'Publish, unpublish, and archive lookbooks' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -162,6 +169,7 @@ export const ROLES_DATA = [
       'homepage.view', 'homepage.create', 'homepage.update',
       'journal.view', 'journal.create', 'journal.update', 'journal.delete',
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
+      'lookbook.view', 'lookbook.create', 'lookbook.update',
       'seo.view', 'seo.update'
     ]
   },
@@ -189,6 +197,7 @@ export const ROLES_DATA = [
       'journal-category.view', 'journal-category.create', 'journal-category.update',
       'journal-tag.view', 'journal-tag.create', 'journal-tag.update',
       'journal.delete', 'journal-author.delete', 'journal-category.delete', 'journal-tag.delete',
+      'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.delete', 'lookbook.publish',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -218,6 +227,7 @@ export const ROLES_DATA = [
       'artist.view',
       'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish',
       'journal.view', 'journal.create', 'journal.update', 'journal.publish',
+      'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.publish',
       'journal-author.view', 'journal-category.view', 'journal-tag.view'
     ]
   }
