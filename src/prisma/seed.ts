@@ -150,6 +150,11 @@ export const PERMISSIONS_DATA = [
   { name: 'View Customer Sessions', slug: 'customer.session.view', module: 'CUSTOMER', description: 'Inspect customer active sessions' },
   { name: 'Revoke Customer Sessions', slug: 'customer.session.revoke', module: 'CUSTOMER', description: 'Force-revoke customer sessions' },
 
+  // CART MANAGEMENT (MODULE 18)
+  { name: 'View Carts', slug: 'cart.view', module: 'CART', description: 'Inspect customer and guest shopping carts' },
+  { name: 'Update Cart', slug: 'cart.update', module: 'CART', description: 'Modify cart items or currency' },
+  { name: 'Delete Cart', slug: 'cart.delete', module: 'CART', description: 'Clear or delete shopping carts' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -231,6 +236,7 @@ export const ROLES_DATA = [
     isSystem: true,
     permissionSlugs: [
       'order.view', 'order.update',
+      'cart.view',
       'customer.view', 'customer.address.view', 'customer.status.update'
     ]
   },

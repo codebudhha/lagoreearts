@@ -1220,6 +1220,39 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_cust_addr_customer_id ON customer_addresses(customer_id);
   CREATE INDEX IF NOT EXISTS idx_cust_addr_def_shipping ON customer_addresses(is_default_shipping);
   CREATE INDEX IF NOT EXISTS idx_cust_addr_def_billing ON customer_addresses(is_default_billing);
+
+  CREATE TABLE IF NOT EXISTS carts (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT UNIQUE,
+    guest_token_hash TEXT UNIQUE,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    expires_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_carts_customer_id ON carts(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_carts_guest_token_hash ON carts(guest_token_hash);
+  CREATE INDEX IF NOT EXISTS idx_carts_expires_at ON carts(expires_at);
+
+  CREATE TABLE IF NOT EXISTS cart_items (
+    id TEXT PRIMARY KEY,
+    cart_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    variant_id TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    last_seen_unit_price NUMERIC,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cart_items_cart_id ON cart_items(cart_id);
+  CREATE INDEX IF NOT EXISTS idx_cart_items_product_id ON cart_items(product_id);
+  CREATE INDEX IF NOT EXISTS idx_cart_items_variant_id ON cart_items(variant_id);
 `);
 
 /**
@@ -8611,6 +8644,9 @@ export const prisma = {
       if (include?.sessions) {
         cust.sessions = prisma.customerSession.findMany({ where: { customerId: row.id } });
       }
+      if (include?.cart) {
+        cust.cart = prisma.cart.findUnique({ where: { customerId: row.id } });
+      }
       return cust;
     },
 
@@ -9318,6 +9354,338 @@ export const prisma = {
       let sql = 'SELECT COUNT(*) as count FROM customer_addresses WHERE 1=1';
       const params: any[] = [];
       if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  cart: {
+    findUnique: ({ where, include }: { where: { id?: string; customerId?: string; guestTokenHash?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM carts WHERE id = ?').get(where.id);
+      } else if (where.customerId) {
+        row = db.prepare('SELECT * FROM carts WHERE customer_id = ?').get(where.customerId);
+      } else if (where.guestTokenHash) {
+        row = db.prepare('SELECT * FROM carts WHERE guest_token_hash = ?').get(where.guestTokenHash);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        customerId: row.customer_id,
+        guestTokenHash: row.guest_token_hash,
+        currency: row.currency,
+        expiresAt: row.expires_at ? new Date(row.expires_at) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.customer && row.customer_id) {
+        formatted.customer = prisma.customer.findUnique({ where: { id: row.customer_id } });
+      }
+
+      if (include?.items) {
+        const itemInclude = typeof include.items === 'object' ? include.items.include : undefined;
+        formatted.items = prisma.cartItem.findMany({
+          where: { cartId: row.id },
+          include: itemInclude,
+          orderBy: { createdAt: 'asc' }
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM carts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.guestTokenHash) { sql += ' AND guest_token_hash = ?'; params.push(where.guestTokenHash); }
+      if (where?.expiresAt?.lt) {
+        sql += ' AND expires_at < ?';
+        params.push(new Date(where.expiresAt.lt).toISOString());
+      }
+      if (where?.expiresAt?.gt) {
+        sql += ' AND expires_at > ?';
+        params.push(new Date(where.expiresAt.gt).toISOString());
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.cart.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM carts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.guestTokenHash) { sql += ' AND guest_token_hash = ?'; params.push(where.guestTokenHash); }
+      if (where?.expiresAt?.lt) {
+        sql += ' AND expires_at < ?';
+        params.push(new Date(where.expiresAt.lt).toISOString());
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.cart.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO carts (id, customer_id, guest_token_hash, currency, expires_at, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.customerId || null,
+        data.guestTokenHash || null,
+        data.currency || 'INR',
+        data.expiresAt ? new Date(data.expiresAt).toISOString() : null,
+        now,
+        now
+      );
+      return prisma.cart.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; customerId?: string; guestTokenHash?: string }; data: any; include?: any }) => {
+      const existing = prisma.cart.findUnique({ where });
+      if (!existing) throw new Error('Cart not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.customerId !== undefined) { updates.push('customer_id = ?'); params.push(data.customerId); }
+      if (data.guestTokenHash !== undefined) { updates.push('guest_token_hash = ?'); params.push(data.guestTokenHash); }
+      if (data.currency !== undefined) { updates.push('currency = ?'); params.push(data.currency); }
+      if (data.expiresAt !== undefined) { updates.push('expires_at = ?'); params.push(data.expiresAt ? new Date(data.expiresAt).toISOString() : null); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(existing.id);
+      db.prepare(`UPDATE carts SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.cart.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id?: string; customerId?: string; guestTokenHash?: string } }) => {
+      const existing = prisma.cart.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM carts WHERE id = ?').run(existing.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM carts').run();
+        return;
+      }
+      let sql = 'DELETE FROM carts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.guestTokenHash) { sql += ' AND guest_token_hash = ?'; params.push(where.guestTokenHash); }
+      if (where?.expiresAt?.lt) {
+        sql += ' AND expires_at < ?';
+        params.push(new Date(where.expiresAt.lt).toISOString());
+      }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM carts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.guestTokenHash) { sql += ' AND guest_token_hash = ?'; params.push(where.guestTokenHash); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  cartItem: {
+    findUnique: ({ where, include }: { where: { id?: string; cartId_productId_variantId?: { cartId: string; productId: string; variantId?: string | null } }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM cart_items WHERE id = ?').get(where.id);
+      } else if (where.cartId_productId_variantId) {
+        const { cartId, productId, variantId } = where.cartId_productId_variantId;
+        if (variantId) {
+          row = db.prepare('SELECT * FROM cart_items WHERE cart_id = ? AND product_id = ? AND variant_id = ?').get(cartId, productId, variantId);
+        } else {
+          row = db.prepare('SELECT * FROM cart_items WHERE cart_id = ? AND product_id = ? AND variant_id IS NULL').get(cartId, productId);
+        }
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        cartId: row.cart_id,
+        productId: row.product_id,
+        variantId: row.variant_id || null,
+        quantity: Number(row.quantity),
+        lastSeenUnitPrice: row.last_seen_unit_price !== null ? Number(row.last_seen_unit_price) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.product) {
+        formatted.product = prisma.product.findUnique({ where: { id: row.product_id }, include: include.product?.include || { media: true, antiqueProfile: true, sanskritEditProfile: true } });
+      }
+
+      if (include?.variant && row.variant_id) {
+        formatted.variant = prisma.productVariant.findUnique({ where: { id: row.variant_id }, include: include.variant?.include || { optionValues: true, media: true } });
+      }
+
+      if (include?.cart) {
+        formatted.cart = prisma.cart.findUnique({ where: { id: row.cart_id } });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM cart_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.cartId) { sql += ' AND cart_id = ?'; params.push(where.cartId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.variantId !== undefined) {
+        if (where.variantId === null) {
+          sql += ' AND variant_id IS NULL';
+        } else {
+          sql += ' AND variant_id = ?';
+          params.push(where.variantId);
+        }
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.cartItem.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM cart_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.cartId) { sql += ' AND cart_id = ?'; params.push(where.cartId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.variantId !== undefined) {
+        if (where.variantId === null) {
+          sql += ' AND variant_id IS NULL';
+        } else {
+          sql += ' AND variant_id = ?';
+          params.push(where.variantId);
+        }
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.cartItem.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO cart_items (id, cart_id, product_id, variant_id, quantity, last_seen_unit_price, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.cartId,
+        data.productId,
+        data.variantId || null,
+        Number(data.quantity || 1),
+        data.lastSeenUnitPrice !== undefined && data.lastSeenUnitPrice !== null ? Number(data.lastSeenUnitPrice) : null,
+        now,
+        now
+      );
+      return prisma.cartItem.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.cartItem.findUnique({ where });
+      if (!existing) throw new Error('CartItem not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.quantity !== undefined) { updates.push('quantity = ?'); params.push(Number(data.quantity)); }
+      if (data.lastSeenUnitPrice !== undefined) { updates.push('last_seen_unit_price = ?'); params.push(data.lastSeenUnitPrice !== null ? Number(data.lastSeenUnitPrice) : null); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE cart_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.cartItem.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.cartItem.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM cart_items WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM cart_items').run();
+        return;
+      }
+      let sql = 'DELETE FROM cart_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.cartId) { sql += ' AND cart_id = ?'; params.push(where.cartId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.variantId !== undefined) {
+        if (where.variantId === null) {
+          sql += ' AND variant_id IS NULL';
+        } else {
+          sql += ' AND variant_id = ?';
+          params.push(where.variantId);
+        }
+      }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM cart_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.cartId) { sql += ' AND cart_id = ?'; params.push(where.cartId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }

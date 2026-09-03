@@ -39,6 +39,8 @@ import { adminNavigationRouter, publicNavigationRouter } from './modules/navigat
 import { customerAuthRouter } from './modules/customers/customer-auth.routes.ts';
 import { customerProfileRouter } from './modules/customers/customer-profile.routes.ts';
 import { adminCustomerRouter } from './modules/customers/customer-admin.routes.ts';
+import cartRouter from './modules/cart/cart.routes.ts';
+import adminCartRouter from './modules/cart/admin-cart.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -164,7 +166,8 @@ export function createApp() {
         'Module 13: Journal / Blog',
         'Module 14: Lookbook',
         'Module 15: Navigation / Menus',
-        'Module 16: Customer Management & Customer Accounts'
+        'Module 16: Customer Management & Customer Accounts',
+        'Module 18: Cart & Shopping Cart Management'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -188,6 +191,8 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/cart', cartRouter);
+  app.use('/api/v1/admin/carts', adminCartRouter);
   app.use('/api/v1/auth/customer', customerAuthRouter);
   app.use('/api/v1/customer', customerProfileRouter);
   app.use('/api/v1/admin/customers', adminCustomerRouter);
