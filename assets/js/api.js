@@ -244,33 +244,37 @@ export const API = {
     async get(couponCode = null) {
       const query = couponCode ? `?couponCode=${encodeURIComponent(couponCode)}` : '';
       const res = await request(`/cart${query}`, { method: 'GET', showToast: false });
-      if (res.success && res.cart) {
-        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: res.cart }));
+      const cartData = res.data || res.cart || null;
+      if (res.success && cartData) {
+        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: cartData }));
       }
-      return res;
+      return { ...res, cart: cartData };
     },
     async add(item) {
-      const res = await request('/cart/add', { method: 'POST', body: JSON.stringify(item) });
-      if (res.success && res.cart) {
+      const res = await request('/cart/items', { method: 'POST', body: JSON.stringify(item) });
+      const cartData = res.data || res.cart || null;
+      if (res.success && cartData) {
         LagoreeToast.show(res.message || 'Artwork added to your collection.', 'success', 'Collection Updated');
-        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: res.cart }));
+        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: cartData }));
       }
-      return res;
+      return { ...res, cart: cartData };
     },
     async update(itemId, quantity) {
-      const res = await request(`/cart/items/${itemId}`, { method: 'PUT', body: JSON.stringify({ quantity }) });
-      if (res.success && res.cart) {
-        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: res.cart }));
+      const res = await request(`/cart/items/${itemId}`, { method: 'PATCH', body: JSON.stringify({ quantity }) });
+      const cartData = res.data || res.cart || null;
+      if (res.success && cartData) {
+        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: cartData }));
       }
-      return res;
+      return { ...res, cart: cartData };
     },
     async remove(itemId) {
       const res = await request(`/cart/items/${itemId}`, { method: 'DELETE' });
-      if (res.success && res.cart) {
+      const cartData = res.data || res.cart || null;
+      if (res.success && cartData) {
         LagoreeToast.show('Item removed from cart.', 'success');
-        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: res.cart }));
+        window.dispatchEvent(new CustomEvent('lagoree:cart-updated', { detail: cartData }));
       }
-      return res;
+      return { ...res, cart: cartData };
     },
     async applyCoupon(code, subtotal) {
       return request('/cart/coupon', { method: 'POST', body: JSON.stringify({ code, subtotal }) });

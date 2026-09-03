@@ -13,63 +13,83 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 1. Fetch Cart Data
   async function loadCheckoutData() {
-    const res = await window.LagoreeAPI.cart.get();
-    if (!res.success || !res.cart || res.cart.items.length === 0) {
-      window.LagoreeToast.show('Your curated bag is empty. Redirecting to gallery...', 'info');
-      setTimeout(() => window.location.href = '/category', 1500);
-      return;
+    try {
+      const res = await window.LagoreeAPI.cart.get();
+      const cart = res.cart || res.data;
+      if (cart && cart.items && cart.items.length > 0) {
+        currentCart = cart;
+        renderOrderSummary(currentCart);
+      }
+    } catch (e) {
+      console.warn('Checkout cart load note:', e);
     }
 
-    currentCart = res.cart;
-    renderOrderSummary(currentCart);
-
     // If logged in, fetch saved addresses & prefill contact details
-    if (window.LagoreeAPI.auth.isLoggedIn()) {
+    if (window.LagoreeAPI.auth && window.LagoreeAPI.auth.isLoggedIn()) {
       const user = window.LagoreeAPI.auth.getUser();
-      const nameInput = checkoutForm.querySelector('[name="customerName"]');
-      const emailInput = checkoutForm.querySelector('[name="customerEmail"]');
-      const phoneInput = checkoutForm.querySelector('[name="customerPhone"]');
+      const nameInput = checkoutForm.querySelector('[name="customerName"]') || checkoutForm.querySelector('#firstName');
+      const emailInput = checkoutForm.querySelector('[name="customerEmail"]') || checkoutForm.querySelector('#email');
+      const phoneInput = checkoutForm.querySelector('[name="customerPhone"]') || checkoutForm.querySelector('#phone');
 
-      if (nameInput && user) nameInput.value = user.name || '';
+      if (nameInput && user) nameInput.value = user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : (user.name || '');
       if (emailInput && user) emailInput.value = user.email || '';
       if (phoneInput && user) phoneInput.value = user.phone || '';
 
-      const addrRes = await window.LagoreeAPI.auth.getAddresses();
-      if (addrRes.success && addrRes.addresses) {
-        savedAddresses = addrRes.addresses;
-        renderSavedAddresses();
-      }
+      try {
+        const addrRes = await window.LagoreeAPI.auth.getAddresses();
+        if (addrRes && addrRes.success && (addrRes.addresses || addrRes.data)) {
+          savedAddresses = addrRes.addresses || addrRes.data || [];
+          renderSavedAddresses();
+        }
+      } catch (e) {}
     }
   }
 
   function renderOrderSummary(cart) {
-    const itemsList = document.getElementById('checkoutItemsList') || document.querySelector('.checkout-items-list');
-    if (itemsList) {
-      itemsList.innerHTML = cart.items.map(item => `
-        <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--stone);">
-          <div style="width: 54px; height: 68px; aspect-ratio: 4/5; overflow: hidden; background: #eee; flex-shrink: 0;">
-            <img src="${item.image}" alt="${item.title}" style="width: 100%; height: 100%; object-fit: cover;">
+    const itemsList = document.getElementById('checkoutItemsList') || document.querySelector('.checkout-items-list') || document.querySelector('.order-items');
+    if (itemsList && cart.items && cart.items.length > 0) {
+      itemsList.innerHTML = cart.items.map(item => {
+        const title = item.product?.name || item.title || 'Art Piece';
+        const img = item.product?.thumbnail || item.product?.image || item.image || '';
+        const variantDesc = item.variant?.sku || item.framingName || 'Original Masterwork';
+        const total = item.lineTotal || item.itemTotal || ((item.unitPrice || 0) * (item.quantity || 1));
+        const fmtTotal = typeof window.formatINR === 'function' ? window.formatINR(total) : '₹' + Number(total).toLocaleString('en-IN');
+
+        return `
+          <div style="display: flex; gap: 14px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--stone, #DED5C8);">
+            <div style="width: 54px; height: 68px; aspect-ratio: 4/5; overflow: hidden; background: #eee; flex-shrink: 0;">
+              ${img ? `<img src="${img}" alt="${title}" style="width: 100%; height: 100%; object-fit: cover;">` : `<div style="width:100%;height:100%;background:#123524;display:flex;align-items:center;justify-content:center;color:#C6A15B;font-size:10px;">ART</div>`}
+            </div>
+            <div style="flex: 1;">
+              <div style="font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--forest, #123524); font-weight: 500;">${title}</div>
+              <div style="font-size: 11px; color: var(--muted, #686660);">${variantDesc} • Qty: ${item.quantity}</div>
+            </div>
+            <div style="font-weight: 600; font-size: 14px; color: var(--forest, #123524);">${fmtTotal}</div>
           </div>
-          <div style="flex: 1;">
-            <div style="font-family: 'Cormorant Garamond', serif; font-size: 16px; color: var(--forest);">${item.title}</div>
-            <div style="font-size: 11px; color: var(--muted);">${item.framingName} • Qty: ${item.quantity}</div>
-          </div>
-          <div style="font-weight: 600; font-size: 14px; color: var(--forest);">${window.formatINR(item.itemTotal)}</div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
-    const subtotalEl = document.getElementById('checkoutSubtotal');
-    const discountEl = document.getElementById('checkoutDiscount');
-    const shippingEl = document.getElementById('checkoutShipping');
-    const taxEl = document.getElementById('checkoutTax');
-    const totalEl = document.getElementById('checkoutTotal');
+    const subtotal = cart.subtotal || cart.grossSubtotal || 0;
+    const discount = cart.discountTotal || cart.discountAmount || 0;
+    const shipping = cart.shippingTotal || cart.shippingFee || 0;
+    const grandTotal = cart.totals?.grandTotal || cart.grandTotal || subtotal;
 
-    if (subtotalEl) subtotalEl.textContent = window.formatINR(cart.grossSubtotal);
-    if (discountEl) discountEl.textContent = cart.discountAmount > 0 ? `−${window.formatINR(cart.discountAmount)}` : '₹0';
-    if (shippingEl) shippingEl.textContent = cart.shippingFee === 0 ? 'Complimentary Insured' : window.formatINR(cart.shippingFee);
-    if (taxEl) taxEl.textContent = window.formatINR(cart.taxAmount);
-    if (totalEl) totalEl.textContent = window.formatINR(cart.grandTotal);
+    const fmt = val => typeof window.formatINR === 'function' ? window.formatINR(val) : '₹' + Number(val).toLocaleString('en-IN');
+
+    const subtotalEl = document.getElementById('checkoutSubtotal') || document.querySelector('.summary-subtotal');
+    const discountEl = document.getElementById('checkoutDiscount') || document.querySelector('.summary-discount');
+    const shippingEl = document.getElementById('checkoutShipping') || document.querySelector('.summary-shipping');
+    const totalEl = document.getElementById('checkoutTotal') || document.querySelector('.summary-total');
+
+    if (subtotalEl) subtotalEl.textContent = fmt(subtotal);
+    if (discountEl) discountEl.textContent = discount > 0 ? `−${fmt(discount)}` : '₹0';
+    if (shippingEl) shippingEl.textContent = shipping === 0 ? 'Complimentary' : fmt(shipping);
+    if (totalEl) totalEl.textContent = fmt(grandTotal);
+
+    document.querySelectorAll('#desktopPlaceOrder, #mobilePlaceOrder, .btn-place-order').forEach(btn => {
+      btn.textContent = `Place Order · ${fmt(grandTotal)}`;
+    });
   }
 
   function renderSavedAddresses() {
