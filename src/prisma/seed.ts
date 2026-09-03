@@ -132,6 +132,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Delete Lookbook', slug: 'lookbook.delete', module: 'LOOKBOOK', description: 'Delete lookbooks and sections' },
   { name: 'Publish Lookbook', slug: 'lookbook.publish', module: 'LOOKBOOK', description: 'Publish, unpublish, and archive lookbooks' },
 
+  // NAVIGATION / MENUS (MODULE 15)
+  { name: 'View Navigation', slug: 'navigation.view', module: 'NAVIGATION', description: 'View storefront menus, navigation trees, and items' },
+  { name: 'Create Navigation', slug: 'navigation.create', module: 'NAVIGATION', description: 'Create navigation structures and menu items' },
+  { name: 'Update Navigation', slug: 'navigation.update', module: 'NAVIGATION', description: 'Modify menus, reorder hierarchy, and configure targets' },
+  { name: 'Delete Navigation', slug: 'navigation.delete', module: 'NAVIGATION', description: 'Delete navigations and menu items' },
+  { name: 'Publish Navigation', slug: 'navigation.publish', module: 'NAVIGATION', description: 'Activate, deactivate, and configure default storefront menus' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -170,6 +177,7 @@ export const ROLES_DATA = [
       'journal.view', 'journal.create', 'journal.update', 'journal.delete',
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
       'lookbook.view', 'lookbook.create', 'lookbook.update',
+      'navigation.view', 'navigation.create', 'navigation.update',
       'seo.view', 'seo.update'
     ]
   },
@@ -198,6 +206,7 @@ export const ROLES_DATA = [
       'journal-tag.view', 'journal-tag.create', 'journal-tag.update',
       'journal.delete', 'journal-author.delete', 'journal-category.delete', 'journal-tag.delete',
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.delete', 'lookbook.publish',
+      'navigation.view', 'navigation.create', 'navigation.update', 'navigation.delete', 'navigation.publish',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -228,6 +237,7 @@ export const ROLES_DATA = [
       'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish',
       'journal.view', 'journal.create', 'journal.update', 'journal.publish',
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.publish',
+      'navigation.view', 'navigation.create', 'navigation.update', 'navigation.publish',
       'journal-author.view', 'journal-category.view', 'journal-tag.view'
     ]
   }
@@ -1452,6 +1462,191 @@ export async function runSeed(): Promise<void> {
     });
 
     console.log('✓ Seeded initial Journal categories, tags, author, and featured essay');
+  }
+
+  // 14. SEED DEFAULT NAVIGATION (MODULE 15)
+  const existingNav = await prisma.navigation.findUnique({ where: { slug: 'default-main-navigation' } });
+  if (!existingNav) {
+    // A. Main Header Navigation
+    const headerNav = await prisma.navigation.create({
+      data: {
+        name: 'Main Header Navigation',
+        slug: 'default-main-navigation',
+        location: 'HEADER',
+        status: 'ACTIVE',
+        isDefault: true
+      }
+    });
+
+    const paintingsCat = await prisma.category.findUnique({ where: { slug: 'paintings' } });
+    const sculpturesCat = await prisma.category.findUnique({ where: { slug: 'fine-sculptures' } });
+
+    // Item 1: Art (Group)
+    const artGroup = await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        label: 'Art',
+        displayType: 'MEGA_MENU',
+        targetType: 'NONE',
+        sortOrder: 0,
+        isVisible: true
+      }
+    });
+
+    if (paintingsCat) {
+      await prisma.navigationItem.create({
+        data: {
+          navigationId: headerNav.id,
+          parentId: artGroup.id,
+          label: 'Paintings',
+          displayType: 'LINK',
+          targetType: 'CATEGORY',
+          targetId: paintingsCat.id,
+          sortOrder: 0,
+          isVisible: true
+        }
+      });
+    }
+
+    if (sculpturesCat) {
+      await prisma.navigationItem.create({
+        data: {
+          navigationId: headerNav.id,
+          parentId: artGroup.id,
+          label: 'Sculptures',
+          displayType: 'LINK',
+          targetType: 'CATEGORY',
+          targetId: sculpturesCat.id,
+          sortOrder: 1,
+          isVisible: true
+        }
+      });
+    }
+
+    // Item 2: Heritage (Group)
+    const heritageGroup = await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        label: 'Heritage',
+        displayType: 'GROUP',
+        targetType: 'NONE',
+        sortOrder: 1,
+        isVisible: true
+      }
+    });
+
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        parentId: heritageGroup.id,
+        label: 'Antiques & Vintage',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/antiques',
+        sortOrder: 0,
+        isVisible: true
+      }
+    });
+
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        parentId: heritageGroup.id,
+        label: 'The Sanskrit Edit',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/sanskrit-edit',
+        sortOrder: 1,
+        isVisible: true
+      }
+    });
+
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        parentId: heritageGroup.id,
+        label: 'Artists & Masters',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/artists',
+        sortOrder: 2,
+        isVisible: true
+      }
+    });
+
+    // Item 3: Journal
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        label: 'Journal',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/journal',
+        sortOrder: 2,
+        isVisible: true
+      }
+    });
+
+    // Item 4: Lookbooks
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: headerNav.id,
+        label: 'Lookbooks',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/lookbooks',
+        sortOrder: 3,
+        isVisible: true
+      }
+    });
+
+    // B. Footer Navigation
+    const footerNav = await prisma.navigation.create({
+      data: {
+        name: 'Default Footer Navigation',
+        slug: 'default-footer-navigation',
+        location: 'FOOTER',
+        status: 'ACTIVE',
+        isDefault: true
+      }
+    });
+
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: footerNav.id,
+        label: 'About Atelier',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/about',
+        sortOrder: 0,
+        isVisible: true
+      }
+    });
+
+    await prisma.navigationItem.create({
+      data: {
+        navigationId: footerNav.id,
+        label: 'Sacred Art Conservation',
+        displayType: 'LINK',
+        targetType: 'INTERNAL_URL',
+        url: '/conservation',
+        sortOrder: 1,
+        isVisible: true
+      }
+    });
+
+    // C. Mobile Navigation
+    await prisma.navigation.create({
+      data: {
+        name: 'Default Mobile Navigation',
+        slug: 'default-mobile-navigation',
+        location: 'MOBILE',
+        status: 'ACTIVE',
+        isDefault: true
+      }
+    });
+
+    console.log('✓ Seeded default Header, Footer, and Mobile navigation menus');
   }
 
   console.log('✨ Seeding Completed Successfully!\n');

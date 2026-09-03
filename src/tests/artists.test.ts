@@ -830,7 +830,7 @@ async function runTests() {
   console.log('\n--- Categories Z, AA, AB: Public Storefront APIs ---');
 
   await test('Z1: Public artists list returns ACTIVE artists only', async () => {
-    const res = await request('GET', '/api/v1/artists');
+    const res = await request('GET', '/api/v1/artists?limit=100');
     assert(res.status === 200, `Expected 200, got ${res.status}`);
     assert(Array.isArray(res.body.data), 'Expected array data');
     assert(!res.body.data.some((a: any) => a.id === createdArtistId2), 'Expected inactive artist NOT in public list');

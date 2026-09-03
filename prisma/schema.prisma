@@ -1499,5 +1499,85 @@ model LookbookSectionMedia {
   @@map("lookbook_section_media")
 }
 
+// ==========================================
+// MODULE 15: NAVIGATION / MENUS
+// ==========================================
 
+enum NavigationLocation {
+  HEADER
+  FOOTER
+  MOBILE
+  SECONDARY
+}
 
+enum NavigationStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum NavigationItemTargetType {
+  NONE
+  CATEGORY
+  COLLECTION
+  PRODUCT
+  ARTIST
+  JOURNAL
+  LOOKBOOK
+  SANSKRIT_EDIT
+  INTERNAL_URL
+  EXTERNAL_URL
+}
+
+enum NavigationItemDisplayType {
+  LINK
+  GROUP
+  MEGA_MENU
+}
+
+model Navigation {
+  id        String             @id @default(uuid()) @db.VarChar(36)
+  name      String             @db.VarChar(255)
+  slug      String             @unique @db.VarChar(255)
+  location  NavigationLocation @default(HEADER)
+  status    NavigationStatus   @default(ACTIVE)
+  isDefault Boolean            @default(false) @map("is_default")
+  createdAt DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  items     NavigationItem[]
+
+  @@index([location])
+  @@index([status])
+  @@index([isDefault])
+  @@map("navigations")
+}
+
+model NavigationItem {
+  id           String                    @id @default(uuid()) @db.VarChar(36)
+  navigationId String                    @map("navigation_id") @db.VarChar(36)
+  parentId     String?                   @map("parent_id") @db.VarChar(36)
+  label        String                    @db.VarChar(255)
+  description  String?                   @db.Text
+  targetType   NavigationItemTargetType  @default(NONE) @map("target_type")
+  targetId     String?                   @map("target_id") @db.VarChar(36)
+  url          String?                   @db.VarChar(1024)
+  displayType  NavigationItemDisplayType @default(LINK) @map("display_type")
+  openInNewTab Boolean                   @default(false) @map("open_in_new_tab")
+  isVisible    Boolean                   @default(true) @map("is_visible")
+  isFeatured   Boolean                   @default(false) @map("is_featured")
+  sortOrder    Int                       @default(0) @map("sort_order")
+  createdAt    DateTime                  @default(now()) @map("created_at")
+  updatedAt    DateTime                  @updatedAt @map("updated_at")
+
+  navigation   Navigation                @relation(fields: [navigationId], references: [id], onDelete: Cascade)
+  parent       NavigationItem?           @relation("NavigationItemHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children     NavigationItem[]          @relation("NavigationItemHierarchy")
+
+  @@index([navigationId])
+  @@index([parentId])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([sortOrder])
+  @@index([isVisible])
+  @@map("navigation_items")
+}

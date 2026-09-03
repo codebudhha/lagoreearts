@@ -35,6 +35,7 @@ import {
 import { adminHomepageRouter, publicHomepageRouter } from './modules/homepage/homepage.routes.ts';
 import { adminJournalRouter, publicJournalRouter } from './modules/journal/journal.routes.ts';
 import { adminLookbookRouter, publicLookbookRouter } from './modules/lookbook/lookbook.routes.ts';
+import { adminNavigationRouter, publicNavigationRouter } from './modules/navigation/navigation.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -158,7 +159,8 @@ export function createApp() {
         'Module 11: Artists & Makers',
         'Module 12: Homepage CMS',
         'Module 13: Journal / Blog',
-        'Module 14: Lookbook'
+        'Module 14: Lookbook',
+        'Module 15: Navigation / Menus'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -185,6 +187,7 @@ export function createApp() {
   app.use('/api/v1/admin/auth', adminAuthRoutes);
   app.use('/api/v1/admin/users', adminUsersRoutes);
   app.use('/api/v1/admin/roles', adminRolesRoutes);
+  app.use('/api/v1/admin/navigation', adminNavigationRouter);
   app.use('/api/v1/admin/homepage', adminHomepageRouter);
   app.use('/api/v1/admin/journal', adminJournalRouter);
   app.use('/api/v1/admin/lookbooks', adminLookbookRouter);
@@ -206,6 +209,7 @@ export function createApp() {
   app.use('/api/v1/admin/products', adminProductOptionsRouter);
   app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);
+  app.use('/api/v1/navigation', publicNavigationRouter);
   app.use('/api/v1/homepage', publicHomepageRouter);
   app.use('/api/v1/journal', publicJournalRouter);
   app.use('/api/v1/lookbooks', publicLookbookRouter);

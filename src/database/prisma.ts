@@ -1084,6 +1084,51 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_lbsm_role ON lookbook_section_media(role);
   CREATE INDEX IF NOT EXISTS idx_lbsm_sort_order ON lookbook_section_media(sort_order);
   CREATE INDEX IF NOT EXISTS idx_lbsm_is_primary ON lookbook_section_media(is_primary);
+
+  CREATE TABLE IF NOT EXISTS navigations (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    location TEXT NOT NULL DEFAULT 'HEADER',
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_navigations_slug ON navigations(slug);
+  CREATE INDEX IF NOT EXISTS idx_navigations_location ON navigations(location);
+  CREATE INDEX IF NOT EXISTS idx_navigations_status ON navigations(status);
+  CREATE INDEX IF NOT EXISTS idx_navigations_is_default ON navigations(is_default);
+  CREATE INDEX IF NOT EXISTS idx_navigations_created_at ON navigations(created_at);
+
+  CREATE TABLE IF NOT EXISTS navigation_items (
+    id TEXT PRIMARY KEY,
+    navigation_id TEXT NOT NULL,
+    parent_id TEXT,
+    label TEXT NOT NULL,
+    description TEXT,
+    target_type TEXT NOT NULL DEFAULT 'NONE',
+    target_id TEXT,
+    url TEXT,
+    display_type TEXT NOT NULL DEFAULT 'LINK',
+    open_in_new_tab INTEGER NOT NULL DEFAULT 0,
+    is_visible INTEGER NOT NULL DEFAULT 1,
+    is_featured INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (navigation_id) REFERENCES navigations(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES navigation_items(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_nav_items_nav_id ON navigation_items(navigation_id);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_parent_id ON navigation_items(parent_id);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_target_type ON navigation_items(target_type);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_target_id ON navigation_items(target_id);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_sort_order ON navigation_items(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_is_visible ON navigation_items(is_visible);
+  CREATE INDEX IF NOT EXISTS idx_nav_items_created_at ON navigation_items(created_at);
 `);
 
 /**
@@ -8024,6 +8069,421 @@ export const prisma = {
       if (where?.lookbookSectionId) { sql += ' AND lookbook_section_id = ?'; params.push(where.lookbookSectionId); }
       if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
       if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  navigation: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM navigations WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM navigations WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+      const nav: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        location: row.location,
+        status: row.status,
+        isDefault: Boolean(row.is_default),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.items) {
+        let sql = 'SELECT * FROM navigation_items WHERE navigation_id = ?';
+        if (include.items?.where?.isVisible !== undefined) {
+          sql += ` AND is_visible = ${include.items.where.isVisible ? 1 : 0}`;
+        }
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+        const itemRows: any[] = db.prepare(sql).all(row.id);
+        nav.items = itemRows.map(r => ({
+          id: r.id,
+          navigationId: r.navigation_id,
+          parentId: r.parent_id,
+          label: r.label,
+          description: r.description,
+          targetType: r.target_type,
+          targetId: r.target_id,
+          url: r.url,
+          displayType: r.display_type,
+          openInNewTab: Boolean(r.open_in_new_tab),
+          isVisible: Boolean(r.is_visible),
+          isFeatured: Boolean(r.is_featured),
+          sortOrder: Number(r.sort_order || 0),
+          createdAt: new Date(r.created_at),
+          updatedAt: new Date(r.updated_at)
+        }));
+      }
+      return nav;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM navigations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.location) { sql += ' AND location = ?'; params.push(where.location); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else if (orderBy?.updatedAt) sql += ` ORDER BY updated_at ${orderBy.updatedAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.navigation.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM navigations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.location) { sql += ' AND location = ?'; params.push(where.location); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(slug) LIKE LOWER(?))';
+        const s = `%${where.search}%`;
+        params.push(s, s);
+      }
+
+      if (orderBy?.name) sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      else if (orderBy?.location) sql += ` ORDER BY location ${orderBy.location.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else if (orderBy?.updatedAt) sql += ` ORDER BY updated_at ${orderBy.updatedAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.navigation.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO navigations (id, name, slug, location, status, is_default, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.location || 'HEADER',
+        data.status || 'ACTIVE',
+        data.isDefault ? 1 : 0,
+        now,
+        now
+      );
+      return prisma.navigation.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.navigation.findUnique({ where });
+      if (!existing) throw new Error('Navigation not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.location !== undefined) { updates.push('location = ?'); params.push(data.location); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.isDefault !== undefined) { updates.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(existing.id);
+      db.prepare(`UPDATE navigations SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.navigation.findUnique({ where: { id: existing.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.isDefault !== undefined) { updates.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (updates.length === 0) return { count: 0 };
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      let sql = `UPDATE navigations SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.location) { sql += ' AND location = ?'; params.push(where.location); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.NOT?.id) { sql += ' AND id != ?'; params.push(where.NOT.id); }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    delete: ({ where }: { where: { id?: string; slug?: string } }) => {
+      const existing = prisma.navigation.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM navigation_items WHERE navigation_id = ?').run(existing.id);
+      db.prepare('DELETE FROM navigations WHERE id = ?').run(existing.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM navigation_items').run();
+        db.prepare('DELETE FROM navigations').run();
+        return;
+      }
+      let sql = 'DELETE FROM navigations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.location) { sql += ' AND location = ?'; params.push(where.location); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM navigations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.location) { sql += ' AND location = ?'; params.push(where.location); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(slug) LIKE LOWER(?))';
+        const s = `%${where.search}%`;
+        params.push(s, s);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  navigationItem: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const r: any = db.prepare('SELECT * FROM navigation_items WHERE id = ?').get(where.id);
+      if (!r) return null;
+      const item: any = {
+        id: r.id,
+        navigationId: r.navigation_id,
+        parentId: r.parent_id,
+        label: r.label,
+        description: r.description,
+        targetType: r.target_type,
+        targetId: r.target_id,
+        url: r.url,
+        displayType: r.display_type,
+        openInNewTab: Boolean(r.open_in_new_tab),
+        isVisible: Boolean(r.is_visible),
+        isFeatured: Boolean(r.is_featured),
+        sortOrder: Number(r.sort_order || 0),
+        createdAt: new Date(r.created_at),
+        updatedAt: new Date(r.updated_at)
+      };
+      if (include?.children) {
+        let childSql = 'SELECT * FROM navigation_items WHERE parent_id = ?';
+        if (include.children?.where?.isVisible !== undefined) {
+          childSql += ` AND is_visible = ${include.children.where.isVisible ? 1 : 0}`;
+        }
+        childSql += ' ORDER BY sort_order ASC, created_at ASC';
+        const childRows: any[] = db.prepare(childSql).all(r.id);
+        item.children = childRows.map(c => ({
+          id: c.id,
+          navigationId: c.navigation_id,
+          parentId: c.parent_id,
+          label: c.label,
+          description: c.description,
+          targetType: c.target_type,
+          targetId: c.target_id,
+          url: c.url,
+          displayType: c.display_type,
+          openInNewTab: Boolean(c.open_in_new_tab),
+          isVisible: Boolean(c.is_visible),
+          isFeatured: Boolean(c.is_featured),
+          sortOrder: Number(c.sort_order || 0),
+          createdAt: new Date(c.created_at),
+          updatedAt: new Date(c.updated_at)
+        }));
+      }
+      if (include?.parent && r.parent_id) {
+        item.parent = prisma.navigationItem.findUnique({ where: { id: r.parent_id } });
+      }
+      if (include?.navigation) {
+        item.navigation = prisma.navigation.findUnique({ where: { id: r.navigation_id } });
+      }
+      return item;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM navigation_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.navigationId) { sql += ' AND navigation_id = ?'; params.push(where.navigationId); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) sql += ' AND parent_id IS NULL';
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+      if (where?.targetType) { sql += ' AND target_type = ?'; params.push(where.targetType); }
+      if (where?.targetId) { sql += ' AND target_id = ?'; params.push(where.targetId); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+
+      if (orderBy?.sortOrder) sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      else sql += ' ORDER BY sort_order ASC, created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.navigationItem.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM navigation_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.navigationId) { sql += ' AND navigation_id = ?'; params.push(where.navigationId); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) sql += ' AND parent_id IS NULL';
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+      if (where?.targetType) { sql += ' AND target_type = ?'; params.push(where.targetType); }
+      if (where?.targetId) { sql += ' AND target_id = ?'; params.push(where.targetId); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+
+      if (orderBy?.sortOrder) sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY sort_order ASC, created_at ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.navigationItem.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO navigation_items (
+          id, navigation_id, parent_id, label, description, target_type, target_id,
+          url, display_type, open_in_new_tab, is_visible, is_featured, sort_order, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.navigationId,
+        data.parentId || null,
+        data.label.trim(),
+        data.description || null,
+        data.targetType || 'NONE',
+        data.targetId || null,
+        data.url || null,
+        data.displayType || 'LINK',
+        data.openInNewTab ? 1 : 0,
+        data.isVisible !== undefined ? (data.isVisible ? 1 : 0) : 1,
+        data.isFeatured ? 1 : 0,
+        Number(data.sortOrder || 0),
+        now,
+        now
+      );
+      return prisma.navigationItem.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.navigationItem.findUnique({ where });
+      if (!existing) throw new Error('Navigation item not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.navigationId !== undefined) { updates.push('navigation_id = ?'); params.push(data.navigationId); }
+      if (data.parentId !== undefined) { updates.push('parent_id = ?'); params.push(data.parentId || null); }
+      if (data.label !== undefined) { updates.push('label = ?'); params.push(data.label.trim()); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description || null); }
+      if (data.targetType !== undefined) { updates.push('target_type = ?'); params.push(data.targetType); }
+      if (data.targetId !== undefined) { updates.push('target_id = ?'); params.push(data.targetId || null); }
+      if (data.url !== undefined) { updates.push('url = ?'); params.push(data.url || null); }
+      if (data.displayType !== undefined) { updates.push('display_type = ?'); params.push(data.displayType); }
+      if (data.openInNewTab !== undefined) { updates.push('open_in_new_tab = ?'); params.push(data.openInNewTab ? 1 : 0); }
+      if (data.isVisible !== undefined) { updates.push('is_visible = ?'); params.push(data.isVisible ? 1 : 0); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE navigation_items SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.navigationItem.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.isVisible !== undefined) { updates.push('is_visible = ?'); params.push(data.isVisible ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (updates.length === 0) return { count: 0 };
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      let sql = `UPDATE navigation_items SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.navigationId) { sql += ' AND navigation_id = ?'; params.push(where.navigationId); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) sql += ' AND parent_id IS NULL';
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.navigationItem.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM navigation_items WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM navigation_items').run();
+        return;
+      }
+      let sql = 'DELETE FROM navigation_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.navigationId) { sql += ' AND navigation_id = ?'; params.push(where.navigationId); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) sql += ' AND parent_id IS NULL';
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM navigation_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.navigationId) { sql += ' AND navigation_id = ?'; params.push(where.navigationId); }
+      if (where?.parentId !== undefined) {
+        if (where.parentId === null) sql += ' AND parent_id IS NULL';
+        else { sql += ' AND parent_id = ?'; params.push(where.parentId); }
+      }
+      if (where?.targetType) { sql += ' AND target_type = ?'; params.push(where.targetType); }
+      if (where?.targetId) { sql += ' AND target_id = ?'; params.push(where.targetId); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }
