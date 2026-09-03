@@ -1619,6 +1619,7 @@ model Customer {
   passwordResets     CustomerPasswordReset[]
   emailVerifications CustomerEmailVerification[]
   cart               Cart?
+  checkoutSessions   CheckoutSession[]
 
   @@index([normalizedEmail])
   @@index([status])
@@ -1717,6 +1718,7 @@ model Cart {
 
   customer       Customer?  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   items          CartItem[]
+  checkouts      CheckoutSession[]
 
   @@index([customerId])
   @@index([guestTokenHash])
@@ -1743,5 +1745,101 @@ model CartItem {
   @@index([productId])
   @@index([variantId])
   @@map("cart_items")
+}
+
+enum CheckoutStatus {
+  ACTIVE
+  EXPIRED
+  COMPLETED
+  CANCELLED
+}
+
+enum CheckoutAddressType {
+  SHIPPING
+  BILLING
+}
+
+model CheckoutSession {
+  id                 String            @id @default(uuid()) @db.VarChar(36)
+  customerId         String?           @map("customer_id") @db.VarChar(36)
+  cartId             String            @map("cart_id") @db.VarChar(36)
+  guestTokenHash     String?           @map("guest_token_hash") @db.VarChar(255)
+  status             CheckoutStatus    @default(ACTIVE)
+  currency           String            @default("INR") @db.VarChar(10)
+  email              String            @db.VarChar(255)
+  billingAddressId   String?           @map("billing_address_id") @db.VarChar(36)
+  shippingAddressId  String?           @map("shipping_address_id") @db.VarChar(36)
+  subtotal           Decimal           @db.Decimal(12, 2)
+  discountTotal      Decimal           @default(0.00) @map("discount_total") @db.Decimal(12, 2)
+  shippingTotal      Decimal           @default(0.00) @map("shipping_total") @db.Decimal(12, 2)
+  taxTotal           Decimal           @default(0.00) @map("tax_total") @db.Decimal(12, 2)
+  grandTotal         Decimal           @map("grand_total") @db.Decimal(12, 2)
+  idempotencyKey     String?           @map("idempotency_key") @db.VarChar(255)
+  expiresAt          DateTime          @map("expires_at")
+  completedAt        DateTime?         @map("completed_at")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  customer           Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  cart               Cart              @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  items              CheckoutItem[]
+  addresses          CheckoutAddress[]
+
+  @@index([customerId])
+  @@index([cartId])
+  @@index([guestTokenHash])
+  @@index([status])
+  @@index([expiresAt])
+  @@index([idempotencyKey])
+  @@index([createdAt])
+  @@map("checkout_sessions")
+}
+
+model CheckoutItem {
+  id                 String          @id @default(uuid()) @db.VarChar(36)
+  checkoutSessionId  String          @map("checkout_session_id") @db.VarChar(36)
+  productId          String          @map("product_id") @db.VarChar(36)
+  variantId          String?         @map("variant_id") @db.VarChar(36)
+  sku                String          @db.VarChar(100)
+  productName        String          @map("product_name") @db.VarChar(255)
+  variantDescription String?         @map("variant_description") @db.VarChar(255)
+  quantity           Int             @default(1)
+  unitPrice          Decimal         @map("unit_price") @db.Decimal(12, 2)
+  lineTotal          Decimal         @map("line_total") @db.Decimal(12, 2)
+  currency           String          @default("INR") @db.VarChar(10)
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  checkoutSession    CheckoutSession @relation(fields: [checkoutSessionId], references: [id], onDelete: Cascade)
+  product            Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant            ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([checkoutSessionId])
+  @@index([productId])
+  @@index([variantId])
+  @@map("checkout_items")
+}
+
+model CheckoutAddress {
+  id                String              @id @default(uuid()) @db.VarChar(36)
+  checkoutSessionId String              @map("checkout_session_id") @db.VarChar(36)
+  type              CheckoutAddressType @default(SHIPPING)
+  firstName         String              @map("first_name") @db.VarChar(100)
+  lastName          String              @map("last_name") @db.VarChar(100)
+  companyName       String?             @map("company_name") @db.VarChar(255)
+  addressLine1      String              @map("address_line1") @db.VarChar(255)
+  addressLine2      String?             @map("address_line2") @db.VarChar(255)
+  landmark          String?             @db.VarChar(255)
+  city              String              @db.VarChar(100)
+  state             String              @db.VarChar(100)
+  postalCode        String              @map("postal_code") @db.VarChar(20)
+  country           String              @default("INDIA") @db.VarChar(100)
+  phone             String              @db.VarChar(50)
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  checkoutSession   CheckoutSession     @relation(fields: [checkoutSessionId], references: [id], onDelete: Cascade)
+
+  @@index([checkoutSessionId])
+  @@index([type])
+  @@map("checkout_addresses")
 }
 

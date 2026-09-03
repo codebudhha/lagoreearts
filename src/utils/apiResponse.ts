@@ -16,11 +16,22 @@ export interface ApiErrorResponse {
 }
 
 export const ApiResponse = {
-  success<T>(res: Response, data?: T, statusCode: number = 200, message?: string) {
+  success<T>(res: Response, data?: T, statusCodeOrMessage: number | string = 200, message?: string) {
+    let statusCode = 200;
+    let msg = message;
+    if (typeof statusCodeOrMessage === 'number') {
+      statusCode = statusCodeOrMessage;
+    } else if (typeof statusCodeOrMessage === 'string') {
+      msg = statusCodeOrMessage;
+    }
     const payload: ApiSuccessResponse<T> = { success: true };
     if (data !== undefined) payload.data = data;
-    if (message) payload.message = message;
+    if (msg) payload.message = msg;
     return res.status(statusCode).json(payload);
+  },
+
+  created<T>(res: Response, data?: T, message?: string) {
+    return ApiResponse.success(res, data, 201, message);
   },
 
   error(res: Response, code: string, message: string, statusCode: number = 400, details?: any) {

@@ -155,6 +155,9 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Cart', slug: 'cart.update', module: 'CART', description: 'Modify cart items or currency' },
   { name: 'Delete Cart', slug: 'cart.delete', module: 'CART', description: 'Clear or delete shopping carts' },
 
+  // CHECKOUT (MODULE 19)
+  { name: 'View Checkout Sessions', slug: 'checkout.view', module: 'CHECKOUT', description: 'Inspect active, completed, and expired checkout sessions' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -237,6 +240,7 @@ export const ROLES_DATA = [
     permissionSlugs: [
       'order.view', 'order.update',
       'cart.view',
+      'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update'
     ]
   },
