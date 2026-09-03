@@ -93,6 +93,12 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Sanskrit Edit Profile', slug: 'sanskrit-edit.update', module: 'SANSKRIT_EDIT', description: 'Modify Sanskrit Edit profile and publishing status' },
   { name: 'Delete Sanskrit Edit Profile', slug: 'sanskrit-edit.delete', module: 'SANSKRIT_EDIT', description: 'Delete Sanskrit Edit profile' },
 
+  // ARTISTS & MAKERS (MODULE 11)
+  { name: 'View Artists', slug: 'artist.view', module: 'ARTISTS', description: 'View artist and maker profiles' },
+  { name: 'Create Artist', slug: 'artist.create', module: 'ARTISTS', description: 'Create artist and maker profile' },
+  { name: 'Update Artist', slug: 'artist.update', module: 'ARTISTS', description: 'Modify artist profile and product relationships' },
+  { name: 'Delete Artist', slug: 'artist.delete', module: 'ARTISTS', description: 'Delete artist profile' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -126,6 +132,7 @@ export const ROLES_DATA = [
       'media-folder.view', 'media-folder.create', 'media-folder.update', 'media-folder.delete',
       'antique.view', 'antique.create', 'antique.update', 'antique.delete',
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update', 'sanskrit-edit.delete',
+      'artist.view', 'artist.create', 'artist.update', 'artist.delete',
       'seo.view', 'seo.update'
     ]
   },
@@ -146,6 +153,7 @@ export const ROLES_DATA = [
       'media-folder.view', 'media-folder.create', 'media-folder.update',
       'antique.view', 'antique.create', 'antique.update',
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update',
+      'artist.view', 'artist.create', 'artist.update',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -171,7 +179,8 @@ export const ROLES_DATA = [
       'variant.view', 'product-option.view',
       'media.view', 'media-folder.view',
       'antique.view',
-      'sanskrit-edit.view'
+      'sanskrit-edit.view',
+      'artist.view'
     ]
   }
 ];
@@ -916,7 +925,7 @@ export async function runSeed(): Promise<void> {
     {
       name: 'Dharmachakra Pravartana Sacred Brass Wall Panel',
       slug: 'dharmachakra-pravartana-sacred-brass-wall-panel',
-      sku: 'LA-SAN-0001',
+      sku: 'LA-SAN-0002',
       shortDescription: 'Sacred brass Indic panel depicting the turning of the wheel of righteousness with classical Sanskrit verses.',
       description: 'An authoritative heirloom piece celebrating eternal cosmic order and righteous duty, hand-embossed in high-purity brass with Devanagari verse inscriptions.',
       price: 125000,
@@ -932,10 +941,10 @@ export async function runSeed(): Promise<void> {
       isNewArrival: true,
       isBestseller: true,
       sortOrder: 1,
-      categorySlug: 'sculptures',
+      categorySlug: 'spiritual-art',
       collectionSlugs: ['divine-pantheon', 'temple-heritage'],
       attributes: [
-        { attributeSlug: 'material', valueSlug: 'brass' }
+        { attrSlug: 'material', valSlug: 'brass' }
       ],
       sanskritEdit: {
         sanskritTitle: 'धर्मचक्रप्रवर्तनम्',
@@ -956,9 +965,59 @@ export async function runSeed(): Promise<void> {
         displayOrder: 1,
         isFeatured: true,
         isPublished: true
-      }
+      },
+      artists: [
+        { artistSlug: 'master-sculptor-sompura', role: 'ARTIST', isPrimary: true }
+      ]
     }
   ];
+
+  // MODULE 11: INITIAL ARTISTS & MAKERS
+  const INITIAL_ARTISTS = [
+    {
+      name: 'Master Sculptor Sompura',
+      slug: 'master-sculptor-sompura',
+      shortBio: 'Hereditary temple architect and sacred icon sculptor from Gujarat tradition.',
+      biography: 'Master Sculptor Sompura carries on an unbroken lineage of sacred vastu shilpa art spanning five generations.',
+      birthYear: 1958,
+      deathYear: null,
+      nationality: 'Indian',
+      origin: 'Patan, Gujarat',
+      tradition: 'Vedic Temple Architecture & Shilpa Shastra',
+      medium: 'Lost-wax Bronze & White Marble',
+      specialization: 'Sacred Sculptures & Yantras',
+      signature: 'Shilpi Sompura',
+      status: 'ACTIVE' as const,
+      isFeatured: true,
+      sortOrder: 1
+    },
+    {
+      name: 'Ustad Mansur Heritage Atelier',
+      slug: 'ustad-mansur-heritage-atelier',
+      shortBio: 'Classical atelier specializing in miniature painting and natural mineral pigment masterworks.',
+      biography: 'Reviving 17th-century Mughal and Rajasthani court atelier techniques with hand-ground lapis lazuli and gold leaf.',
+      birthYear: null,
+      deathYear: null,
+      nationality: 'Indian',
+      origin: 'Jaipur, Rajasthan',
+      tradition: 'Mughal & Rajasthani Miniature',
+      medium: 'Natural Mineral Pigments & Gold Leaf on Wasli Paper',
+      specialization: 'Botanical & Court Miniatures',
+      signature: 'Mansur Atelier',
+      status: 'ACTIVE' as const,
+      isFeatured: true,
+      sortOrder: 2
+    }
+  ];
+
+  for (const artDef of INITIAL_ARTISTS) {
+    const existing = prisma.artist.findUnique({ where: { slug: artDef.slug } });
+    if (!existing) {
+      prisma.artist.create({
+        data: artDef
+      });
+    }
+  }
 
   for (const prodDef of INITIAL_PRODUCTS) {
     const existing = prisma.product.findUnique({ where: { slug: prodDef.slug } }) || prisma.product.findUnique({ where: { sku: prodDef.sku } });
@@ -968,7 +1027,7 @@ export async function runSeed(): Promise<void> {
         const cat = prisma.category.findUnique({ where: { slug: prodDef.categorySlug } });
         if (cat) categoryId = cat.id;
       }
-      const fallbackCat = prisma.category.findUnique({ where: { slug: 'art' } });
+      const fallbackCat = prisma.category.findUnique({ where: { slug: 'art' } }) || prisma.category.findFirst();
       categoryId = categoryId || fallbackCat?.id || null;
 
       if (categoryId) {
@@ -1049,6 +1108,29 @@ export async function runSeed(): Promise<void> {
                 ...(prodDef as any).sanskritEdit
               }
             });
+          }
+        }
+
+        // Link Artists if defined
+        if ((prodDef as any).artists) {
+          for (const aDef of (prodDef as any).artists) {
+            const artist = prisma.artist.findUnique({ where: { slug: aDef.artistSlug } });
+            if (artist) {
+              const existingPA = prisma.productArtist.findUnique({
+                where: { productId_artistId_role: { productId: prod.id, artistId: artist.id, role: aDef.role || 'ARTIST' } }
+              });
+              if (!existingPA) {
+                prisma.productArtist.create({
+                  data: {
+                    productId: prod.id,
+                    artistId: artist.id,
+                    role: aDef.role || 'ARTIST',
+                    isPrimary: Boolean(aDef.isPrimary),
+                    sortOrder: 0
+                  }
+                });
+              }
+            }
           }
         }
 

@@ -892,6 +892,32 @@ export class ProductsService {
       };
     }
 
+    if (p.artists && Array.isArray(p.artists)) {
+      const activeArtists = p.artists
+        .filter((pa: any) => pa.artist && pa.artist.status !== 'INACTIVE')
+        .map((pa: any) => ({
+          artist: {
+            id: pa.artist.id,
+            name: pa.artist.name,
+            slug: pa.artist.slug,
+            shortBio: pa.artist.shortBio || null,
+            nationality: pa.artist.nationality || null,
+            origin: pa.artist.origin || null,
+            tradition: pa.artist.tradition || null,
+            medium: pa.artist.medium || null,
+            specialization: pa.artist.specialization || null,
+            image: pa.artist.media?.find((m: any) => m.isPrimary)?.media?.publicUrl || pa.artist.ogImage || null
+          },
+          role: pa.role || 'ARTIST',
+          isPrimary: Boolean(pa.isPrimary),
+          sortOrder: pa.sortOrder !== undefined ? Number(pa.sortOrder) : 0
+        }));
+
+      if (activeArtists.length > 0) {
+        formatted.artists = activeArtists;
+      }
+    }
+
     return formatted;
   }
 }

@@ -35,8 +35,13 @@ async function runTests() {
   // Seed DB and start test server
   await runSeed();
 
-  // Clean up any test categories from previous test runs
-  const testSlugs = ['hidden-secret-artifacts', 'nataraja-bronze-idols', 'bronze-sculptures', 'fine-sculptures'];
+  // Clean up any test categories/products from previous test runs
+  const prod = prisma.product.findUnique({ where: { slug: 'nataraja-bronze-idols' } });
+  if (prod) {
+    prisma.product.delete({ where: { id: prod.id } });
+  }
+
+  const testSlugs = ['bronze-sculptures', 'fine-sculptures', 'hidden-secret-artifacts'];
   for (const slug of testSlugs) {
     const existing = prisma.category.findUnique({ where: { slug } });
     if (existing) {

@@ -158,6 +158,7 @@ async function runTests() {
       await prisma.productVariantMedia.deleteMany({});
       await prisma.categoryMedia.deleteMany({});
       await prisma.collectionMedia.deleteMany({});
+      await prisma.artistMedia.deleteMany({});
       await prisma.mediaAsset.deleteMany({});
       await prisma.mediaFolder.deleteMany({});
 

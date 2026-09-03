@@ -103,6 +103,24 @@ enum DimensionUnit {
   FT
 }
 
+enum ArtistStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ArtistRole {
+  ARTIST
+  MAKER
+  DESIGNER
+  ATTRIBUTED_TO
+}
+
+enum ArtistMediaRole {
+  PROFILE
+  GALLERY
+  OG
+}
+
 enum WeightUnit {
   G
   KG
@@ -416,6 +434,7 @@ model Product {
   media             ProductMedia[]
   antiqueProfile    AntiqueProfile?
   sanskritEditProfile SanskritEditProfile?
+  artists           ProductArtist[]
 
   @@index([slug])
   @@index([sku])
@@ -677,6 +696,7 @@ model MediaAsset {
   variantMedia     ProductVariantMedia[]
   categoryMedia    CategoryMedia[]
   collectionMedia  CollectionMedia[]
+  artistMedia      ArtistMedia[]
 
   @@index([storageKey])
   @@index([mimeType])
@@ -762,3 +782,84 @@ model CollectionMedia {
   @@index([sortOrder])
   @@map("collection_media")
 }
+
+model Artist {
+  id              String          @id @default(uuid()) @db.VarChar(36)
+  name            String          @db.VarChar(150)
+  slug            String          @unique @db.VarChar(180)
+  shortBio        String?         @map("short_bio") @db.VarChar(500)
+  biography       String?         @db.Text
+  birthYear       Int?            @map("birth_year")
+  deathYear       Int?            @map("death_year")
+  nationality     String?         @db.VarChar(100)
+  origin          String?         @db.VarChar(150)
+  tradition       String?         @db.VarChar(150)
+  medium          String?         @db.VarChar(150)
+  specialization  String?         @db.VarChar(150)
+  signature       String?         @db.VarChar(255)
+  status          ArtistStatus    @default(ACTIVE)
+  isFeatured      Boolean         @default(false) @map("is_featured")
+  sortOrder       Int             @default(0) @map("sort_order")
+  metaTitle       String?         @map("meta_title") @db.VarChar(150)
+  metaDescription String?         @map("meta_description") @db.Text
+  metaKeywords    String?         @map("meta_keywords") @db.VarChar(255)
+  ogImage         String?         @map("og_image") @db.VarChar(255)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  products        ProductArtist[]
+  media           ArtistMedia[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([status])
+  @@index([isFeatured])
+  @@index([sortOrder])
+  @@index([tradition])
+  @@index([medium])
+  @@index([specialization])
+  @@index([createdAt])
+  @@map("artists")
+}
+
+model ProductArtist {
+  productId String     @map("product_id") @db.VarChar(36)
+  artistId  String     @map("artist_id") @db.VarChar(36)
+  role      ArtistRole @default(ARTIST)
+  isPrimary Boolean    @default(false) @map("is_primary")
+  sortOrder Int        @default(0) @map("sort_order")
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  artist    Artist     @relation(fields: [artistId], references: [id], onDelete: Restrict)
+
+  @@id([productId, artistId, role])
+  @@index([productId])
+  @@index([artistId])
+  @@index([role])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@map("product_artists")
+}
+
+model ArtistMedia {
+  artistId  String          @map("artist_id") @db.VarChar(36)
+  mediaId   String          @map("media_id") @db.VarChar(36)
+  sortOrder Int             @default(0) @map("sort_order")
+  isPrimary Boolean         @default(false) @map("is_primary")
+  role      ArtistMediaRole @default(PROFILE)
+  createdAt DateTime        @default(now()) @map("created_at")
+
+  artist    Artist          @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  media     MediaAsset      @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([artistId, mediaId, role])
+  @@index([artistId])
+  @@index([mediaId])
+  @@index([isPrimary])
+  @@index([sortOrder])
+  @@index([role])
+  @@map("artist_media")
+}
+

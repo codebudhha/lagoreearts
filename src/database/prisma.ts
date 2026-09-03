@@ -566,6 +566,78 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_display_order ON sanskrit_edit_profiles(display_order);
   CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_theme ON sanskrit_edit_profiles(theme);
   CREATE INDEX IF NOT EXISTS idx_sanskrit_prof_source ON sanskrit_edit_profiles(source);
+
+  CREATE TABLE IF NOT EXISTS artists (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    short_bio TEXT,
+    biography TEXT,
+    birth_year INTEGER,
+    death_year INTEGER,
+    nationality TEXT,
+    origin TEXT,
+    tradition TEXT,
+    medium TEXT,
+    specialization TEXT,
+    signature TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    is_featured INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    meta_title TEXT,
+    meta_description TEXT,
+    meta_keywords TEXT,
+    og_image TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_artists_name ON artists(name);
+  CREATE INDEX IF NOT EXISTS idx_artists_slug ON artists(slug);
+  CREATE INDEX IF NOT EXISTS idx_artists_status ON artists(status);
+  CREATE INDEX IF NOT EXISTS idx_artists_is_featured ON artists(is_featured);
+  CREATE INDEX IF NOT EXISTS idx_artists_sort_order ON artists(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_artists_tradition ON artists(tradition);
+  CREATE INDEX IF NOT EXISTS idx_artists_medium ON artists(medium);
+  CREATE INDEX IF NOT EXISTS idx_artists_specialization ON artists(specialization);
+  CREATE INDEX IF NOT EXISTS idx_artists_created_at ON artists(created_at);
+
+  CREATE TABLE IF NOT EXISTS product_artists (
+    product_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'ARTIST',
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY (product_id, artist_id, role),
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_prod_art_prod_id ON product_artists(product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_art_art_id ON product_artists(artist_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_art_role ON product_artists(role);
+  CREATE INDEX IF NOT EXISTS idx_prod_art_primary ON product_artists(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_prod_art_sort ON product_artists(sort_order);
+
+  CREATE TABLE IF NOT EXISTS artist_media (
+    artist_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'PROFILE',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (artist_id, media_id, role),
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_art_media_art_id ON artist_media(artist_id);
+  CREATE INDEX IF NOT EXISTS idx_art_media_media_id ON artist_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_art_media_primary ON artist_media(is_primary);
+  CREATE INDEX IF NOT EXISTS idx_art_media_sort ON artist_media(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_art_media_role ON artist_media(role);
 `);
 
 /**
@@ -1233,7 +1305,16 @@ export const prisma = {
 
     delete: ({ where }: { where: { id: string } }) => {
       const category = prisma.category.findUnique({ where });
-      db.prepare('DELETE FROM categories WHERE id = ?').run(where.id);
+      if (category) {
+        db.prepare('DELETE FROM category_media WHERE category_id = ?').run(where.id);
+        db.prepare('DELETE FROM category_attributes WHERE category_id = ?').run(where.id);
+        db.prepare('UPDATE categories SET parent_id = NULL WHERE parent_id = ?').run(where.id);
+        const prods: any[] = db.prepare('SELECT id FROM products WHERE category_id = ?').all(where.id);
+        for (const p of prods) {
+          prisma.product.delete({ where: { id: p.id } });
+        }
+        db.prepare('DELETE FROM categories WHERE id = ?').run(where.id);
+      }
       return category;
     }
   },
@@ -1952,6 +2033,13 @@ export const prisma = {
         formatted.sanskritEditProfile = prisma.sanskritEditProfile.findUnique({ where: { productId: row.id } });
       }
 
+      if (include?.artists) {
+        formatted.artists = prisma.productArtist.findMany({
+          where: { productId: row.id },
+          include: include.artists === true ? { artist: true } : (include.artists?.include || { artist: true })
+        });
+      }
+
       return formatted;
     },
 
@@ -2195,9 +2283,10 @@ export const prisma = {
     },
 
     delete: ({ where }: { where: { id: string } }) => {
-      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true, sanskritEditProfile: true } });
+      const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true, sanskritEditProfile: true, artists: true } });
       db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
+      db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -4230,6 +4319,582 @@ export const prisma = {
       if (where?.source) { sql += ' AND LOWER(source) = LOWER(?)'; params.push(where.source); }
       if (where?.isPublished !== undefined) { sql += ' AND is_published = ?'; params.push(where.isPublished ? 1 : 0); }
       if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  artist: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM artists WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM artists WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        shortBio: row.short_bio,
+        biography: row.biography,
+        birthYear: row.birth_year !== null ? Number(row.birth_year) : null,
+        deathYear: row.death_year !== null ? Number(row.death_year) : null,
+        nationality: row.nationality,
+        origin: row.origin,
+        tradition: row.tradition,
+        medium: row.medium,
+        specialization: row.specialization,
+        signature: row.signature,
+        status: row.status,
+        isFeatured: Boolean(row.is_featured),
+        sortOrder: Number(row.sort_order || 0),
+        metaTitle: row.meta_title,
+        metaDescription: row.meta_description,
+        metaKeywords: row.meta_keywords,
+        ogImage: row.og_image,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.products) {
+        formatted.products = prisma.productArtist.findMany({
+          where: { artistId: row.id },
+          include: include.products === true ? { product: true } : (include.products?.include || { product: true })
+        });
+      }
+
+      if (include?.media) {
+        formatted.media = prisma.artistMedia.findMany({
+          where: { artistId: row.id },
+          include: { media: true }
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.name) { sql += ' AND LOWER(name) = LOWER(?)'; params.push(where.name); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+      if (where?.tradition) { sql += ' AND LOWER(tradition) = LOWER(?)'; params.push(where.tradition); }
+      if (where?.medium) { sql += ' AND LOWER(medium) = LOWER(?)'; params.push(where.medium); }
+      if (where?.specialization) { sql += ' AND LOWER(specialization) = LOWER(?)'; params.push(where.specialization); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.artist.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM artists WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+      if (where?.tradition) { sql += ' AND LOWER(tradition) = LOWER(?)'; params.push(where.tradition); }
+      if (where?.medium) { sql += ' AND LOWER(medium) = LOWER(?)'; params.push(where.medium); }
+      if (where?.specialization) { sql += ' AND LOWER(specialization) = LOWER(?)'; params.push(where.specialization); }
+      if (where?.nationality) { sql += ' AND LOWER(nationality) = LOWER(?)'; params.push(where.nationality); }
+
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ? OR biography LIKE ? OR tradition LIKE ? OR medium LIKE ? OR specialization LIKE ?)';
+        const q = `%${where.search}%`;
+        params.push(q, q, q, q, q, q);
+      }
+
+      if (orderBy) {
+        if (orderBy.sortOrder) {
+          sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+        } else if (orderBy.name) {
+          sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+        } else if (orderBy.createdAt) {
+          sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        }
+      } else {
+        sql += ' ORDER BY sort_order ASC, name ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.artist.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO artists (
+          id, name, slug, short_bio, biography, birth_year, death_year,
+          nationality, origin, tradition, medium, specialization, signature,
+          status, is_featured, sort_order, meta_title, meta_description,
+          meta_keywords, og_image, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?, ?,
+          ?, ?, ?, ?
+        )
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.shortBio || null,
+        data.biography || null,
+        data.birthYear !== undefined && data.birthYear !== null ? Number(data.birthYear) : null,
+        data.deathYear !== undefined && data.deathYear !== null ? Number(data.deathYear) : null,
+        data.nationality || null,
+        data.origin || null,
+        data.tradition || null,
+        data.medium || null,
+        data.specialization || null,
+        data.signature || null,
+        data.status || 'ACTIVE',
+        data.isFeatured !== undefined ? (data.isFeatured ? 1 : 0) : 0,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.metaTitle || null,
+        data.metaDescription || null,
+        data.metaKeywords || null,
+        data.ogImage || null,
+        now,
+        now
+      );
+
+      return prisma.artist.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.shortBio !== undefined) { updates.push('short_bio = ?'); params.push(data.shortBio || null); }
+      if (data.biography !== undefined) { updates.push('biography = ?'); params.push(data.biography || null); }
+      if (data.birthYear !== undefined) { updates.push('birth_year = ?'); params.push(data.birthYear !== null ? Number(data.birthYear) : null); }
+      if (data.deathYear !== undefined) { updates.push('death_year = ?'); params.push(data.deathYear !== null ? Number(data.deathYear) : null); }
+      if (data.nationality !== undefined) { updates.push('nationality = ?'); params.push(data.nationality || null); }
+      if (data.origin !== undefined) { updates.push('origin = ?'); params.push(data.origin || null); }
+      if (data.tradition !== undefined) { updates.push('tradition = ?'); params.push(data.tradition || null); }
+      if (data.medium !== undefined) { updates.push('medium = ?'); params.push(data.medium || null); }
+      if (data.specialization !== undefined) { updates.push('specialization = ?'); params.push(data.specialization || null); }
+      if (data.signature !== undefined) { updates.push('signature = ?'); params.push(data.signature || null); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.metaTitle !== undefined) { updates.push('meta_title = ?'); params.push(data.metaTitle || null); }
+      if (data.metaDescription !== undefined) { updates.push('meta_description = ?'); params.push(data.metaDescription || null); }
+      if (data.metaKeywords !== undefined) { updates.push('meta_keywords = ?'); params.push(data.metaKeywords || null); }
+      if (data.ogImage !== undefined) { updates.push('og_image = ?'); params.push(data.ogImage || null); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let whereClause = '';
+      if (where.id) {
+        whereClause = 'id = ?';
+        params.push(where.id);
+      } else if (where.slug) {
+        whereClause = 'LOWER(slug) = LOWER(?)';
+        params.push(where.slug);
+      }
+
+      db.prepare(`UPDATE artists SET ${updates.join(', ')} WHERE ${whereClause}`).run(...params);
+      return prisma.artist.findUnique({ where, include });
+    },
+
+    updateMany: ({ where, data }: { where?: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.isFeatured !== undefined) { updates.push('is_featured = ?'); params.push(data.isFeatured ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let sql = `UPDATE artists SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.artist.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM artist_media WHERE artist_id = ?').run(where.id);
+        db.prepare('DELETE FROM artists WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isFeatured !== undefined) { sql += ' AND is_featured = ?'; params.push(where.isFeatured ? 1 : 0); }
+      if (where?.tradition) { sql += ' AND LOWER(tradition) = LOWER(?)'; params.push(where.tradition); }
+      if (where?.medium) { sql += ' AND LOWER(medium) = LOWER(?)'; params.push(where.medium); }
+      if (where?.specialization) { sql += ' AND LOWER(specialization) = LOWER(?)'; params.push(where.specialization); }
+      if (where?.nationality) { sql += ' AND LOWER(nationality) = LOWER(?)'; params.push(where.nationality); }
+
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ? OR biography LIKE ? OR tradition LIKE ? OR medium LIKE ? OR specialization LIKE ?)';
+        const q = `%${where.search}%`;
+        params.push(q, q, q, q, q, q);
+      }
+
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  productArtist: {
+    findUnique: ({ where, include }: { where: { productId_artistId_role?: { productId: string; artistId: string; role: string }; id?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.productId_artistId_role) {
+        row = db.prepare('SELECT * FROM product_artists WHERE product_id = ? AND artist_id = ? AND role = ?')
+          .get(where.productId_artistId_role.productId, where.productId_artistId_role.artistId, where.productId_artistId_role.role);
+      }
+      if (!row) return null;
+
+      const formatted: any = {
+        productId: row.product_id,
+        artistId: row.artist_id,
+        role: row.role,
+        isPrimary: Boolean(row.is_primary),
+        sortOrder: Number(row.sort_order || 0),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.product) {
+        formatted.product = prisma.product.findUnique({ where: { id: row.product_id } });
+      }
+
+      if (include?.artist) {
+        formatted.artist = prisma.artist.findUnique({
+          where: { id: row.artist_id },
+          include: include.artist === true ? { media: true } : (include.artist?.include || { media: true })
+        });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM product_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.productArtist.findUnique({
+        where: { productId_artistId_role: { productId: row.product_id, artistId: row.artist_id, role: row.role } },
+        include
+      });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM product_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      if (orderBy) {
+        if (orderBy.isPrimary) {
+          sql += ` ORDER BY is_primary ${orderBy.isPrimary.toUpperCase()}, sort_order ASC`;
+        } else if (orderBy.sortOrder) {
+          sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+        }
+      } else {
+        sql += ' ORDER BY is_primary DESC, sort_order ASC, created_at ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.productArtist.findUnique({
+        where: { productId_artistId_role: { productId: r.product_id, artistId: r.artist_id, role: r.role } },
+        include
+      }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO product_artists (product_id, artist_id, role, is_primary, sort_order, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        data.productId,
+        data.artistId,
+        data.role || 'ARTIST',
+        data.isPrimary !== undefined ? (data.isPrimary ? 1 : 0) : 0,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        now,
+        now
+      );
+
+      return prisma.productArtist.findUnique({
+        where: { productId_artistId_role: { productId: data.productId, artistId: data.artistId, role: data.role || 'ARTIST' } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: { where: { productId_artistId_role?: { productId: string; artistId: string; role: string }; productId?: string; artistId?: string; role?: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.role !== undefined) { updates.push('role = ?'); params.push(data.role); }
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      const target = where.productId_artistId_role || where;
+      params.push(target.productId, target.artistId, target.role);
+
+      db.prepare(`UPDATE product_artists SET ${updates.join(', ')} WHERE product_id = ? AND artist_id = ? AND role = ?`).run(...params);
+
+      const newRole = data.role || target.role;
+      return prisma.productArtist.findUnique({
+        where: { productId_artistId_role: { productId: target.productId, artistId: target.artistId, role: newRole } },
+        include
+      });
+    },
+
+    updateMany: ({ where, data }: { where?: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { updates.push('role = ?'); params.push(data.role); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let sql = `UPDATE product_artists SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { productId_artistId_role?: { productId: string; artistId: string; role: string }; productId?: string; artistId?: string; role?: string } }) => {
+      const target = where.productId_artistId_role || where;
+      const existing = prisma.productArtist.findUnique({ where: { productId_artistId_role: { productId: target.productId!, artistId: target.artistId!, role: target.role! } } });
+      if (existing) {
+        db.prepare('DELETE FROM product_artists WHERE product_id = ? AND artist_id = ? AND role = ?').run(target.productId, target.artistId, target.role);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM product_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM product_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  artistMedia: {
+    findUnique: ({ where, include }: { where: { artistId_mediaId_role?: { artistId: string; mediaId: string; role: string } }; include?: any }) => {
+      const target = where.artistId_mediaId_role;
+      if (!target) return null;
+      const row: any = db.prepare('SELECT * FROM artist_media WHERE artist_id = ? AND media_id = ? AND role = ?')
+        .get(target.artistId, target.mediaId, target.role);
+      if (!row) return null;
+
+      const formatted: any = {
+        artistId: row.artist_id,
+        mediaId: row.media_id,
+        role: row.role,
+        sortOrder: Number(row.sort_order || 0),
+        isPrimary: Boolean(row.is_primary),
+        createdAt: new Date(row.created_at)
+      };
+
+      if (include?.artist) {
+        formatted.artist = prisma.artist.findUnique({ where: { id: row.artist_id } });
+      }
+
+      if (include?.media) {
+        formatted.media = prisma.mediaAsset.findUnique({ where: { id: row.media_id } });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM artist_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.artistMedia.findUnique({
+        where: { artistId_mediaId_role: { artistId: row.artist_id, mediaId: row.media_id, role: row.role } },
+        include
+      });
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM artist_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      if (orderBy) {
+        if (orderBy.isPrimary) {
+          sql += ` ORDER BY is_primary ${orderBy.isPrimary.toUpperCase()}, sort_order ASC`;
+        } else if (orderBy.sortOrder) {
+          sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+        }
+      } else {
+        sql += ' ORDER BY is_primary DESC, sort_order ASC, created_at ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.artistMedia.findUnique({
+        where: { artistId_mediaId_role: { artistId: r.artist_id, mediaId: r.media_id, role: r.role } },
+        include
+      }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO artist_media (artist_id, media_id, role, is_primary, sort_order, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.artistId,
+        data.mediaId,
+        data.role || 'PROFILE',
+        data.isPrimary !== undefined ? (data.isPrimary ? 1 : 0) : 0,
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        now
+      );
+
+      return prisma.artistMedia.findUnique({
+        where: { artistId_mediaId_role: { artistId: data.artistId, mediaId: data.mediaId, role: data.role || 'PROFILE' } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: { where: { artistId_mediaId_role: { artistId: string; mediaId: string; role: string } }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.role !== undefined) { updates.push('role = ?'); params.push(data.role); }
+
+      const target = where.artistId_mediaId_role;
+      params.push(target.artistId, target.mediaId, target.role);
+
+      db.prepare(`UPDATE artist_media SET ${updates.join(', ')} WHERE artist_id = ? AND media_id = ? AND role = ?`).run(...params);
+
+      const newRole = data.role || target.role;
+      return prisma.artistMedia.findUnique({
+        where: { artistId_mediaId_role: { artistId: target.artistId, mediaId: target.mediaId, role: newRole } },
+        include
+      });
+    },
+
+    updateMany: ({ where, data }: { where?: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      let sql = `UPDATE artist_media SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { artistId_mediaId_role: { artistId: string; mediaId: string; role: string } } }) => {
+      const target = where.artistId_mediaId_role;
+      const existing = prisma.artistMedia.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM artist_media WHERE artist_id = ? AND media_id = ? AND role = ?').run(target.artistId, target.mediaId, target.role);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM artist_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM artist_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }
