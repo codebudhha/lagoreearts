@@ -1129,6 +1129,97 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_nav_items_sort_order ON navigation_items(sort_order);
   CREATE INDEX IF NOT EXISTS idx_nav_items_is_visible ON navigation_items(is_visible);
   CREATE INDEX IF NOT EXISTS idx_nav_items_created_at ON navigation_items(created_at);
+
+  CREATE TABLE IF NOT EXISTS customers (
+    id TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    normalized_email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    email_verified_at TEXT,
+    last_login_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_customers_normalized_email ON customers(normalized_email);
+  CREATE INDEX IF NOT EXISTS idx_customers_status ON customers(status);
+  CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+  CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at);
+
+  CREATE TABLE IF NOT EXISTS customer_sessions (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    refresh_token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    revoked_at TEXT,
+    created_at TEXT NOT NULL,
+    last_used_at TEXT NOT NULL,
+    user_agent TEXT,
+    ip_address TEXT,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cust_sess_customer_id ON customer_sessions(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_cust_sess_token_hash ON customer_sessions(refresh_token_hash);
+  CREATE INDEX IF NOT EXISTS idx_cust_sess_expires_at ON customer_sessions(expires_at);
+
+  CREATE TABLE IF NOT EXISTS customer_password_resets (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    used_at TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cust_pwd_customer_id ON customer_password_resets(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_cust_pwd_token_hash ON customer_password_resets(token_hash);
+  CREATE INDEX IF NOT EXISTS idx_cust_pwd_expires_at ON customer_password_resets(expires_at);
+
+  CREATE TABLE IF NOT EXISTS customer_email_verifications (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    verified_at TEXT,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cust_email_customer_id ON customer_email_verifications(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_cust_email_token_hash ON customer_email_verifications(token_hash);
+  CREATE INDEX IF NOT EXISTS idx_cust_email_expires_at ON customer_email_verifications(expires_at);
+
+  CREATE TABLE IF NOT EXISTS customer_addresses (
+    id TEXT PRIMARY KEY,
+    customer_id TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'HOME',
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    company_name TEXT,
+    address_line1 TEXT NOT NULL,
+    address_line2 TEXT,
+    landmark TEXT,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    postal_code TEXT NOT NULL,
+    country TEXT NOT NULL DEFAULT 'INDIA',
+    phone TEXT NOT NULL,
+    is_default_shipping INTEGER NOT NULL DEFAULT 0,
+    is_default_billing INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_cust_addr_customer_id ON customer_addresses(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_cust_addr_def_shipping ON customer_addresses(is_default_shipping);
+  CREATE INDEX IF NOT EXISTS idx_cust_addr_def_billing ON customer_addresses(is_default_billing);
 `);
 
 /**
@@ -8484,6 +8575,749 @@ export const prisma = {
       if (where?.targetType) { sql += ' AND target_type = ?'; params.push(where.targetType); }
       if (where?.targetId) { sql += ' AND target_id = ?'; params.push(where.targetId); }
       if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  customer: {
+    findUnique: ({ where, include }: { where: { id?: string; email?: string; normalizedEmail?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM customers WHERE id = ?').get(where.id);
+      } else if (where.normalizedEmail) {
+        row = db.prepare('SELECT * FROM customers WHERE normalized_email = ?').get(where.normalizedEmail.toLowerCase().trim());
+      } else if (where.email) {
+        row = db.prepare('SELECT * FROM customers WHERE normalized_email = ?').get(where.email.toLowerCase().trim());
+      }
+      if (!row) return null;
+      const cust: any = {
+        id: row.id,
+        email: row.email,
+        normalizedEmail: row.normalized_email,
+        passwordHash: row.password_hash,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        phone: row.phone,
+        status: row.status,
+        emailVerifiedAt: row.email_verified_at ? new Date(row.email_verified_at) : null,
+        lastLoginAt: row.last_login_at ? new Date(row.last_login_at) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.addresses) {
+        cust.addresses = prisma.customerAddress.findMany({ where: { customerId: row.id } });
+      }
+      if (include?.sessions) {
+        cust.sessions = prisma.customerSession.findMany({ where: { customerId: row.id } });
+      }
+      return cust;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM customers WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.normalizedEmail) { sql += ' AND normalized_email = ?'; params.push(where.normalizedEmail.toLowerCase().trim()); }
+      if (where?.email) { sql += ' AND normalized_email = ?'; params.push(where.email.toLowerCase().trim()); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.customer.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM customers WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(first_name) LIKE LOWER(?) OR LOWER(last_name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?) OR phone LIKE ?)';
+        const s = `%${where.search}%`;
+        params.push(s, s, s, s);
+      }
+      if (where?.createdAt?.gte) {
+        sql += ' AND created_at >= ?';
+        params.push(new Date(where.createdAt.gte).toISOString());
+      }
+      if (where?.createdAt?.lte) {
+        sql += ' AND created_at <= ?';
+        params.push(new Date(where.createdAt.lte).toISOString());
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else if (orderBy?.firstName) sql += ` ORDER BY first_name ${orderBy.firstName.toUpperCase()}`;
+      else if (orderBy?.email) sql += ` ORDER BY email ${orderBy.email.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.customer.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      const normEmail = (data.normalizedEmail || data.email).toLowerCase().trim();
+      db.prepare(`
+        INSERT INTO customers (
+          id, email, normalized_email, password_hash, first_name, last_name, phone, status,
+          email_verified_at, last_login_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.email.trim(),
+        normEmail,
+        data.passwordHash,
+        data.firstName.trim(),
+        data.lastName.trim(),
+        data.phone ? data.phone.trim() : null,
+        data.status || 'ACTIVE',
+        data.emailVerifiedAt ? new Date(data.emailVerifiedAt).toISOString() : null,
+        data.lastLoginAt ? new Date(data.lastLoginAt).toISOString() : null,
+        now,
+        now
+      );
+      return prisma.customer.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; normalizedEmail?: string }; data: any; include?: any }) => {
+      const existing = prisma.customer.findUnique({ where });
+      if (!existing) throw new Error('Customer not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.email !== undefined) {
+        updates.push('email = ?');
+        params.push(data.email.trim());
+        updates.push('normalized_email = ?');
+        params.push(data.email.toLowerCase().trim());
+      }
+      if (data.normalizedEmail !== undefined && data.email === undefined) {
+        updates.push('normalized_email = ?');
+        params.push(data.normalizedEmail.toLowerCase().trim());
+      }
+      if (data.passwordHash !== undefined) { updates.push('password_hash = ?'); params.push(data.passwordHash); }
+      if (data.firstName !== undefined) { updates.push('first_name = ?'); params.push(data.firstName.trim()); }
+      if (data.lastName !== undefined) { updates.push('last_name = ?'); params.push(data.lastName.trim()); }
+      if (data.phone !== undefined) { updates.push('phone = ?'); params.push(data.phone ? data.phone.trim() : null); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.emailVerifiedAt !== undefined) {
+        updates.push('email_verified_at = ?');
+        params.push(data.emailVerifiedAt ? new Date(data.emailVerifiedAt).toISOString() : null);
+      }
+      if (data.lastLoginAt !== undefined) {
+        updates.push('last_login_at = ?');
+        params.push(data.lastLoginAt ? new Date(data.lastLoginAt).toISOString() : null);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(existing.id);
+      db.prepare(`UPDATE customers SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.customer.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.customer.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM customers WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM customer_addresses').run();
+        db.prepare('DELETE FROM customer_sessions').run();
+        db.prepare('DELETE FROM customer_password_resets').run();
+        db.prepare('DELETE FROM customer_email_verifications').run();
+        db.prepare('DELETE FROM customers').run();
+        return;
+      }
+      let sql = 'DELETE FROM customers WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM customers WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(first_name) LIKE LOWER(?) OR LOWER(last_name) LIKE LOWER(?) OR LOWER(email) LIKE LOWER(?) OR phone LIKE ?)';
+        const s = `%${where.search}%`;
+        params.push(s, s, s, s);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  customerSession: {
+    findUnique: ({ where, include }: { where: { id?: string; refreshTokenHash?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM customer_sessions WHERE id = ?').get(where.id);
+      } else if (where.refreshTokenHash) {
+        row = db.prepare('SELECT * FROM customer_sessions WHERE refresh_token_hash = ?').get(where.refreshTokenHash);
+      }
+      if (!row) return null;
+      const sess: any = {
+        id: row.id,
+        customerId: row.customer_id,
+        refreshTokenHash: row.refresh_token_hash,
+        expiresAt: new Date(row.expires_at),
+        revokedAt: row.revoked_at ? new Date(row.revoked_at) : null,
+        createdAt: new Date(row.created_at),
+        lastUsedAt: new Date(row.last_used_at),
+        userAgent: row.user_agent,
+        ipAddress: row.ip_address
+      };
+      if (include?.customer) {
+        sess.customer = prisma.customer.findUnique({ where: { id: row.customer_id } });
+      }
+      return sess;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM customer_sessions WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.refreshTokenHash) { sql += ' AND refresh_token_hash = ?'; params.push(where.refreshTokenHash); }
+      if (where?.revokedAt !== undefined) {
+        if (where.revokedAt === null) sql += ' AND revoked_at IS NULL';
+        else sql += ' AND revoked_at IS NOT NULL';
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.customerSession.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM customer_sessions WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.revokedAt !== undefined) {
+        if (where.revokedAt === null) sql += ' AND revoked_at IS NULL';
+        else sql += ' AND revoked_at IS NOT NULL';
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.customerSession.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO customer_sessions (
+          id, customer_id, refresh_token_hash, expires_at, revoked_at, created_at, last_used_at, user_agent, ip_address
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.customerId,
+        data.refreshTokenHash,
+        new Date(data.expiresAt).toISOString(),
+        data.revokedAt ? new Date(data.revokedAt).toISOString() : null,
+        now,
+        now,
+        data.userAgent || null,
+        data.ipAddress || null
+      );
+      return prisma.customerSession.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.customerSession.findUnique({ where });
+      if (!existing) throw new Error('Customer session not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.refreshTokenHash !== undefined) { updates.push('refresh_token_hash = ?'); params.push(data.refreshTokenHash); }
+      if (data.expiresAt !== undefined) { updates.push('expires_at = ?'); params.push(new Date(data.expiresAt).toISOString()); }
+      if (data.revokedAt !== undefined) {
+        updates.push('revoked_at = ?');
+        params.push(data.revokedAt ? new Date(data.revokedAt).toISOString() : null);
+      }
+      if (data.lastUsedAt !== undefined) {
+        updates.push('last_used_at = ?');
+        params.push(new Date(data.lastUsedAt).toISOString());
+      }
+
+      if (updates.length === 0) return existing;
+      params.push(where.id);
+      db.prepare(`UPDATE customer_sessions SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.customerSession.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.revokedAt !== undefined) {
+        updates.push('revoked_at = ?');
+        params.push(data.revokedAt ? new Date(data.revokedAt).toISOString() : null);
+      }
+      if (updates.length === 0) return { count: 0 };
+
+      let sql = `UPDATE customer_sessions SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.revokedAt === null) { sql += ' AND revoked_at IS NULL'; }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.customerSession.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM customer_sessions WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM customer_sessions').run();
+        return;
+      }
+      let sql = 'DELETE FROM customer_sessions WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM customer_sessions WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.revokedAt !== undefined) {
+        if (where.revokedAt === null) sql += ' AND revoked_at IS NULL';
+        else sql += ' AND revoked_at IS NOT NULL';
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  customerPasswordReset: {
+    findUnique: ({ where, include }: { where: { id?: string; tokenHash?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM customer_password_resets WHERE id = ?').get(where.id);
+      } else if (where.tokenHash) {
+        row = db.prepare('SELECT * FROM customer_password_resets WHERE token_hash = ?').get(where.tokenHash);
+      }
+      if (!row) return null;
+      const reset: any = {
+        id: row.id,
+        customerId: row.customer_id,
+        tokenHash: row.token_hash,
+        expiresAt: new Date(row.expires_at),
+        usedAt: row.used_at ? new Date(row.used_at) : null,
+        createdAt: new Date(row.created_at)
+      };
+      if (include?.customer) {
+        reset.customer = prisma.customer.findUnique({ where: { id: row.customer_id } });
+      }
+      return reset;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM customer_password_resets WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.tokenHash) { sql += ' AND token_hash = ?'; params.push(where.tokenHash); }
+      if (where?.usedAt !== undefined) {
+        if (where.usedAt === null) sql += ' AND used_at IS NULL';
+        else sql += ' AND used_at IS NOT NULL';
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.customerPasswordReset.findUnique({ where: { id: row.id }, include });
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO customer_password_resets (id, customer_id, token_hash, expires_at, used_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.customerId,
+        data.tokenHash,
+        new Date(data.expiresAt).toISOString(),
+        data.usedAt ? new Date(data.usedAt).toISOString() : null,
+        now
+      );
+      return prisma.customerPasswordReset.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.customerPasswordReset.findUnique({ where });
+      if (!existing) throw new Error('Customer password reset record not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.usedAt !== undefined) {
+        updates.push('used_at = ?');
+        params.push(data.usedAt ? new Date(data.usedAt).toISOString() : null);
+      }
+
+      if (updates.length === 0) return existing;
+      params.push(where.id);
+      db.prepare(`UPDATE customer_password_resets SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.customerPasswordReset.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.usedAt !== undefined) {
+        updates.push('used_at = ?');
+        params.push(data.usedAt ? new Date(data.usedAt).toISOString() : null);
+      }
+      if (updates.length === 0) return { count: 0 };
+
+      let sql = `UPDATE customer_password_resets SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.usedAt === null) { sql += ' AND used_at IS NULL'; }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM customer_password_resets').run();
+        return;
+      }
+      let sql = 'DELETE FROM customer_password_resets WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  customerEmailVerification: {
+    findUnique: ({ where, include }: { where: { id?: string; tokenHash?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM customer_email_verifications WHERE id = ?').get(where.id);
+      } else if (where.tokenHash) {
+        row = db.prepare('SELECT * FROM customer_email_verifications WHERE token_hash = ?').get(where.tokenHash);
+      }
+      if (!row) return null;
+      const ver: any = {
+        id: row.id,
+        customerId: row.customer_id,
+        tokenHash: row.token_hash,
+        expiresAt: new Date(row.expires_at),
+        verifiedAt: row.verified_at ? new Date(row.verified_at) : null,
+        createdAt: new Date(row.created_at)
+      };
+      if (include?.customer) {
+        ver.customer = prisma.customer.findUnique({ where: { id: row.customer_id } });
+      }
+      return ver;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM customer_email_verifications WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.tokenHash) { sql += ' AND token_hash = ?'; params.push(where.tokenHash); }
+      if (where?.verifiedAt !== undefined) {
+        if (where.verifiedAt === null) sql += ' AND verified_at IS NULL';
+        else sql += ' AND verified_at IS NOT NULL';
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.customerEmailVerification.findUnique({ where: { id: row.id }, include });
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO customer_email_verifications (id, customer_id, token_hash, expires_at, verified_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.customerId,
+        data.tokenHash,
+        new Date(data.expiresAt).toISOString(),
+        data.verifiedAt ? new Date(data.verifiedAt).toISOString() : null,
+        now
+      );
+      return prisma.customerEmailVerification.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.customerEmailVerification.findUnique({ where });
+      if (!existing) throw new Error('Customer email verification record not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.verifiedAt !== undefined) {
+        updates.push('verified_at = ?');
+        params.push(data.verifiedAt ? new Date(data.verifiedAt).toISOString() : null);
+      }
+
+      if (updates.length === 0) return existing;
+      params.push(where.id);
+      db.prepare(`UPDATE customer_email_verifications SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.customerEmailVerification.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.verifiedAt !== undefined) {
+        updates.push('verified_at = ?');
+        params.push(data.verifiedAt ? new Date(data.verifiedAt).toISOString() : null);
+      }
+      if (updates.length === 0) return { count: 0 };
+
+      let sql = `UPDATE customer_email_verifications SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.verifiedAt === null) { sql += ' AND verified_at IS NULL'; }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM customer_email_verifications').run();
+        return;
+      }
+      let sql = 'DELETE FROM customer_email_verifications WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  customerAddress: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM customer_addresses WHERE id = ?').get(where.id);
+      if (!row) return null;
+      const addr: any = {
+        id: row.id,
+        customerId: row.customer_id,
+        type: row.type,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        companyName: row.company_name,
+        addressLine1: row.address_line1,
+        addressLine2: row.address_line2,
+        landmark: row.landmark,
+        city: row.city,
+        state: row.state,
+        postalCode: row.postal_code,
+        country: row.country,
+        phone: row.phone,
+        isDefaultShipping: Boolean(row.is_default_shipping),
+        isDefaultBilling: Boolean(row.is_default_billing),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.customer) {
+        addr.customer = prisma.customer.findUnique({ where: { id: row.customer_id } });
+      }
+      return addr;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM customer_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.isDefaultShipping !== undefined) { sql += ' AND is_default_shipping = ?'; params.push(where.isDefaultShipping ? 1 : 0); }
+      if (where?.isDefaultBilling !== undefined) { sql += ' AND is_default_billing = ?'; params.push(where.isDefaultBilling ? 1 : 0); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.customerAddress.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM customer_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.isDefaultShipping !== undefined) { sql += ' AND is_default_shipping = ?'; params.push(where.isDefaultShipping ? 1 : 0); }
+      if (where?.isDefaultBilling !== undefined) { sql += ' AND is_default_billing = ?'; params.push(where.isDefaultBilling ? 1 : 0); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY is_default_shipping DESC, is_default_billing DESC, created_at ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.customerAddress.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO customer_addresses (
+          id, customer_id, type, first_name, last_name, company_name, address_line1, address_line2,
+          landmark, city, state, postal_code, country, phone, is_default_shipping, is_default_billing,
+          created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.customerId,
+        data.type || 'HOME',
+        data.firstName.trim(),
+        data.lastName.trim(),
+        data.companyName ? data.companyName.trim() : null,
+        data.addressLine1.trim(),
+        data.addressLine2 ? data.addressLine2.trim() : null,
+        data.landmark ? data.landmark.trim() : null,
+        data.city.trim(),
+        data.state.trim(),
+        data.postalCode.trim(),
+        data.country ? data.country.trim() : 'INDIA',
+        data.phone.trim(),
+        data.isDefaultShipping ? 1 : 0,
+        data.isDefaultBilling ? 1 : 0,
+        now,
+        now
+      );
+      return prisma.customerAddress.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.customerAddress.findUnique({ where });
+      if (!existing) throw new Error('Customer address not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+      if (data.firstName !== undefined) { updates.push('first_name = ?'); params.push(data.firstName.trim()); }
+      if (data.lastName !== undefined) { updates.push('last_name = ?'); params.push(data.lastName.trim()); }
+      if (data.companyName !== undefined) { updates.push('company_name = ?'); params.push(data.companyName ? data.companyName.trim() : null); }
+      if (data.addressLine1 !== undefined) { updates.push('address_line1 = ?'); params.push(data.addressLine1.trim()); }
+      if (data.addressLine2 !== undefined) { updates.push('address_line2 = ?'); params.push(data.addressLine2 ? data.addressLine2.trim() : null); }
+      if (data.landmark !== undefined) { updates.push('landmark = ?'); params.push(data.landmark ? data.landmark.trim() : null); }
+      if (data.city !== undefined) { updates.push('city = ?'); params.push(data.city.trim()); }
+      if (data.state !== undefined) { updates.push('state = ?'); params.push(data.state.trim()); }
+      if (data.postalCode !== undefined) { updates.push('postal_code = ?'); params.push(data.postalCode.trim()); }
+      if (data.country !== undefined) { updates.push('country = ?'); params.push(data.country.trim()); }
+      if (data.phone !== undefined) { updates.push('phone = ?'); params.push(data.phone.trim()); }
+      if (data.isDefaultShipping !== undefined) { updates.push('is_default_shipping = ?'); params.push(data.isDefaultShipping ? 1 : 0); }
+      if (data.isDefaultBilling !== undefined) { updates.push('is_default_billing = ?'); params.push(data.isDefaultBilling ? 1 : 0); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE customer_addresses SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.customerAddress.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.isDefaultShipping !== undefined) { updates.push('is_default_shipping = ?'); params.push(data.isDefaultShipping ? 1 : 0); }
+      if (data.isDefaultBilling !== undefined) { updates.push('is_default_billing = ?'); params.push(data.isDefaultBilling ? 1 : 0); }
+      if (updates.length === 0) return { count: 0 };
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      let sql = `UPDATE customer_addresses SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.NOT?.id) { sql += ' AND id != ?'; params.push(where.NOT.id); }
+
+      const res = db.prepare(sql).run(...params);
+      return { count: res.changes };
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.customerAddress.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM customer_addresses WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM customer_addresses').run();
+        return;
+      }
+      let sql = 'DELETE FROM customer_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM customer_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }

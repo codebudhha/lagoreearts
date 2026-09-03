@@ -139,6 +139,17 @@ export const PERMISSIONS_DATA = [
   { name: 'Delete Navigation', slug: 'navigation.delete', module: 'NAVIGATION', description: 'Delete navigations and menu items' },
   { name: 'Publish Navigation', slug: 'navigation.publish', module: 'NAVIGATION', description: 'Activate, deactivate, and configure default storefront menus' },
 
+  // CUSTOMER MANAGEMENT (MODULE 16)
+  { name: 'View Customers', slug: 'customer.view', module: 'CUSTOMER', description: 'View customer accounts and profiles' },
+  { name: 'Create Customer', slug: 'customer.create', module: 'CUSTOMER', description: 'Create customer records' },
+  { name: 'Update Customer', slug: 'customer.update', module: 'CUSTOMER', description: 'Modify customer profile and status' },
+  { name: 'Delete Customer', slug: 'customer.delete', module: 'CUSTOMER', description: 'Deactivate/delete customer accounts' },
+  { name: 'View Customer Addresses', slug: 'customer.address.view', module: 'CUSTOMER', description: 'View customer delivery and billing addresses' },
+  { name: 'Update Customer Addresses', slug: 'customer.address.update', module: 'CUSTOMER', description: 'Modify customer address book' },
+  { name: 'Update Customer Status', slug: 'customer.status.update', module: 'CUSTOMER', description: 'Suspend or activate customer accounts' },
+  { name: 'View Customer Sessions', slug: 'customer.session.view', module: 'CUSTOMER', description: 'Inspect customer active sessions' },
+  { name: 'Revoke Customer Sessions', slug: 'customer.session.revoke', module: 'CUSTOMER', description: 'Force-revoke customer sessions' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -178,6 +189,7 @@ export const ROLES_DATA = [
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
       'lookbook.view', 'lookbook.create', 'lookbook.update',
       'navigation.view', 'navigation.create', 'navigation.update',
+      'customer.view',
       'seo.view', 'seo.update'
     ]
   },
@@ -207,6 +219,7 @@ export const ROLES_DATA = [
       'journal.delete', 'journal-author.delete', 'journal-category.delete', 'journal-tag.delete',
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.delete', 'lookbook.publish',
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.delete', 'navigation.publish',
+      'customer.view',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -218,7 +231,7 @@ export const ROLES_DATA = [
     isSystem: true,
     permissionSlugs: [
       'order.view', 'order.update',
-      'customer.view', 'customer.update'
+      'customer.view', 'customer.address.view', 'customer.status.update'
     ]
   },
   {

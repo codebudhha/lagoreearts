@@ -36,6 +36,9 @@ import { adminHomepageRouter, publicHomepageRouter } from './modules/homepage/ho
 import { adminJournalRouter, publicJournalRouter } from './modules/journal/journal.routes.ts';
 import { adminLookbookRouter, publicLookbookRouter } from './modules/lookbook/lookbook.routes.ts';
 import { adminNavigationRouter, publicNavigationRouter } from './modules/navigation/navigation.routes.ts';
+import { customerAuthRouter } from './modules/customers/customer-auth.routes.ts';
+import { customerProfileRouter } from './modules/customers/customer-profile.routes.ts';
+import { adminCustomerRouter } from './modules/customers/customer-admin.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -160,7 +163,8 @@ export function createApp() {
         'Module 12: Homepage CMS',
         'Module 13: Journal / Blog',
         'Module 14: Lookbook',
-        'Module 15: Navigation / Menus'
+        'Module 15: Navigation / Menus',
+        'Module 16: Customer Management & Customer Accounts'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -184,6 +188,9 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/auth/customer', customerAuthRouter);
+  app.use('/api/v1/customer', customerProfileRouter);
+  app.use('/api/v1/admin/customers', adminCustomerRouter);
   app.use('/api/v1/admin/auth', adminAuthRoutes);
   app.use('/api/v1/admin/users', adminUsersRoutes);
   app.use('/api/v1/admin/roles', adminRolesRoutes);
