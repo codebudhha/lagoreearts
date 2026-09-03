@@ -128,6 +128,33 @@ enum WeightUnit {
   LB
 }
 
+enum HomepageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum HomepageSectionType {
+  HERO
+  FEATURED_COLLECTIONS
+  FEATURED_PRODUCTS
+  FEATURED_ARTISTS
+  CATEGORIES
+  ANTIQUES
+  SANSKRIT_EDIT
+  EDITORIAL
+  IMAGE_BANNER
+  PROMOTIONAL_BANNER
+  SPACER
+}
+
+enum HomepageSectionMediaRole {
+  PRIMARY
+  MOBILE
+  BACKGROUND
+  GALLERY
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -281,6 +308,7 @@ model Category {
   categoryAttributes CategoryAttribute[]
   products           Product[]
   media              CategoryMedia[]
+  homepageSections   HomepageSectionCategory[]
 
   @@index([slug])
   @@index([status])
@@ -382,6 +410,7 @@ model Collection {
 
   productCollections ProductCollection[]
   media              CollectionMedia[]
+  homepageSections   HomepageSectionCollection[]
 
   @@index([slug])
   @@index([status])
@@ -435,6 +464,7 @@ model Product {
   antiqueProfile    AntiqueProfile?
   sanskritEditProfile SanskritEditProfile?
   artists           ProductArtist[]
+  homepageSections  HomepageSectionProduct[]
 
   @@index([slug])
   @@index([sku])
@@ -697,6 +727,8 @@ model MediaAsset {
   categoryMedia    CategoryMedia[]
   collectionMedia  CollectionMedia[]
   artistMedia      ArtistMedia[]
+  homepageSectionsMedia HomepageSectionMedia[]
+  homepages        Homepage[]
 
   @@index([storageKey])
   @@index([mimeType])
@@ -809,6 +841,7 @@ model Artist {
 
   products        ProductArtist[]
   media           ArtistMedia[]
+  homepageSections HomepageSectionArtist[]
 
   @@index([name])
   @@index([slug])
@@ -862,4 +895,138 @@ model ArtistMedia {
   @@index([role])
   @@map("artist_media")
 }
+
+model Homepage {
+  id             String         @id @default(uuid()) @db.VarChar(36)
+  name           String         @db.VarChar(191)
+  slug           String         @unique @db.VarChar(191)
+  status         HomepageStatus @default(DRAFT)
+  isDefault      Boolean        @default(false) @map("is_default")
+  seoTitle       String?        @map("seo_title") @db.VarChar(150)
+  seoDescription String?        @map("seo_description") @db.Text
+  seoKeywords    String?        @map("seo_keywords") @db.VarChar(255)
+  ogImageId      String?        @map("og_image_id") @db.VarChar(36)
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  ogImage        MediaAsset?    @relation(fields: [ogImageId], references: [id], onDelete: SetNull)
+  sections       HomepageSection[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([isDefault])
+  @@index([createdAt])
+  @@map("homepages")
+}
+
+model HomepageSection {
+  id           String              @id @default(uuid()) @db.VarChar(36)
+  homepageId   String              @map("homepage_id") @db.VarChar(36)
+  type         HomepageSectionType
+  title        String?             @db.VarChar(255)
+  subtitle     String?             @db.VarChar(255)
+  eyebrow      String?             @db.VarChar(255)
+  content      String?             @db.Text
+  config       String?             @db.Text
+  displayOrder Int                 @default(0) @map("display_order")
+  isVisible    Boolean             @default(true) @map("is_visible")
+  createdAt    DateTime            @default(now()) @map("created_at")
+  updatedAt    DateTime            @updatedAt @map("updated_at")
+
+  homepage     Homepage            @relation(fields: [homepageId], references: [id], onDelete: Cascade)
+  products     HomepageSectionProduct[]
+  collections  HomepageSectionCollection[]
+  artists      HomepageSectionArtist[]
+  categories   HomepageSectionCategory[]
+  media        HomepageSectionMedia[]
+
+  @@index([homepageId])
+  @@index([type])
+  @@index([displayOrder])
+  @@index([isVisible])
+  @@map("homepage_sections")
+}
+
+model HomepageSectionProduct {
+  sectionId    String          @map("section_id") @db.VarChar(36)
+  productId    String          @map("product_id") @db.VarChar(36)
+  displayOrder Int             @default(0) @map("display_order")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  section      HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([sectionId, productId])
+  @@index([sectionId])
+  @@index([productId])
+  @@index([displayOrder])
+  @@map("homepage_section_products")
+}
+
+model HomepageSectionCollection {
+  sectionId    String          @map("section_id") @db.VarChar(36)
+  collectionId String          @map("collection_id") @db.VarChar(36)
+  displayOrder Int             @default(0) @map("display_order")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  section      HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  collection   Collection      @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([sectionId, collectionId])
+  @@index([sectionId])
+  @@index([collectionId])
+  @@index([displayOrder])
+  @@map("homepage_section_collections")
+}
+
+model HomepageSectionArtist {
+  sectionId    String          @map("section_id") @db.VarChar(36)
+  artistId     String          @map("artist_id") @db.VarChar(36)
+  displayOrder Int             @default(0) @map("display_order")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  section      HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  artist       Artist          @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([sectionId, artistId])
+  @@index([sectionId])
+  @@index([artistId])
+  @@index([displayOrder])
+  @@map("homepage_section_artists")
+}
+
+model HomepageSectionCategory {
+  sectionId    String          @map("section_id") @db.VarChar(36)
+  categoryId   String          @map("category_id") @db.VarChar(36)
+  displayOrder Int             @default(0) @map("display_order")
+  createdAt    DateTime        @default(now()) @map("created_at")
+
+  section      HomepageSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  category     Category        @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([sectionId, categoryId])
+  @@index([sectionId])
+  @@index([categoryId])
+  @@index([displayOrder])
+  @@map("homepage_section_categories")
+}
+
+model HomepageSectionMedia {
+  sectionId    String                   @map("section_id") @db.VarChar(36)
+  mediaId      String                   @map("media_id") @db.VarChar(36)
+  role         HomepageSectionMediaRole @default(PRIMARY)
+  displayOrder Int                      @default(0) @map("display_order")
+  createdAt    DateTime                 @default(now()) @map("created_at")
+
+  section      HomepageSection          @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  media        MediaAsset               @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@id([sectionId, mediaId, role])
+  @@index([sectionId])
+  @@index([mediaId])
+  @@index([role])
+  @@index([displayOrder])
+  @@map("homepage_section_media")
+}
+
 

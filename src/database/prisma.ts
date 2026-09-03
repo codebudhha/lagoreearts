@@ -638,6 +638,119 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_art_media_primary ON artist_media(is_primary);
   CREATE INDEX IF NOT EXISTS idx_art_media_sort ON artist_media(sort_order);
   CREATE INDEX IF NOT EXISTS idx_art_media_role ON artist_media(role);
+
+  CREATE TABLE IF NOT EXISTS homepages (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'DRAFT',
+    is_default INTEGER NOT NULL DEFAULT 0,
+    seo_title TEXT,
+    seo_description TEXT,
+    seo_keywords TEXT,
+    og_image_id TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (og_image_id) REFERENCES media_assets(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_homepages_slug ON homepages(slug);
+  CREATE INDEX IF NOT EXISTS idx_homepages_status ON homepages(status);
+  CREATE INDEX IF NOT EXISTS idx_homepages_is_default ON homepages(is_default);
+  CREATE INDEX IF NOT EXISTS idx_homepages_created_at ON homepages(created_at);
+
+  CREATE TABLE IF NOT EXISTS homepage_sections (
+    id TEXT PRIMARY KEY,
+    homepage_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    title TEXT,
+    subtitle TEXT,
+    eyebrow TEXT,
+    content TEXT,
+    config TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    is_visible INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (homepage_id) REFERENCES homepages(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_homepage_sections_homepage_id ON homepage_sections(homepage_id);
+  CREATE INDEX IF NOT EXISTS idx_homepage_sections_type ON homepage_sections(type);
+  CREATE INDEX IF NOT EXISTS idx_homepage_sections_display_order ON homepage_sections(display_order);
+  CREATE INDEX IF NOT EXISTS idx_homepage_sections_is_visible ON homepage_sections(is_visible);
+
+  CREATE TABLE IF NOT EXISTS homepage_section_products (
+    section_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (section_id, product_id),
+    FOREIGN KEY (section_id) REFERENCES homepage_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hsp_section_id ON homepage_section_products(section_id);
+  CREATE INDEX IF NOT EXISTS idx_hsp_product_id ON homepage_section_products(product_id);
+  CREATE INDEX IF NOT EXISTS idx_hsp_display_order ON homepage_section_products(display_order);
+
+  CREATE TABLE IF NOT EXISTS homepage_section_collections (
+    section_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (section_id, collection_id),
+    FOREIGN KEY (section_id) REFERENCES homepage_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hsc_section_id ON homepage_section_collections(section_id);
+  CREATE INDEX IF NOT EXISTS idx_hsc_collection_id ON homepage_section_collections(collection_id);
+  CREATE INDEX IF NOT EXISTS idx_hsc_display_order ON homepage_section_collections(display_order);
+
+  CREATE TABLE IF NOT EXISTS homepage_section_artists (
+    section_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (section_id, artist_id),
+    FOREIGN KEY (section_id) REFERENCES homepage_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hsa_section_id ON homepage_section_artists(section_id);
+  CREATE INDEX IF NOT EXISTS idx_hsa_artist_id ON homepage_section_artists(artist_id);
+  CREATE INDEX IF NOT EXISTS idx_hsa_display_order ON homepage_section_artists(display_order);
+
+  CREATE TABLE IF NOT EXISTS homepage_section_categories (
+    section_id TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (section_id, category_id),
+    FOREIGN KEY (section_id) REFERENCES homepage_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hscat_section_id ON homepage_section_categories(section_id);
+  CREATE INDEX IF NOT EXISTS idx_hscat_category_id ON homepage_section_categories(category_id);
+  CREATE INDEX IF NOT EXISTS idx_hscat_display_order ON homepage_section_categories(display_order);
+
+  CREATE TABLE IF NOT EXISTS homepage_section_media (
+    section_id TEXT NOT NULL,
+    media_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'PRIMARY',
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (section_id, media_id, role),
+    FOREIGN KEY (section_id) REFERENCES homepage_sections(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_hsm_section_id ON homepage_section_media(section_id);
+  CREATE INDEX IF NOT EXISTS idx_hsm_media_id ON homepage_section_media(media_id);
+  CREATE INDEX IF NOT EXISTS idx_hsm_role ON homepage_section_media(role);
+  CREATE INDEX IF NOT EXISTS idx_hsm_display_order ON homepage_section_media(display_order);
 `);
 
 /**
@@ -1308,6 +1421,7 @@ export const prisma = {
       if (category) {
         db.prepare('DELETE FROM category_media WHERE category_id = ?').run(where.id);
         db.prepare('DELETE FROM category_attributes WHERE category_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_categories WHERE category_id = ?').run(where.id);
         db.prepare('UPDATE categories SET parent_id = NULL WHERE parent_id = ?').run(where.id);
         const prods: any[] = db.prepare('SELECT id FROM products WHERE category_id = ?').all(where.id);
         for (const p of prods) {
@@ -1936,6 +2050,7 @@ export const prisma = {
 
     delete: ({ where }: { where: { id: string } }) => {
       const coll = prisma.collection.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_collections WHERE collection_id = ?').run(where.id);
       db.prepare('DELETE FROM collections WHERE id = ?').run(where.id);
       return coll;
     }
@@ -2287,6 +2402,7 @@ export const prisma = {
       db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
+      db.prepare('DELETE FROM homepage_section_products WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -4539,6 +4655,7 @@ export const prisma = {
       const existing = prisma.artist.findUnique({ where });
       if (existing) {
         db.prepare('DELETE FROM artist_media WHERE artist_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_artists WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM artists WHERE id = ?').run(where.id);
       }
       return existing;
@@ -4895,6 +5012,818 @@ export const prisma = {
       if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
       if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
       if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepage: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM homepages WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM homepages WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+
+      const hp: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        status: row.status,
+        isDefault: Boolean(row.is_default),
+        seoTitle: row.seo_title || null,
+        seoDescription: row.seo_description || null,
+        seoKeywords: row.seo_keywords || null,
+        ogImageId: row.og_image_id || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.ogImage && row.og_image_id) {
+        hp.ogImage = prisma.mediaAsset.findUnique({ where: { id: row.og_image_id } });
+      }
+
+      if (include?.sections) {
+        hp.sections = prisma.homepageSection.findMany({
+          where: { homepageId: row.id },
+          include: typeof include.sections === 'object' && include.sections.include ? include.sections.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      return hp;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepages WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+
+      if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+      sql += ' LIMIT 1';
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.homepage.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM homepages WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+
+      if (orderBy) {
+        if (orderBy.name) sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+        else if (orderBy.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        else if (orderBy.updatedAt) sql += ` ORDER BY updated_at ${orderBy.updatedAt.toUpperCase()}`;
+        else if (orderBy.isDefault) sql += ` ORDER BY is_default ${orderBy.isDefault.toUpperCase()}, created_at DESC`;
+        else sql += ' ORDER BY is_default DESC, created_at DESC';
+      } else {
+        sql += ' ORDER BY is_default DESC, created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.homepage.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO homepages (
+          id, name, slug, status, is_default, seo_title, seo_description, seo_keywords, og_image_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.toLowerCase().trim(),
+        data.status || 'DRAFT',
+        data.isDefault ? 1 : 0,
+        data.seoTitle || null,
+        data.seoDescription || null,
+        data.seoKeywords || null,
+        data.ogImageId || null,
+        now,
+        now
+      );
+
+      return prisma.homepage.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.toLowerCase().trim()); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.isDefault !== undefined) { updates.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+      if (data.seoTitle !== undefined) { updates.push('seo_title = ?'); params.push(data.seoTitle); }
+      if (data.seoDescription !== undefined) { updates.push('seo_description = ?'); params.push(data.seoDescription); }
+      if (data.seoKeywords !== undefined) { updates.push('seo_keywords = ?'); params.push(data.seoKeywords); }
+      if (data.ogImageId !== undefined) { updates.push('og_image_id = ?'); params.push(data.ogImageId); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE homepages SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.homepage.findUnique({ where: { id: where.id }, include });
+    },
+
+    updateMany: ({ where, data }: { where?: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.isDefault !== undefined) { updates.push('is_default = ?'); params.push(data.isDefault ? 1 : 0); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      updates.push('updated_at = ?');
+      params.push(now);
+
+      let sql = `UPDATE homepages SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.idNot) { sql += ' AND id != ?'; params.push(where.idNot); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.homepage.findUnique({ where, include: { sections: true } });
+      if (existing) {
+        const sections: any[] = db.prepare('SELECT id FROM homepage_sections WHERE homepage_id = ?').all(where.id);
+        for (const s of sections) {
+          prisma.homepageSection.delete({ where: { id: s.id } });
+        }
+        db.prepare('DELETE FROM homepages WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepages WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepages WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.isDefault !== undefined) { sql += ' AND is_default = ?'; params.push(where.isDefault ? 1 : 0); }
+      if (where?.search) {
+        sql += ' AND (name LIKE ? OR slug LIKE ?)';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSection: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM homepage_sections WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      let parsedConfig = null;
+      if (row.config) {
+        try {
+          parsedConfig = typeof row.config === 'string' ? JSON.parse(row.config) : row.config;
+        } catch {
+          parsedConfig = row.config;
+        }
+      }
+
+      const sec: any = {
+        id: row.id,
+        homepageId: row.homepage_id,
+        type: row.type,
+        title: row.title || null,
+        subtitle: row.subtitle || null,
+        eyebrow: row.eyebrow || null,
+        content: row.content || null,
+        config: parsedConfig,
+        displayOrder: Number(row.display_order || 0),
+        isVisible: Boolean(row.is_visible),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.homepage) {
+        sec.homepage = prisma.homepage.findUnique({ where: { id: row.homepage_id } });
+      }
+
+      if (include?.products) {
+        sec.products = prisma.homepageSectionProduct.findMany({
+          where: { sectionId: row.id },
+          include: typeof include.products === 'object' && include.products.include ? include.products.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      if (include?.collections) {
+        sec.collections = prisma.homepageSectionCollection.findMany({
+          where: { sectionId: row.id },
+          include: typeof include.collections === 'object' && include.collections.include ? include.collections.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      if (include?.artists) {
+        sec.artists = prisma.homepageSectionArtist.findMany({
+          where: { sectionId: row.id },
+          include: typeof include.artists === 'object' && include.artists.include ? include.artists.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      if (include?.categories) {
+        sec.categories = prisma.homepageSectionCategory.findMany({
+          where: { sectionId: row.id },
+          include: typeof include.categories === 'object' && include.categories.include ? include.categories.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      if (include?.media) {
+        sec.media = prisma.homepageSectionMedia.findMany({
+          where: { sectionId: row.id },
+          include: typeof include.media === 'object' && include.media.include ? include.media.include : undefined,
+          orderBy: { displayOrder: 'asc' }
+        });
+      }
+
+      return sec;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.homepageId) { sql += ' AND homepage_id = ?'; params.push(where.homepageId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC, created_at ASC';
+      }
+      sql += ' LIMIT 1';
+
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.homepageSection.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.homepageId) { sql += ' AND homepage_id = ?'; params.push(where.homepageId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+
+      if (orderBy) {
+        if (orderBy.displayOrder) sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}, created_at ASC`;
+        else if (orderBy.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        else sql += ' ORDER BY display_order ASC, created_at ASC';
+      } else {
+        sql += ' ORDER BY display_order ASC, created_at ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ` LIMIT ${take}`;
+        if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.homepageSection.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      const configStr = data.config !== undefined ? (typeof data.config === 'string' ? data.config : JSON.stringify(data.config)) : null;
+
+      db.prepare(`
+        INSERT INTO homepage_sections (
+          id, homepage_id, type, title, subtitle, eyebrow, content, config, display_order, is_visible, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.homepageId,
+        data.type,
+        data.title || null,
+        data.subtitle || null,
+        data.eyebrow || null,
+        data.content || null,
+        configStr,
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        data.isVisible !== undefined ? (data.isVisible ? 1 : 0) : 1,
+        now,
+        now
+      );
+
+      return prisma.homepageSection.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.title !== undefined) { updates.push('title = ?'); params.push(data.title); }
+      if (data.subtitle !== undefined) { updates.push('subtitle = ?'); params.push(data.subtitle); }
+      if (data.eyebrow !== undefined) { updates.push('eyebrow = ?'); params.push(data.eyebrow); }
+      if (data.content !== undefined) { updates.push('content = ?'); params.push(data.content); }
+      if (data.config !== undefined) {
+        updates.push('config = ?');
+        params.push(typeof data.config === 'string' ? data.config : JSON.stringify(data.config));
+      }
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.isVisible !== undefined) { updates.push('is_visible = ?'); params.push(data.isVisible ? 1 : 0); }
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE homepage_sections SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.homepageSection.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.homepageSection.findUnique({ where, include: { products: true, collections: true, artists: true, categories: true, media: true } });
+      if (existing) {
+        db.prepare('DELETE FROM homepage_section_products WHERE section_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_collections WHERE section_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_artists WHERE section_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_categories WHERE section_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_section_media WHERE section_id = ?').run(where.id);
+        db.prepare('DELETE FROM homepage_sections WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.homepageId) { sql += ' AND homepage_id = ?'; params.push(where.homepageId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_sections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.homepageId) { sql += ' AND homepage_id = ?'; params.push(where.homepageId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isVisible !== undefined) { sql += ' AND is_visible = ?'; params.push(where.isVisible ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSectionProduct: {
+    findUnique: ({ where }: { where: { sectionId_productId: { sectionId: string; productId: string } } }) => {
+      const target = where.sectionId_productId;
+      const r: any = db.prepare('SELECT * FROM homepage_section_products WHERE section_id = ? AND product_id = ?').get(target.sectionId, target.productId);
+      if (!r) return null;
+      return {
+        sectionId: r.section_id,
+        productId: r.product_id,
+        displayOrder: Number(r.display_order || 0),
+        createdAt: new Date(r.created_at)
+      };
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_section_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          sectionId: r.section_id,
+          productId: r.product_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.product) {
+          item.product = prisma.product.findUnique({ where: { id: r.product_id }, include: include.product.include || { category: true, collections: { include: { collection: true } }, media: { include: { media: true } }, antiqueProfile: true, sanskritEditProfile: true, artists: { include: { artist: true } } } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO homepage_section_products (section_id, product_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.sectionId, data.productId, data.displayOrder !== undefined ? Number(data.displayOrder) : 0, now);
+
+      return prisma.homepageSectionProduct.findUnique({
+        where: { sectionId_productId: { sectionId: data.sectionId, productId: data.productId } }
+      });
+    },
+
+    delete: ({ where }: { where: { sectionId_productId: { sectionId: string; productId: string } } }) => {
+      const target = where.sectionId_productId;
+      const existing = prisma.homepageSectionProduct.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_products WHERE section_id = ? AND product_id = ?').run(target.sectionId, target.productId);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_section_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_section_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSectionCollection: {
+    findUnique: ({ where }: { where: { sectionId_collectionId: { sectionId: string; collectionId: string } } }) => {
+      const target = where.sectionId_collectionId;
+      const r: any = db.prepare('SELECT * FROM homepage_section_collections WHERE section_id = ? AND collection_id = ?').get(target.sectionId, target.collectionId);
+      if (!r) return null;
+      return {
+        sectionId: r.section_id,
+        collectionId: r.collection_id,
+        displayOrder: Number(r.display_order || 0),
+        createdAt: new Date(r.created_at)
+      };
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_section_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          sectionId: r.section_id,
+          collectionId: r.collection_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.collection) {
+          item.collection = prisma.collection.findUnique({ where: { id: r.collection_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO homepage_section_collections (section_id, collection_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.sectionId, data.collectionId, data.displayOrder !== undefined ? Number(data.displayOrder) : 0, now);
+
+      return prisma.homepageSectionCollection.findUnique({
+        where: { sectionId_collectionId: { sectionId: data.sectionId, collectionId: data.collectionId } }
+      });
+    },
+
+    delete: ({ where }: { where: { sectionId_collectionId: { sectionId: string; collectionId: string } } }) => {
+      const target = where.sectionId_collectionId;
+      const existing = prisma.homepageSectionCollection.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_collections WHERE section_id = ? AND collection_id = ?').run(target.sectionId, target.collectionId);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_section_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_section_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSectionArtist: {
+    findUnique: ({ where }: { where: { sectionId_artistId: { sectionId: string; artistId: string } } }) => {
+      const target = where.sectionId_artistId;
+      const r: any = db.prepare('SELECT * FROM homepage_section_artists WHERE section_id = ? AND artist_id = ?').get(target.sectionId, target.artistId);
+      if (!r) return null;
+      return {
+        sectionId: r.section_id,
+        artistId: r.artist_id,
+        displayOrder: Number(r.display_order || 0),
+        createdAt: new Date(r.created_at)
+      };
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_section_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          sectionId: r.section_id,
+          artistId: r.artist_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.artist) {
+          item.artist = prisma.artist.findUnique({ where: { id: r.artist_id }, include: include.artist.include || { media: { include: { media: true } } } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO homepage_section_artists (section_id, artist_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.sectionId, data.artistId, data.displayOrder !== undefined ? Number(data.displayOrder) : 0, now);
+
+      return prisma.homepageSectionArtist.findUnique({
+        where: { sectionId_artistId: { sectionId: data.sectionId, artistId: data.artistId } }
+      });
+    },
+
+    delete: ({ where }: { where: { sectionId_artistId: { sectionId: string; artistId: string } } }) => {
+      const target = where.sectionId_artistId;
+      const existing = prisma.homepageSectionArtist.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_artists WHERE section_id = ? AND artist_id = ?').run(target.sectionId, target.artistId);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_section_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_section_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSectionCategory: {
+    findUnique: ({ where }: { where: { sectionId_categoryId: { sectionId: string; categoryId: string } } }) => {
+      const target = where.sectionId_categoryId;
+      const r: any = db.prepare('SELECT * FROM homepage_section_categories WHERE section_id = ? AND category_id = ?').get(target.sectionId, target.categoryId);
+      if (!r) return null;
+      return {
+        sectionId: r.section_id,
+        categoryId: r.category_id,
+        displayOrder: Number(r.display_order || 0),
+        createdAt: new Date(r.created_at)
+      };
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_section_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          sectionId: r.section_id,
+          categoryId: r.category_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.category) {
+          item.category = prisma.category.findUnique({ where: { id: r.category_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO homepage_section_categories (section_id, category_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.sectionId, data.categoryId, data.displayOrder !== undefined ? Number(data.displayOrder) : 0, now);
+
+      return prisma.homepageSectionCategory.findUnique({
+        where: { sectionId_categoryId: { sectionId: data.sectionId, categoryId: data.categoryId } }
+      });
+    },
+
+    delete: ({ where }: { where: { sectionId_categoryId: { sectionId: string; categoryId: string } } }) => {
+      const target = where.sectionId_categoryId;
+      const existing = prisma.homepageSectionCategory.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_categories WHERE section_id = ? AND category_id = ?').run(target.sectionId, target.categoryId);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_section_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_section_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  homepageSectionMedia: {
+    findUnique: ({ where, include }: { where: { sectionId_mediaId_role: { sectionId: string; mediaId: string; role: string } }; include?: any }) => {
+      const target = where.sectionId_mediaId_role;
+      const r: any = db.prepare('SELECT * FROM homepage_section_media WHERE section_id = ? AND media_id = ? AND role = ?').get(target.sectionId, target.mediaId, target.role);
+      if (!r) return null;
+
+      const item: any = {
+        sectionId: r.section_id,
+        mediaId: r.media_id,
+        role: r.role,
+        displayOrder: Number(r.display_order || 0),
+        createdAt: new Date(r.created_at)
+      };
+
+      if (include?.media) {
+        item.media = prisma.mediaAsset.findUnique({ where: { id: r.media_id } });
+      }
+
+      return item;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM homepage_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          sectionId: r.section_id,
+          mediaId: r.media_id,
+          role: r.role,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.media) {
+          item.media = prisma.mediaAsset.findUnique({ where: { id: r.media_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO homepage_section_media (section_id, media_id, role, display_order, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(
+        data.sectionId,
+        data.mediaId,
+        data.role || 'PRIMARY',
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        now
+      );
+
+      return prisma.homepageSectionMedia.findUnique({
+        where: { sectionId_mediaId_role: { sectionId: data.sectionId, mediaId: data.mediaId, role: data.role || 'PRIMARY' } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: { where: { sectionId_mediaId_role: { sectionId: string; mediaId: string; role: string } }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.role !== undefined) { updates.push('role = ?'); params.push(data.role); }
+
+      const target = where.sectionId_mediaId_role;
+      params.push(target.sectionId, target.mediaId, target.role);
+
+      db.prepare(`UPDATE homepage_section_media SET ${updates.join(', ')} WHERE section_id = ? AND media_id = ? AND role = ?`).run(...params);
+      const newRole = data.role || target.role;
+      return prisma.homepageSectionMedia.findUnique({
+        where: { sectionId_mediaId_role: { sectionId: target.sectionId, mediaId: target.mediaId, role: newRole } },
+        include
+      });
+    },
+
+    delete: ({ where }: { where: { sectionId_mediaId_role: { sectionId: string; mediaId: string; role: string } } }) => {
+      const target = where.sectionId_mediaId_role;
+      const existing = prisma.homepageSectionMedia.findUnique({ where });
+      db.prepare('DELETE FROM homepage_section_media WHERE section_id = ? AND media_id = ? AND role = ?').run(target.sectionId, target.mediaId, target.role);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM homepage_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM homepage_section_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
+      if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }

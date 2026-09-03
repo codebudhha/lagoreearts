@@ -99,6 +99,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Artist', slug: 'artist.update', module: 'ARTISTS', description: 'Modify artist profile and product relationships' },
   { name: 'Delete Artist', slug: 'artist.delete', module: 'ARTISTS', description: 'Delete artist profile' },
 
+  // HOMEPAGE CMS (MODULE 12)
+  { name: 'View Homepage CMS', slug: 'homepage.view', module: 'HOMEPAGE', description: 'View homepage CMS structures and sections' },
+  { name: 'Create Homepage CMS', slug: 'homepage.create', module: 'HOMEPAGE', description: 'Create homepages and homepage sections' },
+  { name: 'Update Homepage CMS', slug: 'homepage.update', module: 'HOMEPAGE', description: 'Modify homepages, reorder sections and section items' },
+  { name: 'Delete Homepage CMS', slug: 'homepage.delete', module: 'HOMEPAGE', description: 'Delete draft/archived homepages and sections' },
+  { name: 'Publish Homepage CMS', slug: 'homepage.publish', module: 'HOMEPAGE', description: 'Publish and change default active storefront homepage' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -133,6 +140,7 @@ export const ROLES_DATA = [
       'antique.view', 'antique.create', 'antique.update', 'antique.delete',
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update', 'sanskrit-edit.delete',
       'artist.view', 'artist.create', 'artist.update', 'artist.delete',
+      'homepage.view', 'homepage.create', 'homepage.update',
       'seo.view', 'seo.update'
     ]
   },
@@ -154,6 +162,7 @@ export const ROLES_DATA = [
       'antique.view', 'antique.create', 'antique.update',
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update',
       'artist.view', 'artist.create', 'artist.update',
+      'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -180,7 +189,8 @@ export const ROLES_DATA = [
       'media.view', 'media-folder.view',
       'antique.view',
       'sanskrit-edit.view',
-      'artist.view'
+      'artist.view',
+      'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish'
     ]
   }
 ];
@@ -1196,6 +1206,136 @@ export async function runSeed(): Promise<void> {
     }
   }
   console.log(`✓ Seeded ${INITIAL_PRODUCTS.length} curated masterwork products (including VARIABLE products)`);
+
+  // Seed Default Homepage (Module 12)
+  const existingDefaultHomepage = prisma.homepage.findFirst({ where: { slug: 'default-storefront' } });
+  if (!existingDefaultHomepage) {
+    const defaultHp = prisma.homepage.create({
+      data: {
+        name: 'Lagoree Arts Grand Heritage Storefront',
+        slug: 'default-storefront',
+        status: 'PUBLISHED',
+        isDefault: true,
+        seoTitle: 'Lagoree Arts | Heritage Indian Masterpieces & Sacred Adornments',
+        seoDescription: 'Discover authentic Tanjore paintings, handcrafted brass sculptures, Pichwai devotional art, and verified heritage antiques.',
+        seoKeywords: 'tanjore painting, pichwai art, brass sculpture, indian heritage, authentic antique, sanskrit sacred art'
+      }
+    });
+
+    // 1. HERO Section
+    prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'HERO',
+        title: 'Timeless Sacred Heritage, Handcrafted for Connoisseurs',
+        subtitle: 'Authentic 22K gold leaf Tanjore art, lost-wax Chola bronzes, and temple sanctum Pichwais.',
+        eyebrow: 'THE ROYAL ATELIER COLLECTION',
+        config: {
+          ctaLabel: 'Explore Curated Masterpieces',
+          ctaUrl: '/collections/curator-highlights',
+          textAlignment: 'center',
+          overlayOpacity: 0.4
+        },
+        displayOrder: 1,
+        isVisible: true
+      }
+    });
+
+    // 2. FEATURED_COLLECTIONS Section
+    const featCollSec = prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'FEATURED_COLLECTIONS',
+        title: 'Curated Heritage Collections',
+        subtitle: 'Explore our master themes celebrating classical traditions and temple ateliers.',
+        displayOrder: 2,
+        isVisible: true
+      }
+    });
+    const colList = prisma.collection.findMany({ take: 3 });
+    for (let i = 0; i < colList.length; i++) {
+      prisma.homepageSectionCollection.create({
+        data: { sectionId: featCollSec.id, collectionId: colList[i].id, displayOrder: i + 1 }
+      });
+    }
+
+    // 3. FEATURED_PRODUCTS Section
+    const featProdSec = prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'FEATURED_PRODUCTS',
+        title: 'Masterpiece Highlights',
+        subtitle: 'Hand-picked acquisitions from our master artists and certified archives.',
+        displayOrder: 3,
+        isVisible: true
+      }
+    });
+    const prodList = prisma.product.findMany({ take: 4 });
+    for (let i = 0; i < prodList.length; i++) {
+      prisma.homepageSectionProduct.create({
+        data: { sectionId: featProdSec.id, productId: prodList[i].id, displayOrder: i + 1 }
+      });
+    }
+
+    // 4. SANSKRIT_EDIT Section
+    prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'SANSKRIT_EDIT',
+        title: 'The Sanskrit Edit',
+        subtitle: 'Sacred verses, Vedic hymns, and philosophical masterworks inscribed in gold.',
+        eyebrow: 'DEVOTIONAL INSCRIPTIONS',
+        config: {
+          selectionMode: 'AUTOMATIC',
+          maxItems: 4,
+          ctaLabel: 'Explore Devotional Archive',
+          ctaUrl: '/sanskrit-edit'
+        },
+        displayOrder: 4,
+        isVisible: true
+      }
+    });
+
+    // 5. ANTIQUES Section
+    prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'ANTIQUES',
+        title: 'Antiques & Verified Provenance',
+        subtitle: 'Authenticated 19th and 20th-century historical artifacts and temple heirlooms.',
+        eyebrow: 'AUTHENTIC ARCHIVAL PIECES',
+        config: {
+          selectionMode: 'AUTOMATIC',
+          maxItems: 4,
+          ctaLabel: 'View Antique Heirlooms',
+          ctaUrl: '/antiques'
+        },
+        displayOrder: 5,
+        isVisible: true
+      }
+    });
+
+    // 6. EDITORIAL Section
+    prisma.homepageSection.create({
+      data: {
+        homepageId: defaultHp.id,
+        type: 'EDITORIAL',
+        title: 'The Living Legacy of Indian Ateliers',
+        subtitle: 'Preserving thousand-year-old traditions of gold gilding, natural stone pigments, and sacred iconography.',
+        content: '<p>Every Lagoree Arts acquisition represents hundreds of hours of patient handwork by hereditary master artisans. We preserve living cultural heritage through museum-grade materials and rigorous provenance certification.</p>',
+        config: {
+          layout: 'center',
+          ctaLabel: 'Read Our Story',
+          ctaUrl: '/about-the-atelier'
+        },
+        displayOrder: 6,
+        isVisible: true
+      }
+    });
+
+    console.log('✓ Seeded default storefront homepage with curated sections');
+  }
+
   console.log('✨ Seeding Completed Successfully!\n');
 }
 
