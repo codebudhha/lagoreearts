@@ -162,6 +162,9 @@ async function runTests() {
       await prisma.homepageSectionMedia.deleteMany({});
       await prisma.homepageSection.deleteMany({});
       await prisma.homepage.deleteMany({});
+      await prisma.journalPostMedia.deleteMany({});
+      await prisma.journalPost.deleteMany({});
+      await prisma.journalAuthor.deleteMany({});
       await prisma.mediaAsset.deleteMany({});
       await prisma.mediaFolder.deleteMany({});
 

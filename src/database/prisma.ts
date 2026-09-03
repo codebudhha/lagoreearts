@@ -751,6 +751,188 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_hsm_media_id ON homepage_section_media(media_id);
   CREATE INDEX IF NOT EXISTS idx_hsm_role ON homepage_section_media(role);
   CREATE INDEX IF NOT EXISTS idx_hsm_display_order ON homepage_section_media(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_authors (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    bio TEXT,
+    avatar_media_id TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (avatar_media_id) REFERENCES media_assets(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_ja_name ON journal_authors(name);
+  CREATE INDEX IF NOT EXISTS idx_ja_slug ON journal_authors(slug);
+  CREATE INDEX IF NOT EXISTS idx_ja_status ON journal_authors(status);
+  CREATE INDEX IF NOT EXISTS idx_ja_created_at ON journal_authors(created_at);
+
+  CREATE TABLE IF NOT EXISTS journal_categories (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    seo_title TEXT,
+    seo_description TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jc_name ON journal_categories(name);
+  CREATE INDEX IF NOT EXISTS idx_jc_slug ON journal_categories(slug);
+  CREATE INDEX IF NOT EXISTS idx_jc_status ON journal_categories(status);
+  CREATE INDEX IF NOT EXISTS idx_jc_sort_order ON journal_categories(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_jc_created_at ON journal_categories(created_at);
+
+  CREATE TABLE IF NOT EXISTS journal_tags (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jt_name ON journal_tags(name);
+  CREATE INDEX IF NOT EXISTS idx_jt_slug ON journal_tags(slug);
+  CREATE INDEX IF NOT EXISTS idx_jt_status ON journal_tags(status);
+  CREATE INDEX IF NOT EXISTS idx_jt_created_at ON journal_tags(created_at);
+
+  CREATE TABLE IF NOT EXISTS journal_posts (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    slug TEXT NOT NULL UNIQUE,
+    excerpt TEXT,
+    content TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'ARTICLE',
+    status TEXT NOT NULL DEFAULT 'DRAFT',
+    featured INTEGER NOT NULL DEFAULT 0,
+    published_at TEXT,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    author_id TEXT,
+    category_id TEXT,
+    seo_title TEXT,
+    seo_description TEXT,
+    seo_keywords TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (author_id) REFERENCES journal_authors(id) ON DELETE SET NULL,
+    FOREIGN KEY (category_id) REFERENCES journal_categories(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jp_slug ON journal_posts(slug);
+  CREATE INDEX IF NOT EXISTS idx_jp_status ON journal_posts(status);
+  CREATE INDEX IF NOT EXISTS idx_jp_type ON journal_posts(type);
+  CREATE INDEX IF NOT EXISTS idx_jp_featured ON journal_posts(featured);
+  CREATE INDEX IF NOT EXISTS idx_jp_published_at ON journal_posts(published_at);
+  CREATE INDEX IF NOT EXISTS idx_jp_display_order ON journal_posts(display_order);
+  CREATE INDEX IF NOT EXISTS idx_jp_author_id ON journal_posts(author_id);
+  CREATE INDEX IF NOT EXISTS idx_jp_category_id ON journal_posts(category_id);
+  CREATE INDEX IF NOT EXISTS idx_jp_created_at ON journal_posts(created_at);
+
+  CREATE TABLE IF NOT EXISTS journal_post_tags (
+    journal_post_id TEXT NOT NULL,
+    tag_id TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, tag_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES journal_tags(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpt_post_id ON journal_post_tags(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpt_tag_id ON journal_post_tags(tag_id);
+
+  CREATE TABLE IF NOT EXISTS journal_post_products (
+    journal_post_id TEXT NOT NULL,
+    product_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, product_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpp_post_id ON journal_post_products(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpp_product_id ON journal_post_products(product_id);
+  CREATE INDEX IF NOT EXISTS idx_jpp_display_order ON journal_post_products(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_post_collections (
+    journal_post_id TEXT NOT NULL,
+    collection_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, collection_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpc_post_id ON journal_post_collections(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpc_collection_id ON journal_post_collections(collection_id);
+  CREATE INDEX IF NOT EXISTS idx_jpc_display_order ON journal_post_collections(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_post_artists (
+    journal_post_id TEXT NOT NULL,
+    artist_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, artist_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpa_post_id ON journal_post_artists(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpa_artist_id ON journal_post_artists(artist_id);
+  CREATE INDEX IF NOT EXISTS idx_jpa_display_order ON journal_post_artists(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_post_sanskrit_edits (
+    journal_post_id TEXT NOT NULL,
+    sanskrit_edit_profile_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, sanskrit_edit_profile_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (sanskrit_edit_profile_id) REFERENCES sanskrit_edit_profiles(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpse_post_id ON journal_post_sanskrit_edits(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpse_profile_id ON journal_post_sanskrit_edits(sanskrit_edit_profile_id);
+  CREATE INDEX IF NOT EXISTS idx_jpse_display_order ON journal_post_sanskrit_edits(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_post_related_posts (
+    journal_post_id TEXT NOT NULL,
+    related_post_id TEXT NOT NULL,
+    display_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, related_post_id),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (related_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jprp_post_id ON journal_post_related_posts(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jprp_related_id ON journal_post_related_posts(related_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jprp_display_order ON journal_post_related_posts(display_order);
+
+  CREATE TABLE IF NOT EXISTS journal_post_media (
+    journal_post_id TEXT NOT NULL,
+    media_asset_id TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'GALLERY',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_primary INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    PRIMARY KEY (journal_post_id, media_asset_id, role),
+    FOREIGN KEY (journal_post_id) REFERENCES journal_posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (media_asset_id) REFERENCES media_assets(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_jpm_post_id ON journal_post_media(journal_post_id);
+  CREATE INDEX IF NOT EXISTS idx_jpm_media_id ON journal_post_media(media_asset_id);
+  CREATE INDEX IF NOT EXISTS idx_jpm_role ON journal_post_media(role);
+  CREATE INDEX IF NOT EXISTS idx_jpm_sort_order ON journal_post_media(sort_order);
+  CREATE INDEX IF NOT EXISTS idx_jpm_is_primary ON journal_post_media(is_primary);
 `);
 
 /**
@@ -2051,6 +2233,7 @@ export const prisma = {
     delete: ({ where }: { where: { id: string } }) => {
       const coll = prisma.collection.findUnique({ where });
       db.prepare('DELETE FROM homepage_section_collections WHERE collection_id = ?').run(where.id);
+      db.prepare('DELETE FROM journal_post_collections WHERE collection_id = ?').run(where.id);
       db.prepare('DELETE FROM collections WHERE id = ?').run(where.id);
       return coll;
     }
@@ -2337,7 +2520,7 @@ export const prisma = {
         data.isNewArrival ? 1 : 0,
         data.isBestseller ? 1 : 0,
         data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
-        data.categoryId,
+        data.categoryId || null,
         data.image || null,
         data.thumbnail || null,
         data.bannerImage || null,
@@ -2403,6 +2586,7 @@ export const prisma = {
       db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM homepage_section_products WHERE product_id = ?').run(where.id);
+      db.prepare('DELETE FROM journal_post_products WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM products WHERE id = ?').run(where.id);
       return prod;
     }
@@ -3390,15 +3574,15 @@ export const prisma = {
       `).run(
         id,
         data.filename,
-        data.originalFilename,
-        data.storageKey,
+        data.originalFilename || data.filename,
+        data.storageKey || data.filename,
         data.publicUrl,
-        data.mimeType,
+        data.mimeType || 'image/webp',
         data.mediaType || 'IMAGE',
-        Number(data.fileSize),
+        Number(data.fileSize || 0),
         data.width !== undefined && data.width !== null ? Number(data.width) : null,
         data.height !== undefined && data.height !== null ? Number(data.height) : null,
-        data.checksum,
+        data.checksum || 'default-checksum',
         data.title || null,
         data.altText || null,
         data.caption || null,
@@ -4411,6 +4595,7 @@ export const prisma = {
     delete: ({ where }: { where: { id?: string; productId?: string } }) => {
       const existing = prisma.sanskritEditProfile.findUnique({ where });
       if (existing) {
+        db.prepare('DELETE FROM journal_post_sanskrit_edits WHERE sanskrit_edit_profile_id = ?').run(existing.id);
         if (where.id) {
           db.prepare('DELETE FROM sanskrit_edit_profiles WHERE id = ?').run(where.id);
         } else if (where.productId) {
@@ -4656,6 +4841,7 @@ export const prisma = {
       if (existing) {
         db.prepare('DELETE FROM artist_media WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM homepage_section_artists WHERE artist_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_artists WHERE artist_id = ?').run(where.id);
         db.prepare('DELETE FROM artists WHERE id = ?').run(where.id);
       }
       return existing;
@@ -5823,6 +6009,1051 @@ export const prisma = {
       const params: any[] = [];
       if (where?.sectionId) { sql += ' AND section_id = ?'; params.push(where.sectionId); }
       if (where?.mediaId) { sql += ' AND media_id = ?'; params.push(where.mediaId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  journalAuthor: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM journal_authors WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM journal_authors WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+      const formatted: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        bio: row.bio || null,
+        avatarMediaId: row.avatar_media_id || null,
+        status: row.status,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.avatarMedia && row.avatar_media_id) {
+        formatted.avatarMedia = prisma.mediaAsset.findUnique({ where: { id: row.avatar_media_id } });
+      }
+      if (include?.posts) {
+        formatted.posts = prisma.journalPost.findMany({ where: { authorId: row.id } });
+      }
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM journal_authors WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.journalAuthor.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM journal_authors WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(bio) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      if (orderBy?.name) {
+        sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+      if (take !== undefined) sql += ` LIMIT ${take}`;
+      if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.journalAuthor.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO journal_authors (id, name, slug, bio, avatar_media_id, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.trim(),
+        data.bio || null,
+        data.avatarMediaId || null,
+        data.status || 'ACTIVE',
+        now,
+        now
+      );
+      return prisma.journalAuthor.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.journalAuthor.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.trim()); }
+      if (data.bio !== undefined) { updates.push('bio = ?'); params.push(data.bio || null); }
+      if (data.avatarMediaId !== undefined) { updates.push('avatar_media_id = ?'); params.push(data.avatarMediaId || null); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE journal_authors SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.journalAuthor.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.journalAuthor.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM journal_authors WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_authors WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM journal_authors WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(bio) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  journalCategory: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM journal_categories WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM journal_categories WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+      const formatted: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        description: row.description || null,
+        status: row.status,
+        sortOrder: Number(row.sort_order || 0),
+        seoTitle: row.seo_title || null,
+        seoDescription: row.seo_description || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.posts) {
+        formatted.posts = prisma.journalPost.findMany({ where: { categoryId: row.id } });
+      }
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM journal_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.journalCategory.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM journal_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else if (orderBy?.name) {
+        sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at DESC';
+      }
+      if (take !== undefined) sql += ` LIMIT ${take}`;
+      if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.journalCategory.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO journal_categories (id, name, slug, description, status, sort_order, seo_title, seo_description, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.trim(),
+        data.description || null,
+        data.status || 'ACTIVE',
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.seoTitle || null,
+        data.seoDescription || null,
+        now,
+        now
+      );
+      return prisma.journalCategory.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.journalCategory.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.trim()); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description || null); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.seoTitle !== undefined) { updates.push('seo_title = ?'); params.push(data.seoTitle || null); }
+      if (data.seoDescription !== undefined) { updates.push('seo_description = ?'); params.push(data.seoDescription || null); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE journal_categories SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.journalCategory.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.journalCategory.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM journal_categories WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM journal_categories WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND (LOWER(name) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  journalTag: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM journal_tags WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM journal_tags WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+      const formatted: any = {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        status: row.status,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+      if (include?.posts) {
+        formatted.posts = prisma.journalPostTag.findMany({ where: { tagId: row.id }, include: { journalPost: true } });
+      }
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM journal_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.journalTag.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM journal_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND LOWER(name) LIKE LOWER(?)';
+        params.push(`%${where.search}%`);
+      }
+      if (orderBy?.name) {
+        sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY name ASC';
+      }
+      if (take !== undefined) sql += ` LIMIT ${take}`;
+      if (skip !== undefined) sql += ` OFFSET ${skip}`;
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.journalTag.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO journal_tags (id, name, slug, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name.trim(),
+        data.slug.trim(),
+        data.status || 'ACTIVE',
+        now,
+        now
+      );
+      return prisma.journalTag.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.journalTag.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.trim()); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE journal_tags SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.journalTag.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.journalTag.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM journal_post_tags WHERE tag_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_tags WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM journal_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.search) {
+        sql += ' AND LOWER(name) LIKE LOWER(?)';
+        params.push(`%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  journalPost: {
+    findUnique: ({ where, include }: { where: { id?: string; slug?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM journal_posts WHERE id = ?').get(where.id);
+      } else if (where.slug) {
+        row = db.prepare('SELECT * FROM journal_posts WHERE LOWER(slug) = LOWER(?)').get(where.slug);
+      }
+      if (!row) return null;
+      const formatted: any = {
+        id: row.id,
+        title: row.title,
+        slug: row.slug,
+        excerpt: row.excerpt || null,
+        content: row.content,
+        type: row.type,
+        status: row.status,
+        featured: Boolean(row.featured),
+        publishedAt: row.published_at ? new Date(row.published_at) : null,
+        displayOrder: Number(row.display_order || 0),
+        authorId: row.author_id || null,
+        categoryId: row.category_id || null,
+        seoTitle: row.seo_title || null,
+        seoDescription: row.seo_description || null,
+        seoKeywords: row.seo_keywords || null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.author && row.author_id) {
+        formatted.author = prisma.journalAuthor.findUnique({ where: { id: row.author_id }, include: { avatarMedia: true } });
+      }
+      if (include?.category && row.category_id) {
+        formatted.category = prisma.journalCategory.findUnique({ where: { id: row.category_id } });
+      }
+      if (include?.tags) {
+        formatted.tags = prisma.journalPostTag.findMany({ where: { journalPostId: row.id }, include: { tag: true } });
+      }
+      if (include?.products) {
+        formatted.products = prisma.journalPostProduct.findMany({ where: { journalPostId: row.id }, include: { product: true }, orderBy: { displayOrder: 'asc' } });
+      }
+      if (include?.collections) {
+        formatted.collections = prisma.journalPostCollection.findMany({ where: { journalPostId: row.id }, include: { collection: true }, orderBy: { displayOrder: 'asc' } });
+      }
+      if (include?.artists) {
+        formatted.artists = prisma.journalPostArtist.findMany({ where: { journalPostId: row.id }, include: { artist: true }, orderBy: { displayOrder: 'asc' } });
+      }
+      if (include?.sanskritEdits) {
+        formatted.sanskritEdits = prisma.journalPostSanskritEdit.findMany({ where: { journalPostId: row.id }, include: { sanskritEditProfile: true }, orderBy: { displayOrder: 'asc' } });
+      }
+      if (include?.relatedPosts) {
+        formatted.relatedPosts = prisma.journalPostRelatedPost.findMany({ where: { journalPostId: row.id }, include: { relatedPost: true }, orderBy: { displayOrder: 'asc' } });
+      }
+      if (include?.media) {
+        formatted.media = prisma.journalPostMedia.findMany({ where: { journalPostId: row.id }, include: { media: true }, orderBy: { sortOrder: 'asc' } });
+      }
+
+      return formatted;
+    },
+
+    findFirst: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM journal_posts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.slug) { sql += ' AND LOWER(slug) = LOWER(?)'; params.push(where.slug); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.featured !== undefined) { sql += ' AND featured = ?'; params.push(where.featured ? 1 : 0); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.journalPost.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM journal_posts WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) {
+        sql += ' AND status = ?';
+        params.push(where.status);
+      }
+      if (where?.type) {
+        sql += ' AND type = ?';
+        params.push(where.type);
+      }
+      if (where?.featured !== undefined) {
+        sql += ' AND featured = ?';
+        params.push(where.featured ? 1 : 0);
+      }
+      if (where?.authorId) {
+        sql += ' AND author_id = ?';
+        params.push(where.authorId);
+      }
+      if (where?.categoryId) {
+        sql += ' AND category_id = ?';
+        params.push(where.categoryId);
+      }
+      if (where?.publishedAtLTE) {
+        sql += ' AND published_at <= ?';
+        params.push(new Date(where.publishedAtLTE).toISOString());
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(title) LIKE LOWER(?) OR LOWER(excerpt) LIKE LOWER(?) OR LOWER(content) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+      if (where?.tagId) {
+        sql += ' AND id IN (SELECT journal_post_id FROM journal_post_tags WHERE tag_id = ?)';
+        params.push(where.tagId);
+      }
+      if (where?.tagSlug) {
+        sql += ' AND id IN (SELECT jpt.journal_post_id FROM journal_post_tags jpt INNER JOIN journal_tags jt ON jt.id = jpt.tag_id WHERE LOWER(jt.slug) = LOWER(?))';
+        params.push(where.tagSlug);
+      }
+
+      if (orderBy?.publishedAt) {
+        sql += ` ORDER BY published_at ${orderBy.publishedAt.toUpperCase()}, created_at DESC`;
+      } else if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else if (orderBy?.title) {
+        sql += ` ORDER BY title ${orderBy.title.toUpperCase()}`;
+      } else if (orderBy?.updatedAt) {
+        sql += ` ORDER BY updated_at ${orderBy.updatedAt.toUpperCase()}`;
+      } else if (orderBy?.createdAt) {
+        sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC, created_at DESC';
+      }
+
+      if (take !== undefined) sql += ` LIMIT ${take}`;
+      if (skip !== undefined) sql += ` OFFSET ${skip}`;
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.journalPost.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || crypto.randomUUID();
+      const now = new Date().toISOString();
+      const publishedAt = data.publishedAt ? new Date(data.publishedAt).toISOString() : (data.status === 'PUBLISHED' ? now : null);
+
+      db.prepare(`
+        INSERT INTO journal_posts (
+          id, title, slug, excerpt, content, type, status, featured,
+          published_at, display_order, author_id, category_id,
+          seo_title, seo_description, seo_keywords, created_at, updated_at
+        ) VALUES (
+          ?, ?, ?, ?, ?, ?, ?, ?,
+          ?, ?, ?, ?,
+          ?, ?, ?, ?, ?
+        )
+      `).run(
+        id,
+        data.title.trim(),
+        data.slug.trim(),
+        data.excerpt || null,
+        data.content,
+        data.type || 'ARTICLE',
+        data.status || 'DRAFT',
+        data.featured ? 1 : 0,
+        publishedAt,
+        data.displayOrder !== undefined ? Number(data.displayOrder) : 0,
+        data.authorId || null,
+        data.categoryId || null,
+        data.seoTitle || null,
+        data.seoDescription || null,
+        data.seoKeywords || null,
+        now,
+        now
+      );
+
+      return prisma.journalPost.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; slug?: string }; data: any; include?: any }) => {
+      const existing = prisma.journalPost.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.title !== undefined) { updates.push('title = ?'); params.push(data.title.trim()); }
+      if (data.slug !== undefined) { updates.push('slug = ?'); params.push(data.slug.trim()); }
+      if (data.excerpt !== undefined) { updates.push('excerpt = ?'); params.push(data.excerpt || null); }
+      if (data.content !== undefined) { updates.push('content = ?'); params.push(data.content); }
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.featured !== undefined) { updates.push('featured = ?'); params.push(data.featured ? 1 : 0); }
+      if (data.publishedAt !== undefined) {
+        updates.push('published_at = ?');
+        params.push(data.publishedAt ? new Date(data.publishedAt).toISOString() : null);
+      }
+      if (data.displayOrder !== undefined) { updates.push('display_order = ?'); params.push(Number(data.displayOrder)); }
+      if (data.authorId !== undefined) { updates.push('author_id = ?'); params.push(data.authorId || null); }
+      if (data.categoryId !== undefined) { updates.push('category_id = ?'); params.push(data.categoryId || null); }
+      if (data.seoTitle !== undefined) { updates.push('seo_title = ?'); params.push(data.seoTitle || null); }
+      if (data.seoDescription !== undefined) { updates.push('seo_description = ?'); params.push(data.seoDescription || null); }
+      if (data.seoKeywords !== undefined) { updates.push('seo_keywords = ?'); params.push(data.seoKeywords || null); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE journal_posts SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.journalPost.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.journalPost.findUnique({ where });
+      if (existing) {
+        db.prepare('DELETE FROM journal_post_tags WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_products WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_collections WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_artists WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_sanskrit_edits WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_post_related_posts WHERE journal_post_id = ? OR related_post_id = ?').run(where.id, where.id);
+        db.prepare('DELETE FROM journal_post_media WHERE journal_post_id = ?').run(where.id);
+        db.prepare('DELETE FROM journal_posts WHERE id = ?').run(where.id);
+      }
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_posts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.authorId) { sql += ' AND author_id = ?'; params.push(where.authorId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM journal_posts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.featured !== undefined) { sql += ' AND featured = ?'; params.push(where.featured ? 1 : 0); }
+      if (where?.authorId) { sql += ' AND author_id = ?'; params.push(where.authorId); }
+      if (where?.categoryId) { sql += ' AND category_id = ?'; params.push(where.categoryId); }
+      if (where?.publishedAtLTE) {
+        sql += ' AND published_at <= ?';
+        params.push(new Date(where.publishedAtLTE).toISOString());
+      }
+      if (where?.search) {
+        sql += ' AND (LOWER(title) LIKE LOWER(?) OR LOWER(excerpt) LIKE LOWER(?) OR LOWER(content) LIKE LOWER(?))';
+        params.push(`%${where.search}%`, `%${where.search}%`, `%${where.search}%`);
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  journalPostTag: {
+    findMany: ({ where, include }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.tagId) { sql += ' AND tag_id = ?'; params.push(where.tagId); }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          tagId: r.tag_id,
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.tag) {
+          item.tag = prisma.journalTag.findUnique({ where: { id: r.tag_id } });
+        }
+        if (include?.journalPost) {
+          item.journalPost = prisma.journalPost.findUnique({ where: { id: r.journal_post_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR IGNORE INTO journal_post_tags (journal_post_id, tag_id, created_at)
+        VALUES (?, ?, ?)
+      `).run(data.journalPostId, data.tagId, now);
+      return { journalPostId: data.journalPostId, tagId: data.tagId, createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_tags WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.tagId) { sql += ' AND tag_id = ?'; params.push(where.tagId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostProduct: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          productId: r.product_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.product) {
+          item.product = prisma.product.findUnique({
+            where: { id: r.product_id },
+            include: { category: true, collections: true, artists: true, media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO journal_post_products (journal_post_id, product_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.journalPostId, data.productId, Number(data.displayOrder || 0), now);
+      return { journalPostId: data.journalPostId, productId: data.productId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_products WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostCollection: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          collectionId: r.collection_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.collection) {
+          item.collection = prisma.collection.findUnique({
+            where: { id: r.collection_id },
+            include: { media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO journal_post_collections (journal_post_id, collection_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.journalPostId, data.collectionId, Number(data.displayOrder || 0), now);
+      return { journalPostId: data.journalPostId, collectionId: data.collectionId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_collections WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.collectionId) { sql += ' AND collection_id = ?'; params.push(where.collectionId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostArtist: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          artistId: r.artist_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.artist) {
+          item.artist = prisma.artist.findUnique({
+            where: { id: r.artist_id },
+            include: { media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO journal_post_artists (journal_post_id, artist_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.journalPostId, data.artistId, Number(data.displayOrder || 0), now);
+      return { journalPostId: data.journalPostId, artistId: data.artistId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_artists WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.artistId) { sql += ' AND artist_id = ?'; params.push(where.artistId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostSanskritEdit: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_sanskrit_edits WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.sanskritEditProfileId) { sql += ' AND sanskrit_edit_profile_id = ?'; params.push(where.sanskritEditProfileId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          sanskritEditProfileId: r.sanskrit_edit_profile_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.sanskritEditProfile) {
+          item.sanskritEditProfile = prisma.sanskritEditProfile.findUnique({
+            where: { id: r.sanskrit_edit_profile_id },
+            include: { product: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO journal_post_sanskrit_edits (journal_post_id, sanskrit_edit_profile_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.journalPostId, data.sanskritEditProfileId, Number(data.displayOrder || 0), now);
+      return { journalPostId: data.journalPostId, sanskritEditProfileId: data.sanskritEditProfileId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_sanskrit_edits WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.sanskritEditProfileId) { sql += ' AND sanskrit_edit_profile_id = ?'; params.push(where.sanskritEditProfileId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostRelatedPost: {
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_related_posts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.relatedPostId) { sql += ' AND related_post_id = ?'; params.push(where.relatedPostId); }
+      if (orderBy?.displayOrder) {
+        sql += ` ORDER BY display_order ${orderBy.displayOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY display_order ASC';
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          relatedPostId: r.related_post_id,
+          displayOrder: Number(r.display_order || 0),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.relatedPost) {
+          item.relatedPost = prisma.journalPost.findUnique({
+            where: { id: r.related_post_id },
+            include: { author: true, category: true, media: true }
+          });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT OR REPLACE INTO journal_post_related_posts (journal_post_id, related_post_id, display_order, created_at)
+        VALUES (?, ?, ?, ?)
+      `).run(data.journalPostId, data.relatedPostId, Number(data.displayOrder || 0), now);
+      return { journalPostId: data.journalPostId, relatedPostId: data.relatedPostId, displayOrder: Number(data.displayOrder || 0), createdAt: new Date(now) };
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_related_posts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.relatedPostId) { sql += ' AND related_post_id = ?'; params.push(where.relatedPostId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  journalPostMedia: {
+    findUnique: ({ where, include }: { where: { journalPostId_mediaAssetId_role: { journalPostId: string; mediaAssetId: string; role: string } }; include?: any }) => {
+      const target = where.journalPostId_mediaAssetId_role;
+      const r: any = db.prepare('SELECT * FROM journal_post_media WHERE journal_post_id = ? AND media_asset_id = ? AND role = ?').get(target.journalPostId, target.mediaAssetId, target.role);
+      if (!r) return null;
+      const formatted: any = {
+        journalPostId: r.journal_post_id,
+        mediaAssetId: r.media_asset_id,
+        role: r.role,
+        sortOrder: Number(r.sort_order || 0),
+        isPrimary: Boolean(r.is_primary),
+        createdAt: new Date(r.created_at)
+      };
+      if (include?.media) {
+        formatted.media = prisma.mediaAsset.findUnique({ where: { id: r.media_asset_id } });
+      }
+      return formatted;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT * FROM journal_post_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      if (where?.isPrimary !== undefined) { sql += ' AND is_primary = ?'; params.push(where.isPrimary ? 1 : 0); }
+
+      if (orderBy?.sortOrder) {
+        sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      } else {
+        sql += ' ORDER BY sort_order ASC, is_primary DESC';
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => {
+        const item: any = {
+          journalPostId: r.journal_post_id,
+          mediaAssetId: r.media_asset_id,
+          role: r.role,
+          sortOrder: Number(r.sort_order || 0),
+          isPrimary: Boolean(r.is_primary),
+          createdAt: new Date(r.created_at)
+        };
+        if (include?.media) {
+          item.media = prisma.mediaAsset.findUnique({ where: { id: r.media_asset_id } });
+        }
+        return item;
+      });
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO journal_post_media (journal_post_id, media_asset_id, role, sort_order, is_primary, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        data.journalPostId,
+        data.mediaAssetId,
+        data.role || 'GALLERY',
+        data.sortOrder !== undefined ? Number(data.sortOrder) : 0,
+        data.isPrimary ? 1 : 0,
+        now
+      );
+
+      return prisma.journalPostMedia.findUnique({
+        where: { journalPostId_mediaAssetId_role: { journalPostId: data.journalPostId, mediaAssetId: data.mediaAssetId, role: data.role || 'GALLERY' } },
+        include
+      });
+    },
+
+    update: ({ where, data, include }: { where: { journalPostId_mediaAssetId_role: { journalPostId: string; mediaAssetId: string; role: string } }; data: any; include?: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.role !== undefined) { updates.push('role = ?'); params.push(data.role); }
+
+      const target = where.journalPostId_mediaAssetId_role;
+      params.push(target.journalPostId, target.mediaAssetId, target.role);
+
+      db.prepare(`UPDATE journal_post_media SET ${updates.join(', ')} WHERE journal_post_id = ? AND media_asset_id = ? AND role = ?`).run(...params);
+      const newRole = data.role || target.role;
+      return prisma.journalPostMedia.findUnique({
+        where: { journalPostId_mediaAssetId_role: { journalPostId: target.journalPostId, mediaAssetId: target.mediaAssetId, role: newRole } },
+        include
+      });
+    },
+
+    updateMany: ({ where, data }: { where: any; data: any }) => {
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.isPrimary !== undefined) { updates.push('is_primary = ?'); params.push(data.isPrimary ? 1 : 0); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      let sql = `UPDATE journal_post_media SET ${updates.join(', ')} WHERE 1=1`;
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+
+      db.prepare(sql).run(...params);
+    },
+
+    delete: ({ where }: { where: { journalPostId_mediaAssetId_role: { journalPostId: string; mediaAssetId: string; role: string } } }) => {
+      const target = where.journalPostId_mediaAssetId_role;
+      const existing = prisma.journalPostMedia.findUnique({ where });
+      db.prepare('DELETE FROM journal_post_media WHERE journal_post_id = ? AND media_asset_id = ? AND role = ?').run(target.journalPostId, target.mediaAssetId, target.role);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      let sql = 'DELETE FROM journal_post_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
+      if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM journal_post_media WHERE 1=1';
+      const params: any[] = [];
+      if (where?.journalPostId) { sql += ' AND journal_post_id = ?'; params.push(where.journalPostId); }
+      if (where?.mediaAssetId) { sql += ' AND media_asset_id = ?'; params.push(where.mediaAssetId); }
       if (where?.role) { sql += ' AND role = ?'; params.push(where.role); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);

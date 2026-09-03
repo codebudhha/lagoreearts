@@ -106,6 +106,25 @@ export const PERMISSIONS_DATA = [
   { name: 'Delete Homepage CMS', slug: 'homepage.delete', module: 'HOMEPAGE', description: 'Delete draft/archived homepages and sections' },
   { name: 'Publish Homepage CMS', slug: 'homepage.publish', module: 'HOMEPAGE', description: 'Publish and change default active storefront homepage' },
 
+  // JOURNAL / BLOG (MODULE 13)
+  { name: 'View Journal Posts', slug: 'journal.view', module: 'JOURNAL', description: 'View editorial journal posts and articles' },
+  { name: 'Create Journal Post', slug: 'journal.create', module: 'JOURNAL', description: 'Create draft journal posts and articles' },
+  { name: 'Update Journal Post', slug: 'journal.update', module: 'JOURNAL', description: 'Modify journal posts, media, tags, and relations' },
+  { name: 'Delete Journal Post', slug: 'journal.delete', module: 'JOURNAL', description: 'Delete journal posts' },
+  { name: 'Publish Journal Post', slug: 'journal.publish', module: 'JOURNAL', description: 'Publish or schedule journal posts' },
+  { name: 'View Journal Authors', slug: 'journal-author.view', module: 'JOURNAL', description: 'View journal authors' },
+  { name: 'Create Journal Author', slug: 'journal-author.create', module: 'JOURNAL', description: 'Create journal author' },
+  { name: 'Update Journal Author', slug: 'journal-author.update', module: 'JOURNAL', description: 'Modify journal author' },
+  { name: 'Delete Journal Author', slug: 'journal-author.delete', module: 'JOURNAL', description: 'Delete journal author' },
+  { name: 'View Journal Categories', slug: 'journal-category.view', module: 'JOURNAL', description: 'View journal categories' },
+  { name: 'Create Journal Category', slug: 'journal-category.create', module: 'JOURNAL', description: 'Create journal category' },
+  { name: 'Update Journal Category', slug: 'journal-category.update', module: 'JOURNAL', description: 'Modify journal category' },
+  { name: 'Delete Journal Category', slug: 'journal-category.delete', module: 'JOURNAL', description: 'Delete journal category' },
+  { name: 'View Journal Tags', slug: 'journal-tag.view', module: 'JOURNAL', description: 'View journal tags' },
+  { name: 'Create Journal Tag', slug: 'journal-tag.create', module: 'JOURNAL', description: 'Create journal tag' },
+  { name: 'Update Journal Tag', slug: 'journal-tag.update', module: 'JOURNAL', description: 'Modify journal tag' },
+  { name: 'Delete Journal Tag', slug: 'journal-tag.delete', module: 'JOURNAL', description: 'Delete journal tag' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -141,6 +160,8 @@ export const ROLES_DATA = [
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update', 'sanskrit-edit.delete',
       'artist.view', 'artist.create', 'artist.update', 'artist.delete',
       'homepage.view', 'homepage.create', 'homepage.update',
+      'journal.view', 'journal.create', 'journal.update', 'journal.delete',
+      'journal-author.view', 'journal-category.view', 'journal-tag.view',
       'seo.view', 'seo.update'
     ]
   },
@@ -163,6 +184,11 @@ export const ROLES_DATA = [
       'sanskrit-edit.view', 'sanskrit-edit.create', 'sanskrit-edit.update',
       'artist.view', 'artist.create', 'artist.update',
       'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish',
+      'journal.view', 'journal.create', 'journal.update', 'journal.publish',
+      'journal-author.view', 'journal-author.create', 'journal-author.update',
+      'journal-category.view', 'journal-category.create', 'journal-category.update',
+      'journal-tag.view', 'journal-tag.create', 'journal-tag.update',
+      'journal.delete', 'journal-author.delete', 'journal-category.delete', 'journal-tag.delete',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
     ]
@@ -190,7 +216,9 @@ export const ROLES_DATA = [
       'antique.view',
       'sanskrit-edit.view',
       'artist.view',
-      'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish'
+      'homepage.view', 'homepage.create', 'homepage.update', 'homepage.publish',
+      'journal.view', 'journal.create', 'journal.update', 'journal.publish',
+      'journal-author.view', 'journal-category.view', 'journal-tag.view'
     ]
   }
 ];
@@ -1334,6 +1362,86 @@ export async function runSeed(): Promise<void> {
     });
 
     console.log('✓ Seeded default storefront homepage with curated sections');
+  }
+
+  // 14. Seed Initial Journal / Blog Data
+  const existingJournalCat = await prisma.journalCategory.findFirst();
+  if (!existingJournalCat) {
+    const artHistoryCat = await prisma.journalCategory.create({
+      data: {
+        name: 'Art History & Iconography',
+        slug: 'art-history-iconography',
+        description: 'Deep dives into sacred geometry, Shilpa Shastras, and traditional Indian artistic schools.',
+        status: 'ACTIVE',
+        sortOrder: 1,
+        seoTitle: 'Art History & Iconography - Lagoree Arts Journal',
+        seoDescription: 'Explorations in Indian temple aesthetics, sacred iconometry, and regional artistic schools.'
+      }
+    });
+
+    const craftTraditionsCat = await prisma.journalCategory.create({
+      data: {
+        name: 'Living Craft Traditions',
+        slug: 'living-craft-traditions',
+        description: 'Master artisan interviews and process documentation of traditional techniques.',
+        status: 'ACTIVE',
+        sortOrder: 2,
+        seoTitle: 'Living Craft Traditions - Lagoree Arts Journal',
+        seoDescription: 'Documentation of hereditary artisan methods, gold gilding, and mineral pigment preparation.'
+      }
+    });
+
+    const tagGoldLeaf = await prisma.journalTag.create({
+      data: { name: '24k Gold Leaf', slug: '24k-gold-leaf', status: 'ACTIVE' }
+    });
+
+    const tagTanjore = await prisma.journalTag.create({
+      data: { name: 'Tanjore School', slug: 'tanjore-school', status: 'ACTIVE' }
+    });
+
+    const tagIconography = await prisma.journalTag.create({
+      data: { name: 'Sacred Iconography', slug: 'sacred-iconography', status: 'ACTIVE' }
+    });
+
+    const author = await prisma.journalAuthor.create({
+      data: {
+        name: 'Dr. Radhika Krishnamurthy',
+        slug: 'dr-radhika-krishnamurthy',
+        bio: 'Senior Art Historian and specialist in medieval South Indian temple iconography and Vijayanagara painting ateliers.',
+        status: 'ACTIVE'
+      }
+    });
+
+    const samplePost = await prisma.journalPost.create({
+      data: {
+        title: 'The Alchemical Brilliance of 24-Karat Gold Leaf in Thanjavur Art',
+        slug: 'alchemical-brilliance-24k-gold-leaf-thanjavur-art',
+        excerpt: 'An investigation into the traditional gesso formula, unrefined chalk pastes, and burnished gold leaf that grant Thanjavur paintings their eternal luminous presence.',
+        content: '<p>Originating under the patronage of the Maratha rulers of Thanjavur in the 16th century, Thanjavur painting represents one of the most technically demanding sacred painting traditions of India. The defining hallmark of this school is its relief gesso work (sukka pithi) embellished with pure 24-karat gold foil.</p><p>The meticulous layering of unboiled lime, tamarind seed binder, and pure mineral pigments creates a three-dimensional sacred surface designed to radiate under sanctum oil lamps.</p>',
+        type: 'ESSAY',
+        status: 'PUBLISHED',
+        featured: true,
+        publishedAt: new Date().toISOString(),
+        displayOrder: 1,
+        authorId: author.id,
+        categoryId: artHistoryCat.id,
+        seoTitle: 'The Alchemical Brilliance of 24k Gold Leaf in Thanjavur Art',
+        seoDescription: 'A technical and historical exploration of 24k gold leaf and gesso in Thanjavur sacred paintings.',
+        seoKeywords: 'Thanjavur painting, 24k gold foil, gesso relief, sacred art history'
+      }
+    });
+
+    await prisma.journalPostTag.create({
+      data: { journalPostId: samplePost.id, tagId: tagGoldLeaf.id }
+    });
+    await prisma.journalPostTag.create({
+      data: { journalPostId: samplePost.id, tagId: tagTanjore.id }
+    });
+    await prisma.journalPostTag.create({
+      data: { journalPostId: samplePost.id, tagId: tagIconography.id }
+    });
+
+    console.log('✓ Seeded initial Journal categories, tags, author, and featured essay');
   }
 
   console.log('✨ Seeding Completed Successfully!\n');

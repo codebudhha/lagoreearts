@@ -155,6 +155,42 @@ enum HomepageSectionMediaRole {
   GALLERY
 }
 
+enum JournalPostType {
+  ARTICLE
+  ESSAY
+  INTERVIEW
+  STORY
+  GUIDE
+  NEWS
+}
+
+enum JournalPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum JournalAuthorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum JournalCategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum JournalTagStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum JournalPostMediaRole {
+  COVER
+  GALLERY
+  OG
+}
+
 model AdminUser {
   id                String       @id @default(uuid()) @db.VarChar(36)
   name              String       @db.VarChar(191)
@@ -411,6 +447,7 @@ model Collection {
   productCollections ProductCollection[]
   media              CollectionMedia[]
   homepageSections   HomepageSectionCollection[]
+  journalPosts       JournalPostCollection[]
 
   @@index([slug])
   @@index([status])
@@ -465,6 +502,7 @@ model Product {
   sanskritEditProfile SanskritEditProfile?
   artists           ProductArtist[]
   homepageSections  HomepageSectionProduct[]
+  journalPosts      JournalPostProduct[]
 
   @@index([slug])
   @@index([sku])
@@ -560,6 +598,7 @@ model SanskritEditProfile {
   updatedAt                  DateTime  @updatedAt @map("updated_at")
 
   product                    Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  journalPosts               JournalPostSanskritEdit[]
 
   @@index([productId])
   @@index([isPublished])
@@ -729,6 +768,8 @@ model MediaAsset {
   artistMedia      ArtistMedia[]
   homepageSectionsMedia HomepageSectionMedia[]
   homepages        Homepage[]
+  journalPostMedia JournalPostMedia[]
+  journalAuthors   JournalAuthor[]
 
   @@index([storageKey])
   @@index([mimeType])
@@ -842,6 +883,7 @@ model Artist {
   products        ProductArtist[]
   media           ArtistMedia[]
   homepageSections HomepageSectionArtist[]
+  journalPosts    JournalPostArtist[]
 
   @@index([name])
   @@index([slug])
@@ -1028,5 +1070,221 @@ model HomepageSectionMedia {
   @@index([displayOrder])
   @@map("homepage_section_media")
 }
+
+model JournalAuthor {
+  id            String              @id @default(uuid()) @db.VarChar(36)
+  name          String              @db.VarChar(255)
+  slug          String              @unique @db.VarChar(255)
+  bio           String?             @db.Text
+  avatarMediaId String?             @map("avatar_media_id") @db.VarChar(36)
+  status        JournalAuthorStatus @default(ACTIVE)
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+
+  avatarMedia   MediaAsset?         @relation(fields: [avatarMediaId], references: [id], onDelete: SetNull)
+  posts         JournalPost[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([status])
+  @@index([createdAt])
+  @@map("journal_authors")
+}
+
+model JournalCategory {
+  id             String                @id @default(uuid()) @db.VarChar(36)
+  name           String                @db.VarChar(255)
+  slug           String                @unique @db.VarChar(255)
+  description    String?               @db.Text
+  status         JournalCategoryStatus @default(ACTIVE)
+  sortOrder      Int                   @default(0) @map("sort_order")
+  seoTitle       String?               @map("seo_title") @db.VarChar(255)
+  seoDescription String?               @map("seo_description") @db.Text
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+
+  posts          JournalPost[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([status])
+  @@index([sortOrder])
+  @@index([createdAt])
+  @@map("journal_categories")
+}
+
+model JournalTag {
+  id        String           @id @default(uuid()) @db.VarChar(36)
+  name      String           @db.VarChar(100)
+  slug      String           @unique @db.VarChar(100)
+  status    JournalTagStatus @default(ACTIVE)
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  posts     JournalPostTag[]
+
+  @@index([name])
+  @@index([slug])
+  @@index([status])
+  @@index([createdAt])
+  @@map("journal_tags")
+}
+
+model JournalPost {
+  id             String                     @id @default(uuid()) @db.VarChar(36)
+  title          String                     @db.VarChar(255)
+  slug           String                     @unique @db.VarChar(255)
+  excerpt        String?                    @db.Text
+  content        String                     @db.Text
+  type           JournalPostType            @default(ARTICLE)
+  status         JournalPostStatus          @default(DRAFT)
+  featured       Boolean                    @default(false)
+  publishedAt    DateTime?                  @map("published_at")
+  displayOrder   Int                        @default(0) @map("display_order")
+  authorId       String?                    @map("author_id") @db.VarChar(36)
+  categoryId     String?                    @map("category_id") @db.VarChar(36)
+  seoTitle       String?                    @map("seo_title") @db.VarChar(255)
+  seoDescription String?                    @map("seo_description") @db.Text
+  seoKeywords    String?                    @map("seo_keywords") @db.VarChar(255)
+  createdAt      DateTime                   @default(now()) @map("created_at")
+  updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+  author         JournalAuthor?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category       JournalCategory?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tags           JournalPostTag[]
+  products       JournalPostProduct[]
+  collections    JournalPostCollection[]
+  artists        JournalPostArtist[]
+  sanskritEdits  JournalPostSanskritEdit[]
+  relatedPosts   JournalPostRelatedPost[]   @relation("SourceJournalPost")
+  referencedBy   JournalPostRelatedPost[]   @relation("TargetJournalPost")
+  media          JournalPostMedia[]
+
+  @@index([slug])
+  @@index([status])
+  @@index([type])
+  @@index([featured])
+  @@index([publishedAt])
+  @@index([displayOrder])
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([createdAt])
+  @@map("journal_posts")
+}
+
+model JournalPostTag {
+  journalPostId String      @map("journal_post_id") @db.VarChar(36)
+  tagId         String      @map("tag_id") @db.VarChar(36)
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  journalPost   JournalPost @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  tag           JournalTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, tagId])
+  @@index([journalPostId])
+  @@index([tagId])
+  @@map("journal_post_tags")
+}
+
+model JournalPostProduct {
+  journalPostId String      @map("journal_post_id") @db.VarChar(36)
+  productId     String      @map("product_id") @db.VarChar(36)
+  displayOrder  Int         @default(0) @map("display_order")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  journalPost   JournalPost @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  product       Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, productId])
+  @@index([journalPostId])
+  @@index([productId])
+  @@index([displayOrder])
+  @@map("journal_post_products")
+}
+
+model JournalPostCollection {
+  journalPostId String      @map("journal_post_id") @db.VarChar(36)
+  collectionId  String      @map("collection_id") @db.VarChar(36)
+  displayOrder  Int         @default(0) @map("display_order")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  journalPost   JournalPost @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  collection    Collection  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, collectionId])
+  @@index([journalPostId])
+  @@index([collectionId])
+  @@index([displayOrder])
+  @@map("journal_post_collections")
+}
+
+model JournalPostArtist {
+  journalPostId String      @map("journal_post_id") @db.VarChar(36)
+  artistId      String      @map("artist_id") @db.VarChar(36)
+  displayOrder  Int         @default(0) @map("display_order")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  journalPost   JournalPost @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  artist        Artist      @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, artistId])
+  @@index([journalPostId])
+  @@index([artistId])
+  @@index([displayOrder])
+  @@map("journal_post_artists")
+}
+
+model JournalPostSanskritEdit {
+  journalPostId          String              @map("journal_post_id") @db.VarChar(36)
+  sanskritEditProfileId  String              @map("sanskrit_edit_profile_id") @db.VarChar(36)
+  displayOrder           Int                 @default(0) @map("display_order")
+  createdAt              DateTime            @default(now()) @map("created_at")
+
+  journalPost            JournalPost         @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  sanskritEditProfile    SanskritEditProfile @relation(fields: [sanskritEditProfileId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, sanskritEditProfileId])
+  @@index([journalPostId])
+  @@index([sanskritEditProfileId])
+  @@index([displayOrder])
+  @@map("journal_post_sanskrit_edits")
+}
+
+model JournalPostRelatedPost {
+  journalPostId String      @map("journal_post_id") @db.VarChar(36)
+  relatedPostId String      @map("related_post_id") @db.VarChar(36)
+  displayOrder  Int         @default(0) @map("display_order")
+  createdAt     DateTime    @default(now()) @map("created_at")
+
+  journalPost   JournalPost @relation("SourceJournalPost", fields: [journalPostId], references: [id], onDelete: Cascade)
+  relatedPost   JournalPost @relation("TargetJournalPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
+
+  @@id([journalPostId, relatedPostId])
+  @@index([journalPostId])
+  @@index([relatedPostId])
+  @@index([displayOrder])
+  @@map("journal_post_related_posts")
+}
+
+model JournalPostMedia {
+  journalPostId String               @map("journal_post_id") @db.VarChar(36)
+  mediaAssetId  String               @map("media_asset_id") @db.VarChar(36)
+  role          JournalPostMediaRole @default(GALLERY)
+  sortOrder     Int                  @default(0) @map("sort_order")
+  isPrimary     Boolean              @default(false) @map("is_primary")
+  createdAt     DateTime             @default(now()) @map("created_at")
+
+  journalPost   JournalPost          @relation(fields: [journalPostId], references: [id], onDelete: Cascade)
+  mediaAsset    MediaAsset           @relation(fields: [mediaAssetId], references: [id], onDelete: Restrict)
+
+  @@id([journalPostId, mediaAssetId, role])
+  @@index([journalPostId])
+  @@index([mediaAssetId])
+  @@index([role])
+  @@index([sortOrder])
+  @@index([isPrimary])
+  @@map("journal_post_media")
+}
+
 
 

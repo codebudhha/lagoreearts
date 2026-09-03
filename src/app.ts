@@ -33,6 +33,7 @@ import {
   publicArtistsRouter
 } from './modules/artists/artists.routes.ts';
 import { adminHomepageRouter, publicHomepageRouter } from './modules/homepage/homepage.routes.ts';
+import { adminJournalRouter, publicJournalRouter } from './modules/journal/journal.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -154,7 +155,8 @@ export function createApp() {
         'Module 9: Antiques & Collectibles Catalogue Management',
         'Module 10: The Sanskrit Edit Catalogue & Editorial Layer',
         'Module 11: Artists & Makers',
-        'Module 12: Homepage CMS'
+        'Module 12: Homepage CMS',
+        'Module 13: Journal / Blog'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -182,6 +184,7 @@ export function createApp() {
   app.use('/api/v1/admin/users', adminUsersRoutes);
   app.use('/api/v1/admin/roles', adminRolesRoutes);
   app.use('/api/v1/admin/homepage', adminHomepageRouter);
+  app.use('/api/v1/admin/journal', adminJournalRouter);
   app.use('/api/v1/admin/artists', adminArtistsRouter);
   app.use('/api/v1/admin/media', adminMediaRouter);
   app.use('/api/v1/admin/antiques', adminAntiquesRouter);
@@ -201,6 +204,7 @@ export function createApp() {
   app.use('/api/v1/admin/products', adminProductVariantsRouter);
   app.use('/api/v1/admin/products', adminProductsRoutes);
   app.use('/api/v1/homepage', publicHomepageRouter);
+  app.use('/api/v1/journal', publicJournalRouter);
   app.use('/api/v1/artists', publicArtistsRouter);
   app.use('/api/v1/categories', publicCategoryFiltersRoutes);
   app.use('/api/v1/categories', publicCategoriesRoutes);
