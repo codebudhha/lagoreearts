@@ -964,7 +964,13 @@
         });
 
         /* ---------- Checkout ---------- */
-        function goCheckout() { if (state.cart.length > 0) toast('Heading to checkout\u2026'); }
+        function goCheckout() {
+            if (state.cart.length > 0) {
+                window.location.href = '/checkout';
+            } else {
+                toast('Your cart is currently empty');
+            }
+        }
         document.getElementById('checkoutBtn').addEventListener('click', goCheckout);
         document.getElementById('stickyCheckoutBtn').addEventListener('click', goCheckout);
 

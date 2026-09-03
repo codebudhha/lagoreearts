@@ -143,9 +143,17 @@ export function createApp() {
   app.get('/category', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree Category.html')));
   app.get('/product', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree_Product Claude.html')));
   app.get('/cart', (req, res) => res.sendFile(path.join(rootDir, 'Lagoree_Cart claude.html')));
+  app.get('/checkout', (req, res) => res.sendFile(path.join(rootDir, 'Checkout - Lagoree Arts.html')));
   app.get('/lookbook', (req, res) => res.sendFile(path.join(rootDir, 'Lookbook - Lagoree Arts.html')));
   app.get('/login', (req, res) => res.sendFile(path.join(rootDir, 'Login-Register - Lagoree Arts.html')));
   app.get('/about', (req, res) => res.sendFile(path.join(rootDir, 'About - Lagoree Arts.html')));
+  app.get('/account', (req, res) => res.sendFile(path.join(rootDir, 'My Account Lagoree Arts.html')));
+  app.get('/my-account', (req, res) => res.sendFile(path.join(rootDir, 'My Account Lagoree Arts.html')));
+  app.get('/wishlist', (req, res) => res.sendFile(path.join(rootDir, 'Wishlist - Lagoree Arts.html')));
+  app.get('/order-confirmation', (req, res) => res.sendFile(path.join(rootDir, 'Order Confirmation - Lagoree Arts.html')));
+  app.get('/order-detail', (req, res) => res.sendFile(path.join(rootDir, 'Order Detail - Lagoree Arts.html')));
+  app.get('/antiques', (req, res) => res.sendFile(path.join(rootDir, 'Antiques - Lagoree Arts.html')));
+  app.get('/contact', (req, res) => res.sendFile(path.join(rootDir, 'Contact - Lagoree Arts.html')));
 
   app.get('/api/v1/admin/health', (req, res) => {
     return ApiResponse.success(res, {
