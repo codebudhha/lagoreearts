@@ -62,6 +62,9 @@ export const queryKeys = {
     lists: () => ['collections', 'list'] as const,
     list: (params?: Record<string, any>) => ['collections', 'list', params] as const,
     detail: (id: string) => ['collections', 'detail', id] as const,
+    products: (id: string, params?: Record<string, any>) =>
+      ['collections', 'products', id, params] as const,
+    media: (id: string) => ['collections', 'media', id] as const,
   },
   attributes: {
     all: ['attributes'] as const,

@@ -20,11 +20,13 @@ export const CollectionMultiSelector: React.FC<CollectionMultiSelectorProps> = (
   label = 'Assigned Collections',
   error,
 }) => {
-  const { data: collections = [], isLoading } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: queryKeys.collections.list({ status: 'ACTIVE' }),
     queryFn: () => collectionsApi.list({ status: 'ACTIVE' }),
     staleTime: 1000 * 60 * 5,
   });
+
+  const collections = data?.items || [];
 
   const toggleCollection = (collectionId: string) => {
     if (disabled) return;

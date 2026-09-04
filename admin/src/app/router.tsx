@@ -18,6 +18,10 @@ import { AttributeListPage } from '../features/attributes/AttributeListPage';
 import { AttributeCreatePage } from '../features/attributes/AttributeCreatePage';
 import { AttributeDetailPage } from '../features/attributes/AttributeDetailPage';
 import { AttributeEditPage } from '../features/attributes/AttributeEditPage';
+import { CollectionListPage } from '../features/collections/CollectionListPage';
+import { CollectionCreatePage } from '../features/collections/CollectionCreatePage';
+import { CollectionDetailPage } from '../features/collections/CollectionDetailPage';
+import { CollectionEditPage } from '../features/collections/CollectionEditPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -123,16 +127,36 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Collections
       {
         path: 'collections',
         element: (
           <ProtectedRoute permission="collections.read">
-            <ModulePlaceholder
-              title="Curated Collections"
-              subtitle="Assemble seasonal edits and thematic art groupings."
-              moduleName="Collections"
-              permissionRequired="collections.read"
-            />
+            <CollectionListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'collections/new',
+        element: (
+          <ProtectedRoute permission="collections.create">
+            <CollectionCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'collections/:id',
+        element: (
+          <ProtectedRoute permission="collections.read">
+            <CollectionDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'collections/:id/edit',
+        element: (
+          <ProtectedRoute permission="collections.update">
+            <CollectionEditPage />
           </ProtectedRoute>
         ),
       },

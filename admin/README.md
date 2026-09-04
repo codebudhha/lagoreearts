@@ -1,4 +1,4 @@
-# Lagoree Arts — Admin Web Application (Phase 3: Product Management)
+# Lagoree Arts — Admin Web Application (Phase 5: Collection Management)
 
 Luxury-heritage administrative web application for **Lagoree Arts**.
 
@@ -25,6 +25,25 @@ admin/
 │   │   ├── auth/
 │   │   │   ├── Can.tsx          # Declarative permission check component
 │   │   │   └── ProtectedRoute.tsx # Route protection and role barrier
+│   │   ├── collections/
+│   │   │   ├── CollectionMediaManager.tsx # Cover/banner & auxiliary media gallery manager
+│   │   │   ├── CollectionPreview.tsx # Storefront simulation with desktop/mobile switcher
+│   │   │   ├── CollectionProductManager.tsx # Assigned artworks table, search & safe dissociation
+│   │   │   ├── CollectionStatusBadge.tsx # ACTIVE/INACTIVE & Featured indicator badge
+│   │   │   ├── CollectionTypeBadge.tsx # MANUAL vs. SYSTEM collection badge with lock icon
+│   │   │   └── ProductPicker.tsx # Searchable paginated modal with multi-select assignment
+│   │   ├── categories/
+│   │   │   ├── CategoryAttributeManager.tsx # Attribute bindings manager
+│   │   │   ├── CategorySelector.tsx # Parent category picker with cycle prevention
+│   │   │   ├── CategoryStatusBadge.tsx # Status badge
+│   │   │   ├── CategoryTree.tsx # Interactive visual taxonomy hierarchy
+│   │   │   ├── FilterPreview.tsx # Live storefront facet preview
+│   │   │   └── HierarchyBreadcrumb.tsx # Ancestor trail
+│   │   ├── attributes/
+│   │   │   ├── AttributeFormModal.tsx # Create/edit attribute modal
+│   │   │   ├── AttributeTypeBadge.tsx # Semantic data type badge
+│   │   │   ├── AttributeValueManager.tsx # Option values CRUD with reordering
+│   │   │   └── SystemAttributeBadge.tsx # System protection badge
 │   │   ├── dashboard/
 │   │   │   ├── ActivityFeed.tsx # Administrative activity and audit view
 │   │   │   ├── LowStockList.tsx # Authoritative low inventory alerts
@@ -32,7 +51,7 @@ admin/
 │   │   │   ├── RecentCustomersList.tsx # Recent patron accounts
 │   │   │   ├── RecentOrdersTable.tsx # Compact orders and payment statuses
 │   │   │   ├── RecentReviewsList.tsx # Testimonials and ratings moderation
-│   │   │   └── StatCard.tsx     # Stat cards with static secondary info
+│   │   │   └── StatCard.tsx     # Stat cards with secondary info
 │   │   ├── feedback/
 │   │   │   ├── Alert.tsx        # Styled contextual banners
 │   │   │   ├── ConfirmDialog.tsx # Modal confirmation for actions
@@ -48,7 +67,7 @@ admin/
 │   │   │   ├── AdminLayout.tsx  # Master shell (Desktop & Mobile)
 │   │   │   ├── Breadcrumbs.tsx  # Automatic breadcrumb derivation
 │   │   │   ├── Header.tsx       # Top navbar with Command Palette & Notifications
-│   │   │   ├── ModulePlaceholder.tsx # Phase 4+ placeholders
+│   │   │   ├── ModulePlaceholder.tsx # Future phase placeholders
 │   │   │   ├── PageContainer.tsx # Consistent content layout wrapper
 │   │   │   ├── PageHeader.tsx   # Enhanced header with permission-checked actions
 │   │   │   └── Sidebar.tsx      # Collapsible sidebar with RBAC filtering
@@ -57,7 +76,7 @@ admin/
 │   │   │   ├── CollectionMultiSelector.tsx # Multi-collection assignment chips
 │   │   │   ├── ProductAttributeEditor.tsx # Dynamic category-bound specification attributes
 │   │   │   ├── ProductMediaManager.tsx # Gallery management, primary image & reordering
-│   │   │   ├── ProductStatusControl.tsx # Lifecycle status transitions with archive confirmation
+│   │   │   ├── ProductStatusControl.tsx # Lifecycle status transitions
 │   │   │   ├── ProductVariantManager.tsx # Matrix manager for variable artwork editions
 │   │   │   ├── SeoEditor.tsx    # SERP Google preview and OpenGraph editor
 │   │   │   └── UnsavedChangesDialog.tsx # Modal confirmation for unsaved form state
@@ -88,6 +107,21 @@ admin/
 │   │   │   └── UnauthorizedPage.tsx # 403 Forbidden access barrier
 │   │   ├── dashboard/
 │   │   │   └── DashboardPage.tsx # Master operational dashboard
+│   │   ├── collections/
+│   │   │   ├── CollectionListPage.tsx # Table, search, status/type/featured filters & quick sort
+│   │   │   ├── CollectionCreatePage.tsx # Tabbed create form (General, Merchandising, Media, SEO)
+│   │   │   ├── CollectionDetailPage.tsx # Overview, Products, Media, SEO & Storefront Preview tabs
+│   │   │   └── CollectionEditPage.tsx # Edit form with system collection attribute protection
+│   │   ├── categories/
+│   │   │   ├── CategoryListPage.tsx # Tree/Table views, search & status filters
+│   │   │   ├── CategoryCreatePage.tsx # Create form with hierarchy & SEO
+│   │   │   ├── CategoryDetailPage.tsx # Detail overview, attributes & facet preview
+│   │   │   └── CategoryEditPage.tsx # Edit form with cycle prevention
+│   │   ├── attributes/
+│   │   │   ├── AttributeListPage.tsx # List view with system badges & type filter
+│   │   │   ├── AttributeCreatePage.tsx # Create attribute form
+│   │   │   ├── AttributeDetailPage.tsx # Detail overview & values manager
+│   │   │   └── AttributeEditPage.tsx # Edit attribute form
 │   │   └── products/
 │   │       ├── ProductListPage.tsx # Table, search, multi-filters, mobile card representation
 │   │       ├── ProductCreatePage.tsx # Comprehensive create form with tabs & unsaved guard
@@ -97,6 +131,9 @@ admin/
 │   ├── hooks/
 │   │   ├── useAuth.ts          # Auth context consumer
 │   │   ├── useBreadcrumbs.ts   # Breadcrumb path resolver
+│   │   ├── useCollections.ts   # Master Collection TanStack Query & mutation hooks
+│   │   ├── useCategories.ts    # Categories query & mutation hooks
+│   │   ├── useAttributes.ts    # Attributes & values hooks
 │   │   ├── useDashboard.ts     # TanStack Query hooks for stats & recent records
 │   │   ├── useDebounce.ts      # Debouncing hook (250-300ms)
 │   │   ├── useLocalStorage.ts  # Persistent storage hook
@@ -124,10 +161,12 @@ admin/
 │       │   └── variants.ts     # Product options & variants API client
 │       └── permissions/
 │           └── permissionHelpers.ts # Matrix authorization utilities
-├── tests/
-│   ├── admin-phase1.test.mjs   # RBAC and formatting test suite (3 tests)
-│   ├── admin-phase2.test.mjs   # Dashboard & Global Component test suite (22 tests)
-│   └── admin-phase3.test.mjs   # Product Management comprehensive test suite (64 tests)
+│   ├── tests/
+│   │   ├── admin-phase1.test.mjs   # RBAC and formatting test suite (3 tests)
+│   │   ├── admin-phase2.test.mjs   # Dashboard & Global Component test suite (22 tests)
+│   │   ├── admin-phase3.test.mjs   # Product Management test suite (64 tests)
+│   │   ├── admin-phase4.test.mjs   # Category & Attribute Management test suite (68 tests)
+│   │   └── admin-phase5.test.mjs   # Collection Management test suite (68 tests)
 ├── index.html
 ├── package.json
 ├── tailwind.config.js
@@ -151,7 +190,7 @@ npm run typecheck
 # Build for production
 npm run build
 
-# Run complete test suite (Phase 1 + Phase 2 + Phase 3: 89 tests)
+# Run complete test suite (Phases 1-5: 225 automated unit & integration tests passing 100%)
 npm run test
 ```
 
@@ -163,5 +202,7 @@ npm run test
 - **Silent Refresh**: On refresh, an HttpOnly cookie automatically recovers session tokens via `/api/v1/admin/auth/refresh`.
 - **401 Interception**: Automatic retry queue refreshes tokens transparently.
 - **RBAC**: Supports `SUPER_ADMIN`, `CATALOGUE_MANAGER`, `CONTENT_MANAGER`, `ORDER_MANAGER`, and `MARKETING_MANAGER`.
+- **System Collection Locks**: Core system collections cannot be deleted and type conversions are guarded.
+- **Safe Dissociation**: Removing a product from a collection dissociates the curation link without deleting the underlying product entity.
 - **Cost Price Confidentiality**: `costPrice` is strictly hidden on customer storefront previews and read-only non-authorized screens.
 - **Unsaved Changes Guard**: Prevents accidental data loss across internal client-side navigation and external window closing (`beforeunload`).
