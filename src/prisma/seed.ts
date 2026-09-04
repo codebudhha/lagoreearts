@@ -172,6 +172,19 @@ export const PERMISSIONS_DATA = [
   { name: 'Reconcile Payment', slug: 'payment.reconcile', module: 'PAYMENTS', description: 'Manually reconcile payment status with gateways' },
   { name: 'Refund Payment', slug: 'payment.refund', module: 'PAYMENTS', description: 'Issue partial or full payment refunds' },
 
+  // SHIPPING & DELIVERY (MODULE 22)
+  { name: 'View Shipping', slug: 'shipping.view', module: 'SHIPPING', description: 'View shipping zones, methods, and rates' },
+  { name: 'Create Shipping', slug: 'shipping.create', module: 'SHIPPING', description: 'Create shipping configurations' },
+  { name: 'Update Shipping', slug: 'shipping.update', module: 'SHIPPING', description: 'Update shipping configurations' },
+  { name: 'Delete Shipping', slug: 'shipping.delete', module: 'SHIPPING', description: 'Delete shipping configurations' },
+  { name: 'Manage Shipping Zones', slug: 'shipping.manage-zones', module: 'SHIPPING', description: 'Manage geographic zones and postal serviceability' },
+  { name: 'Manage Shipping Rates', slug: 'shipping.manage-rates', module: 'SHIPPING', description: 'Configure shipping rate rules and pricing' },
+  { name: 'Manage Shipping Methods', slug: 'shipping.manage-methods', module: 'SHIPPING', description: 'Configure carriers and delivery methods' },
+  { name: 'View Shipments', slug: 'shipment.view', module: 'SHIPPING', description: 'View order shipments and tracking' },
+  { name: 'Create Shipment', slug: 'shipment.create', module: 'SHIPPING', description: 'Dispatch and create shipments' },
+  { name: 'Update Shipment', slug: 'shipment.update', module: 'SHIPPING', description: 'Update shipment tracking and details' },
+  { name: 'Manage Shipment Status', slug: 'shipment.manage-status', module: 'SHIPPING', description: 'Advance shipment lifecycle status' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -254,6 +267,9 @@ export const ROLES_DATA = [
     permissionSlugs: [
       'order.view', 'order.create', 'order.update', 'order.cancel', 'order.manage-status',
       'payment.view', 'payment.create', 'payment.update', 'payment.reconcile', 'payment.refund',
+      'shipping.view', 'shipping.create', 'shipping.update', 'shipping.delete',
+      'shipping.manage-zones', 'shipping.manage-rates', 'shipping.manage-methods',
+      'shipment.view', 'shipment.create', 'shipment.update', 'shipment.manage-status',
       'cart.view',
       'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update'

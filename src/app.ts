@@ -46,6 +46,7 @@ import { adminCheckoutRoutes } from './modules/checkout/admin-checkout.routes.ts
 import { orderRouter, customerOrderRouter } from './modules/orders/order.routes.ts';
 import { adminOrderRouter } from './modules/orders/admin-order.routes.ts';
 import { customerPaymentRouter, webhookPaymentRouter, adminPaymentRouter } from './modules/payments/payment.routes.ts';
+import { customerShippingRouter, adminShippingRouter, adminShipmentRouter, publicShippingRouter } from './modules/shipping/shipping.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -196,7 +197,8 @@ export function createApp() {
         'Module 18: Cart & Shopping Cart Management',
         'Module 19: Checkout System',
         'Module 20: Order Management',
-        'Module 21: Payments & Gateway Orchestration'
+        'Module 21: Payments & Gateway Orchestration',
+        'Module 22: Shipping & Delivery Management'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -220,6 +222,10 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/shipping', publicShippingRouter);
+  app.use('/api/v1/customer', customerShippingRouter);
+  app.use('/api/v1/admin/shipping', adminShippingRouter);
+  app.use('/api/v1/admin', adminShipmentRouter);
   app.use('/api/v1/payments/webhooks', webhookPaymentRouter);
   app.use('/api/v1/customer/orders', customerPaymentRouter);
   app.use('/api/v1/admin/payments', adminPaymentRouter);

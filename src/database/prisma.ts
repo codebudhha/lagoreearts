@@ -1508,6 +1508,161 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_payment_refunds_payment_id ON payment_refunds(payment_id);
   CREATE INDEX IF NOT EXISTS idx_payment_refunds_provider_refund_id ON payment_refunds(provider_refund_id);
   CREATE INDEX IF NOT EXISTS idx_payment_refunds_status ON payment_refunds(status);
+
+  -- MODULE 22: SHIPPING & DELIVERY
+  CREATE TABLE IF NOT EXISTS shipping_zones (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    priority INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipping_zones_code ON shipping_zones(code);
+  CREATE INDEX IF NOT EXISTS idx_shipping_zones_status ON shipping_zones(status);
+  CREATE INDEX IF NOT EXISTS idx_shipping_zones_priority ON shipping_zones(priority);
+
+  CREATE TABLE IF NOT EXISTS shipping_zone_postal_codes (
+    id TEXT PRIMARY KEY,
+    zone_id TEXT NOT NULL,
+    postal_code TEXT NOT NULL,
+    city TEXT,
+    state TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(zone_id, postal_code),
+    FOREIGN KEY (zone_id) REFERENCES shipping_zones(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_sz_postal_code ON shipping_zone_postal_codes(postal_code);
+  CREATE INDEX IF NOT EXISTS idx_sz_zone_id ON shipping_zone_postal_codes(zone_id);
+  CREATE INDEX IF NOT EXISTS idx_sz_status ON shipping_zone_postal_codes(status);
+
+  CREATE TABLE IF NOT EXISTS shipping_methods (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    code TEXT UNIQUE NOT NULL,
+    description TEXT,
+    carrier TEXT,
+    service_level TEXT,
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    estimated_min_days INTEGER,
+    estimated_max_days INTEGER,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipping_methods_code ON shipping_methods(code);
+  CREATE INDEX IF NOT EXISTS idx_shipping_methods_status ON shipping_methods(status);
+  CREATE INDEX IF NOT EXISTS idx_shipping_methods_sort_order ON shipping_methods(sort_order);
+
+  CREATE TABLE IF NOT EXISTS shipping_rates (
+    id TEXT PRIMARY KEY,
+    shipping_zone_id TEXT NOT NULL,
+    shipping_method_id TEXT NOT NULL,
+    min_order_value REAL,
+    max_order_value REAL,
+    min_weight REAL,
+    max_weight REAL,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    priority INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (shipping_zone_id) REFERENCES shipping_zones(id) ON DELETE RESTRICT,
+    FOREIGN KEY (shipping_method_id) REFERENCES shipping_methods(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipping_rates_zone_id ON shipping_rates(shipping_zone_id);
+  CREATE INDEX IF NOT EXISTS idx_shipping_rates_method_id ON shipping_rates(shipping_method_id);
+  CREATE INDEX IF NOT EXISTS idx_shipping_rates_status ON shipping_rates(status);
+  CREATE INDEX IF NOT EXISTS idx_shipping_rates_priority ON shipping_rates(priority);
+
+  CREATE TABLE IF NOT EXISTS order_shipping_snapshots (
+    id TEXT PRIMARY KEY,
+    order_id TEXT UNIQUE NOT NULL,
+    zone_code TEXT NOT NULL,
+    zone_name TEXT NOT NULL,
+    method_code TEXT NOT NULL,
+    method_name TEXT NOT NULL,
+    carrier TEXT,
+    service_level TEXT,
+    estimated_min_days INTEGER,
+    estimated_max_days INTEGER,
+    shipping_amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    postal_code TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_oss_order_id ON order_shipping_snapshots(order_id);
+
+  CREATE TABLE IF NOT EXISTS shipments (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    shipment_number TEXT UNIQUE NOT NULL,
+    carrier TEXT,
+    service_level TEXT,
+    tracking_number TEXT,
+    tracking_url TEXT,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    shipped_at TEXT,
+    delivered_at TEXT,
+    estimated_delivery_date TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipments_shipment_number ON shipments(shipment_number);
+  CREATE INDEX IF NOT EXISTS idx_shipments_order_id ON shipments(order_id);
+  CREATE INDEX IF NOT EXISTS idx_shipments_status ON shipments(status);
+  CREATE INDEX IF NOT EXISTS idx_shipments_tracking_number ON shipments(tracking_number);
+  CREATE INDEX IF NOT EXISTS idx_shipments_created_at ON shipments(created_at);
+
+  CREATE TABLE IF NOT EXISTS shipment_items (
+    id TEXT PRIMARY KEY,
+    shipment_id TEXT NOT NULL,
+    order_item_id TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE,
+    FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipment_items_shipment_id ON shipment_items(shipment_id);
+  CREATE INDEX IF NOT EXISTS idx_shipment_items_order_item_id ON shipment_items(order_item_id);
+
+  CREATE TABLE IF NOT EXISTS shipment_events (
+    id TEXT PRIMARY KEY,
+    shipment_id TEXT NOT NULL,
+    status TEXT NOT NULL,
+    event_code TEXT,
+    description TEXT,
+    location TEXT,
+    occurred_at TEXT NOT NULL,
+    source TEXT NOT NULL DEFAULT 'SYSTEM',
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_shipment_events_shipment_id ON shipment_events(shipment_id);
+  CREATE INDEX IF NOT EXISTS idx_shipment_events_occurred_at ON shipment_events(occurred_at);
+
+  CREATE TABLE IF NOT EXISTS shipment_sequences (
+    id TEXT PRIMARY KEY,
+    year INTEGER UNIQUE NOT NULL,
+    current_number INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 /**
@@ -9049,6 +9204,11 @@ export const prisma = {
 
     deleteMany: ({ where }: any = {}) => {
       if (!where || Object.keys(where).length === 0) {
+        try {
+          db.prepare('UPDATE orders SET customer_id = NULL WHERE customer_id IS NOT NULL').run();
+          db.prepare('UPDATE checkout_sessions SET customer_id = NULL WHERE customer_id IS NOT NULL').run();
+          db.prepare('UPDATE carts SET customer_id = NULL WHERE customer_id IS NOT NULL').run();
+        } catch {}
         db.prepare('DELETE FROM customer_addresses').run();
         db.prepare('DELETE FROM customer_sessions').run();
         db.prepare('DELETE FROM customer_password_resets').run();
@@ -10589,6 +10749,19 @@ export const prisma = {
         });
       }
 
+      if (include?.shippingSnapshot) {
+        orderObj.shippingSnapshot = prisma.orderShippingSnapshot.findUnique({
+          where: { orderId: row.id }
+        });
+      }
+
+      if (include?.shipments) {
+        orderObj.shipments = prisma.shipment.findMany({
+          where: { orderId: row.id },
+          include: typeof include.shipments === 'object' ? include.shipments.include : undefined
+        });
+      }
+
       return orderObj;
     },
 
@@ -11587,6 +11760,1111 @@ export const prisma = {
       const params: any[] = [];
       if (where?.paymentId) { sql += ' AND payment_id = ?'; params.push(where.paymentId); }
       db.prepare(sql).run(...params);
+    }
+  },
+
+  // ==========================================
+  // MODULE 22 — SHIPPING DELEGATES
+  // ==========================================
+
+  shippingZone: {
+    findUnique: ({ where, include }: { where: { id?: string; code?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM shipping_zones WHERE id = ?').get(where.id);
+      } else if (where.code) {
+        row = db.prepare('SELECT * FROM shipping_zones WHERE code = ?').get(where.code);
+      }
+      if (!row) return null;
+
+      const zoneObj: any = {
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        description: row.description,
+        status: row.status,
+        priority: Number(row.priority),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.postalCodes) {
+        zoneObj.postalCodes = prisma.shippingZonePostalCode.findMany({
+          where: { zoneId: row.id }
+        });
+      }
+
+      if (include?.rates) {
+        zoneObj.rates = prisma.shippingRate.findMany({
+          where: { shippingZoneId: row.id }
+        });
+      }
+
+      return zoneObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_zones WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.priority) sql += ` ORDER BY priority ${orderBy.priority.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY priority DESC, created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.shippingZone.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_zones WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+      if (where?.name && where.name.contains) {
+        sql += ' AND LOWER(name) LIKE LOWER(?)';
+        params.push(`%${where.name.contains}%`);
+      }
+
+      if (orderBy?.priority) sql += ` ORDER BY priority ${orderBy.priority.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else if (orderBy?.name) sql += ` ORDER BY name ${orderBy.name.toUpperCase()}`;
+      else sql += ' ORDER BY priority DESC, created_at ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shippingZone.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipping_zones (id, name, code, description, status, priority, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name,
+        data.code,
+        data.description || null,
+        data.status || 'ACTIVE',
+        Number(data.priority || 0),
+        now,
+        now
+      );
+
+      return prisma.shippingZone.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; code?: string }; data: any; include?: any }) => {
+      const existing = prisma.shippingZone.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name); }
+      if (data.code !== undefined) { updates.push('code = ?'); params.push(data.code); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.priority !== undefined) { updates.push('priority = ?'); params.push(Number(data.priority)); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(existing.id);
+      db.prepare(`UPDATE shipping_zones SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.shippingZone.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id?: string; code?: string } }) => {
+      const existing = prisma.shippingZone.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM shipping_zones WHERE id = ?').run(existing.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipping_zones').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipping_zones WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM shipping_zones WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  shippingZonePostalCode: {
+    findUnique: ({ where, include }: { where: { id?: string; zoneId_postalCode?: { zoneId: string; postalCode: string } }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM shipping_zone_postal_codes WHERE id = ?').get(where.id);
+      } else if (where.zoneId_postalCode) {
+        row = db.prepare('SELECT * FROM shipping_zone_postal_codes WHERE zone_id = ? AND postal_code = ?').get(
+          where.zoneId_postalCode.zoneId,
+          where.zoneId_postalCode.postalCode
+        );
+      }
+      if (!row) return null;
+
+      const codeObj: any = {
+        id: row.id,
+        zoneId: row.zone_id,
+        postalCode: row.postal_code,
+        city: row.city,
+        state: row.state,
+        status: row.status,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.zone && row.zone_id) {
+        codeObj.zone = prisma.shippingZone.findUnique({ where: { id: row.zone_id } });
+      }
+
+      return codeObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_zone_postal_codes WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.zoneId) { sql += ' AND zone_id = ?'; params.push(where.zoneId); }
+      if (where?.postalCode) { sql += ' AND postal_code = ?'; params.push(where.postalCode); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.shippingZonePostalCode.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_zone_postal_codes WHERE 1=1';
+      const params: any[] = [];
+      if (where?.zoneId) { sql += ' AND zone_id = ?'; params.push(where.zoneId); }
+      if (where?.postalCode) { sql += ' AND postal_code = ?'; params.push(where.postalCode); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY postal_code ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shippingZonePostalCode.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipping_zone_postal_codes (id, zone_id, postal_code, city, state, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.zoneId,
+        data.postalCode,
+        data.city || null,
+        data.state || null,
+        data.status || 'ACTIVE',
+        now,
+        now
+      );
+
+      return prisma.shippingZonePostalCode.findUnique({ where: { id }, include });
+    },
+
+    createMany: ({ data }: { data: any[] }) => {
+      const now = new Date().toISOString();
+      for (const d of data) {
+        const id = d.id || randomUUID();
+        db.prepare(`
+          INSERT INTO shipping_zone_postal_codes (id, zone_id, postal_code, city, state, status, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(id, d.zoneId, d.postalCode, d.city || null, d.state || null, d.status || 'ACTIVE', now, now);
+      }
+      return { count: data.length };
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.shippingZonePostalCode.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      if (data.city !== undefined) { updates.push('city = ?'); params.push(data.city); }
+      if (data.state !== undefined) { updates.push('state = ?'); params.push(data.state); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.postalCode !== undefined) { updates.push('postal_code = ?'); params.push(data.postalCode); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE shipping_zone_postal_codes SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.shippingZonePostalCode.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.shippingZonePostalCode.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM shipping_zone_postal_codes WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipping_zone_postal_codes').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipping_zone_postal_codes WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.zoneId) { sql += ' AND zone_id = ?'; params.push(where.zoneId); }
+      if (where?.postalCode) { sql += ' AND postal_code = ?'; params.push(where.postalCode); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM shipping_zone_postal_codes WHERE 1=1';
+      const params: any[] = [];
+      if (where?.zoneId) { sql += ' AND zone_id = ?'; params.push(where.zoneId); }
+      if (where?.postalCode) { sql += ' AND postal_code = ?'; params.push(where.postalCode); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  shippingMethod: {
+    findUnique: ({ where, include }: { where: { id?: string; code?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM shipping_methods WHERE id = ?').get(where.id);
+      } else if (where.code) {
+        row = db.prepare('SELECT * FROM shipping_methods WHERE code = ?').get(where.code);
+      }
+      if (!row) return null;
+
+      const methodObj: any = {
+        id: row.id,
+        name: row.name,
+        code: row.code,
+        description: row.description,
+        carrier: row.carrier,
+        serviceLevel: row.service_level,
+        status: row.status,
+        estimatedMinDays: row.estimated_min_days !== null ? Number(row.estimated_min_days) : null,
+        estimatedMaxDays: row.estimated_max_days !== null ? Number(row.estimated_max_days) : null,
+        sortOrder: Number(row.sort_order),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.rates) {
+        methodObj.rates = prisma.shippingRate.findMany({
+          where: { shippingMethodId: row.id }
+        });
+      }
+
+      return methodObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_methods WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.sortOrder) sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY sort_order ASC, created_at ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.shippingMethod.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_methods WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+
+      if (orderBy?.sortOrder) sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+      else if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY sort_order ASC, created_at ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shippingMethod.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipping_methods (
+          id, name, code, description, carrier, service_level, status,
+          estimated_min_days, estimated_max_days, sort_order, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.name,
+        data.code,
+        data.description || null,
+        data.carrier || null,
+        data.serviceLevel || null,
+        data.status || 'ACTIVE',
+        data.estimatedMinDays !== undefined && data.estimatedMinDays !== null ? Number(data.estimatedMinDays) : null,
+        data.estimatedMaxDays !== undefined && data.estimatedMaxDays !== null ? Number(data.estimatedMaxDays) : null,
+        Number(data.sortOrder || 0),
+        now,
+        now
+      );
+
+      return prisma.shippingMethod.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id?: string; code?: string }; data: any; include?: any }) => {
+      const existing = prisma.shippingMethod.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.name !== undefined) { updates.push('name = ?'); params.push(data.name); }
+      if (data.code !== undefined) { updates.push('code = ?'); params.push(data.code); }
+      if (data.description !== undefined) { updates.push('description = ?'); params.push(data.description); }
+      if (data.carrier !== undefined) { updates.push('carrier = ?'); params.push(data.carrier); }
+      if (data.serviceLevel !== undefined) { updates.push('service_level = ?'); params.push(data.serviceLevel); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.estimatedMinDays !== undefined) { updates.push('estimated_min_days = ?'); params.push(data.estimatedMinDays !== null ? Number(data.estimatedMinDays) : null); }
+      if (data.estimatedMaxDays !== undefined) { updates.push('estimated_max_days = ?'); params.push(data.estimatedMaxDays !== null ? Number(data.estimatedMaxDays) : null); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(existing.id);
+      db.prepare(`UPDATE shipping_methods SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.shippingMethod.findUnique({ where: { id: existing.id }, include });
+    },
+
+    delete: ({ where }: { where: { id?: string; code?: string } }) => {
+      const existing = prisma.shippingMethod.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM shipping_methods WHERE id = ?').run(existing.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipping_methods').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipping_methods WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.code) { sql += ' AND code = ?'; params.push(where.code); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM shipping_methods WHERE 1=1';
+      const params: any[] = [];
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  shippingRate: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM shipping_rates WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      const rateObj: any = {
+        id: row.id,
+        shippingZoneId: row.shipping_zone_id,
+        shippingMethodId: row.shipping_method_id,
+        minOrderValue: row.min_order_value !== null ? Number(row.min_order_value) : null,
+        maxOrderValue: row.max_order_value !== null ? Number(row.max_order_value) : null,
+        minWeight: row.min_weight !== null ? Number(row.min_weight) : null,
+        maxWeight: row.max_weight !== null ? Number(row.max_weight) : null,
+        amount: Number(row.amount),
+        currency: row.currency,
+        status: row.status,
+        priority: Number(row.priority),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.zone && row.shipping_zone_id) {
+        rateObj.zone = prisma.shippingZone.findUnique({ where: { id: row.shipping_zone_id } });
+      }
+
+      if (include?.method && row.shipping_method_id) {
+        rateObj.method = prisma.shippingMethod.findUnique({ where: { id: row.shipping_method_id } });
+      }
+
+      return rateObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_rates WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.shippingZoneId) { sql += ' AND shipping_zone_id = ?'; params.push(where.shippingZoneId); }
+      if (where?.shippingMethodId) { sql += ' AND shipping_method_id = ?'; params.push(where.shippingMethodId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.currency) { sql += ' AND currency = ?'; params.push(where.currency); }
+
+      if (orderBy?.priority) sql += ` ORDER BY priority ${orderBy.priority.toUpperCase()}`;
+      else if (orderBy?.amount) sql += ` ORDER BY amount ${orderBy.amount.toUpperCase()}`;
+      else sql += ' ORDER BY priority DESC, amount ASC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.shippingRate.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM shipping_rates WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shippingZoneId) { sql += ' AND shipping_zone_id = ?'; params.push(where.shippingZoneId); }
+      if (where?.shippingMethodId) { sql += ' AND shipping_method_id = ?'; params.push(where.shippingMethodId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.currency) { sql += ' AND currency = ?'; params.push(where.currency); }
+
+      if (orderBy?.priority) sql += ` ORDER BY priority ${orderBy.priority.toUpperCase()}`;
+      else if (orderBy?.amount) sql += ` ORDER BY amount ${orderBy.amount.toUpperCase()}`;
+      else sql += ' ORDER BY priority DESC, amount ASC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shippingRate.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipping_rates (
+          id, shipping_zone_id, shipping_method_id, min_order_value, max_order_value,
+          min_weight, max_weight, amount, currency, status, priority, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.shippingZoneId,
+        data.shippingMethodId,
+        data.minOrderValue !== undefined && data.minOrderValue !== null ? Number(data.minOrderValue) : null,
+        data.maxOrderValue !== undefined && data.maxOrderValue !== null ? Number(data.maxOrderValue) : null,
+        data.minWeight !== undefined && data.minWeight !== null ? Number(data.minWeight) : null,
+        data.maxWeight !== undefined && data.maxWeight !== null ? Number(data.maxWeight) : null,
+        Number(data.amount || 0),
+        data.currency || 'INR',
+        data.status || 'ACTIVE',
+        Number(data.priority || 0),
+        now,
+        now
+      );
+
+      return prisma.shippingRate.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.shippingRate.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.shippingZoneId !== undefined) { updates.push('shipping_zone_id = ?'); params.push(data.shippingZoneId); }
+      if (data.shippingMethodId !== undefined) { updates.push('shipping_method_id = ?'); params.push(data.shippingMethodId); }
+      if (data.minOrderValue !== undefined) { updates.push('min_order_value = ?'); params.push(data.minOrderValue !== null ? Number(data.minOrderValue) : null); }
+      if (data.maxOrderValue !== undefined) { updates.push('max_order_value = ?'); params.push(data.maxOrderValue !== null ? Number(data.maxOrderValue) : null); }
+      if (data.minWeight !== undefined) { updates.push('min_weight = ?'); params.push(data.minWeight !== null ? Number(data.minWeight) : null); }
+      if (data.maxWeight !== undefined) { updates.push('max_weight = ?'); params.push(data.maxWeight !== null ? Number(data.maxWeight) : null); }
+      if (data.amount !== undefined) { updates.push('amount = ?'); params.push(Number(data.amount)); }
+      if (data.currency !== undefined) { updates.push('currency = ?'); params.push(data.currency); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.priority !== undefined) { updates.push('priority = ?'); params.push(Number(data.priority)); }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE shipping_rates SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.shippingRate.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.shippingRate.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM shipping_rates WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipping_rates').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipping_rates WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.shippingZoneId) { sql += ' AND shipping_zone_id = ?'; params.push(where.shippingZoneId); }
+      if (where?.shippingMethodId) { sql += ' AND shipping_method_id = ?'; params.push(where.shippingMethodId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM shipping_rates WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shippingZoneId) { sql += ' AND shipping_zone_id = ?'; params.push(where.shippingZoneId); }
+      if (where?.shippingMethodId) { sql += ' AND shipping_method_id = ?'; params.push(where.shippingMethodId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  orderShippingSnapshot: {
+    findUnique: ({ where, include }: { where: { id?: string; orderId?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM order_shipping_snapshots WHERE id = ?').get(where.id);
+      } else if (where.orderId) {
+        row = db.prepare('SELECT * FROM order_shipping_snapshots WHERE order_id = ?').get(where.orderId);
+      }
+      if (!row) return null;
+
+      const snapshotObj: any = {
+        id: row.id,
+        orderId: row.order_id,
+        zoneCode: row.zone_code,
+        zoneName: row.zone_name,
+        methodCode: row.method_code,
+        methodName: row.method_name,
+        carrier: row.carrier,
+        serviceLevel: row.service_level,
+        estimatedMinDays: row.estimated_min_days !== null ? Number(row.estimated_min_days) : null,
+        estimatedMaxDays: row.estimated_max_days !== null ? Number(row.estimated_max_days) : null,
+        shippingAmount: Number(row.shipping_amount),
+        currency: row.currency,
+        postalCode: row.postal_code,
+        createdAt: new Date(row.created_at)
+      };
+
+      if (include?.order && row.order_id) {
+        snapshotObj.order = prisma.order.findUnique({ where: { id: row.order_id } });
+      }
+
+      return snapshotObj;
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO order_shipping_snapshots (
+          id, order_id, zone_code, zone_name, method_code, method_name, carrier,
+          service_level, estimated_min_days, estimated_max_days, shipping_amount,
+          currency, postal_code, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderId,
+        data.zoneCode,
+        data.zoneName,
+        data.methodCode,
+        data.methodName,
+        data.carrier || null,
+        data.serviceLevel || null,
+        data.estimatedMinDays !== undefined && data.estimatedMinDays !== null ? Number(data.estimatedMinDays) : null,
+        data.estimatedMaxDays !== undefined && data.estimatedMaxDays !== null ? Number(data.estimatedMaxDays) : null,
+        Number(data.shippingAmount || 0),
+        data.currency || 'INR',
+        data.postalCode,
+        now
+      );
+
+      return prisma.orderShippingSnapshot.findUnique({ where: { id }, include });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM order_shipping_snapshots').run();
+        return;
+      }
+      let sql = 'DELETE FROM order_shipping_snapshots WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  shipment: {
+    findUnique: ({ where, include }: { where: { id?: string; shipmentNumber?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM shipments WHERE id = ?').get(where.id);
+      } else if (where.shipmentNumber) {
+        row = db.prepare('SELECT * FROM shipments WHERE shipment_number = ?').get(where.shipmentNumber);
+      }
+      if (!row) return null;
+
+      const shipmentObj: any = {
+        id: row.id,
+        orderId: row.order_id,
+        shipmentNumber: row.shipment_number,
+        carrier: row.carrier,
+        serviceLevel: row.service_level,
+        trackingNumber: row.tracking_number,
+        trackingUrl: row.tracking_url,
+        status: row.status,
+        shippedAt: row.shipped_at ? new Date(row.shipped_at) : null,
+        deliveredAt: row.delivered_at ? new Date(row.delivered_at) : null,
+        estimatedDeliveryDate: row.estimated_delivery_date ? new Date(row.estimated_delivery_date) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.order && row.order_id) {
+        shipmentObj.order = prisma.order.findUnique({
+          where: { id: row.order_id },
+          include: typeof include.order === 'object' ? include.order.include : undefined
+        });
+      }
+
+      if (include?.items) {
+        shipmentObj.items = prisma.shipmentItem.findMany({
+          where: { shipmentId: row.id },
+          include: typeof include.items === 'object' ? include.items.include : undefined
+        });
+      }
+
+      if (include?.events) {
+        shipmentObj.events = prisma.shipmentEvent.findMany({
+          where: { shipmentId: row.id },
+          orderBy: { occurredAt: 'asc' }
+        });
+      }
+
+      return shipmentObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.shipmentNumber) { sql += ' AND shipment_number = ?'; params.push(where.shipmentNumber); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.trackingNumber) { sql += ' AND tracking_number = ?'; params.push(where.trackingNumber); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.shipment.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM shipments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.status) {
+        if (Array.isArray(where.status.in)) {
+          sql += ` AND status IN (${where.status.in.map(() => '?').join(', ')})`;
+          params.push(...where.status.in);
+        } else {
+          sql += ' AND status = ?';
+          params.push(where.status);
+        }
+      }
+      if (where?.carrier) { sql += ' AND carrier = ?'; params.push(where.carrier); }
+      if (where?.trackingNumber) { sql += ' AND tracking_number = ?'; params.push(where.trackingNumber); }
+      if (where?.shipmentNumber) {
+        if (where.shipmentNumber.contains) {
+          sql += ' AND LOWER(shipment_number) LIKE LOWER(?)';
+          params.push(`%${where.shipmentNumber.contains}%`);
+        } else {
+          sql += ' AND shipment_number = ?';
+          params.push(where.shipmentNumber);
+        }
+      }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shipment.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const shippedAt = data.shippedAt instanceof Date ? data.shippedAt.toISOString() : (data.shippedAt || null);
+      const deliveredAt = data.deliveredAt instanceof Date ? data.deliveredAt.toISOString() : (data.deliveredAt || null);
+      const estimatedDeliveryDate = data.estimatedDeliveryDate instanceof Date ? data.estimatedDeliveryDate.toISOString() : (data.estimatedDeliveryDate || null);
+
+      db.prepare(`
+        INSERT INTO shipments (
+          id, order_id, shipment_number, carrier, service_level, tracking_number,
+          tracking_url, status, shipped_at, delivered_at, estimated_delivery_date, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderId,
+        data.shipmentNumber,
+        data.carrier || null,
+        data.serviceLevel || null,
+        data.trackingNumber || null,
+        data.trackingUrl || null,
+        data.status || 'PENDING',
+        shippedAt,
+        deliveredAt,
+        estimatedDeliveryDate,
+        now,
+        now
+      );
+
+      if (data.items?.create) {
+        const items = Array.isArray(data.items.create) ? data.items.create : [data.items.create];
+        for (const itm of items) {
+          prisma.shipmentItem.create({
+            data: {
+              ...itm,
+              shipmentId: id
+            }
+          });
+        }
+      }
+
+      if (data.events?.create) {
+        const events = Array.isArray(data.events.create) ? data.events.create : [data.events.create];
+        for (const evt of events) {
+          prisma.shipmentEvent.create({
+            data: {
+              ...evt,
+              shipmentId: id
+            }
+          });
+        }
+      }
+
+      return prisma.shipment.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.shipment.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.carrier !== undefined) { updates.push('carrier = ?'); params.push(data.carrier); }
+      if (data.serviceLevel !== undefined) { updates.push('service_level = ?'); params.push(data.serviceLevel); }
+      if (data.trackingNumber !== undefined) { updates.push('tracking_number = ?'); params.push(data.trackingNumber); }
+      if (data.trackingUrl !== undefined) { updates.push('tracking_url = ?'); params.push(data.trackingUrl); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.shippedAt !== undefined) {
+        const val = data.shippedAt instanceof Date ? data.shippedAt.toISOString() : (data.shippedAt || null);
+        updates.push('shipped_at = ?');
+        params.push(val);
+      }
+      if (data.deliveredAt !== undefined) {
+        const val = data.deliveredAt instanceof Date ? data.deliveredAt.toISOString() : (data.deliveredAt || null);
+        updates.push('delivered_at = ?');
+        params.push(val);
+      }
+      if (data.estimatedDeliveryDate !== undefined) {
+        const val = data.estimatedDeliveryDate instanceof Date ? data.estimatedDeliveryDate.toISOString() : (data.estimatedDeliveryDate || null);
+        updates.push('estimated_delivery_date = ?');
+        params.push(val);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE shipments SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.shipment.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.shipment.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM shipments WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipments').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM shipments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  shipmentItem: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM shipment_items WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      const itemObj: any = {
+        id: row.id,
+        shipmentId: row.shipment_id,
+        orderItemId: row.order_item_id,
+        quantity: Number(row.quantity),
+        createdAt: new Date(row.created_at)
+      };
+
+      if (include?.orderItem && row.order_item_id) {
+        itemObj.orderItem = prisma.orderItem.findUnique({ where: { id: row.order_item_id } });
+      }
+
+      return itemObj;
+    },
+
+    findMany: ({ where, include }: any = {}) => {
+      let sql = 'SELECT id FROM shipment_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shipmentId) { sql += ' AND shipment_id = ?'; params.push(where.shipmentId); }
+      if (where?.orderItemId) { sql += ' AND order_item_id = ?'; params.push(where.orderItemId); }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shipmentItem.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipment_items (id, shipment_id, order_item_id, quantity, created_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(id, data.shipmentId, data.orderItemId, Number(data.quantity || 1), now);
+
+      return prisma.shipmentItem.findUnique({ where: { id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipment_items').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipment_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shipmentId) { sql += ' AND shipment_id = ?'; params.push(where.shipmentId); }
+      if (where?.orderItemId) { sql += ' AND order_item_id = ?'; params.push(where.orderItemId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  shipmentEvent: {
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const row: any = db.prepare('SELECT * FROM shipment_events WHERE id = ?').get(where.id);
+      if (!row) return null;
+      return {
+        id: row.id,
+        shipmentId: row.shipment_id,
+        status: row.status,
+        eventCode: row.event_code,
+        description: row.description,
+        location: row.location,
+        occurredAt: new Date(row.occurred_at),
+        source: row.source,
+        createdAt: new Date(row.created_at)
+      };
+    },
+
+    findMany: ({ where, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM shipment_events WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shipmentId) { sql += ' AND shipment_id = ?'; params.push(where.shipmentId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.occurredAt) sql += ` ORDER BY occurred_at ${orderBy.occurredAt.toUpperCase()}`;
+      else sql += ' ORDER BY occurred_at ASC';
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.shipmentEvent.findUnique({ where: { id: r.id } }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const occurredAt = data.occurredAt instanceof Date ? data.occurredAt.toISOString() : (data.occurredAt || now);
+
+      db.prepare(`
+        INSERT INTO shipment_events (id, shipment_id, status, event_code, description, location, occurred_at, source, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.shipmentId,
+        data.status,
+        data.eventCode || null,
+        data.description || null,
+        data.location || null,
+        occurredAt,
+        data.source || 'SYSTEM',
+        now
+      );
+
+      return prisma.shipmentEvent.findUnique({ where: { id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM shipment_events').run();
+        return;
+      }
+      let sql = 'DELETE FROM shipment_events WHERE 1=1';
+      const params: any[] = [];
+      if (where?.shipmentId) { sql += ' AND shipment_id = ?'; params.push(where.shipmentId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  shipmentSequence: {
+    findUnique: ({ where }: { where: { year?: number; id?: string } }) => {
+      let row: any = null;
+      if (where.year !== undefined) {
+        row = db.prepare('SELECT * FROM shipment_sequences WHERE year = ?').get(where.year);
+      } else if (where.id) {
+        row = db.prepare('SELECT * FROM shipment_sequences WHERE id = ?').get(where.id);
+      }
+      if (!row) return null;
+      return {
+        id: row.id,
+        year: Number(row.year),
+        currentNumber: Number(row.current_number),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || `SHIPMENT_SEQ_${data.year}`;
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO shipment_sequences (id, year, current_number, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(id, data.year, Number(data.currentNumber || 0), now, now);
+
+      return prisma.shipmentSequence.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { year?: number; id?: string }; data: any }) => {
+      const now = new Date().toISOString();
+      if (where.year !== undefined) {
+        db.prepare('UPDATE shipment_sequences SET current_number = ?, updated_at = ? WHERE year = ?')
+          .run(Number(data.currentNumber), now, where.year);
+        return prisma.shipmentSequence.findUnique({ where: { year: where.year } });
+      } else {
+        db.prepare('UPDATE shipment_sequences SET current_number = ?, updated_at = ? WHERE id = ?')
+          .run(Number(data.currentNumber), now, where.id);
+        return prisma.shipmentSequence.findUnique({ where: { id: where.id } });
+      }
+    },
+
+    upsert: ({ where, create, update }: any) => {
+      const existing = prisma.shipmentSequence.findUnique({ where });
+      if (existing) {
+        return prisma.shipmentSequence.update({ where, data: update });
+      } else {
+        return prisma.shipmentSequence.create({ data: create });
+      }
     }
   },
 

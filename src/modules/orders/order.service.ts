@@ -163,10 +163,42 @@ export class OrderService {
       addresses
     });
 
-    // 8. Inventory boundary reservation
+    // 8. Create historical immutable OrderShippingSnapshot
+    try {
+      const shippingAddr = checkoutContract.shippingAddress;
+      const postalCode = shippingAddr?.postalCode || '302001';
+      const zone = await prisma.shippingZonePostalCode.findFirst({
+        where: { postalCode, status: 'ACTIVE' },
+        include: { zone: true }
+      });
+
+      const zoneName = zone?.zone?.name || 'Heritage Domestic Logistics Zone';
+      const zoneCode = zone?.zone?.code || 'IN_DOMESTIC';
+
+      await prisma.orderShippingSnapshot.create({
+        data: {
+          orderId: createdOrder.id,
+          zoneCode,
+          zoneName,
+          methodCode: 'STANDARD',
+          methodName: 'Standard Insured Art Delivery',
+          carrier: 'LAGOREE_WHITE_GLOVE',
+          serviceLevel: 'COMPLIMENTARY_INSURED',
+          estimatedMinDays: 3,
+          estimatedMaxDays: 7,
+          shippingAmount: Number(createdOrder.shippingTotal || 0),
+          currency: createdOrder.currency || 'INR',
+          postalCode
+        }
+      });
+    } catch {
+      // Gracefully continue if snapshot creation already exists or fails non-critically
+    }
+
+    // 9. Inventory boundary reservation
     await this.inventoryProvider.reserveForOrder(createdOrder);
 
-    // 9. Audit event
+    // 10. Audit event
     AuditService.log({
       action: 'ORDER_CREATED',
       module: 'ORDERS',

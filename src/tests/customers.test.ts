@@ -160,7 +160,24 @@ async function runCustomerTests() {
     }
     orderManagerToken = generateAccessToken({ sub: ordUser.id, roleId: orderManagerRole!.id });
 
-    // Clean customer database fixtures
+    // Clean customer database fixtures and dependent checkout/order data
+    try {
+      prisma.shipmentEvent.deleteMany({});
+      prisma.shipmentItem.deleteMany({});
+      prisma.shipment.deleteMany({});
+      prisma.orderShippingSnapshot.deleteMany({});
+      prisma.paymentAttempt.deleteMany({});
+      prisma.paymentRefund.deleteMany({});
+      prisma.payment.deleteMany({});
+      prisma.orderItem.deleteMany({});
+      prisma.orderStatusHistory.deleteMany({});
+      prisma.order.deleteMany({});
+      prisma.checkoutAddress.deleteMany({});
+      prisma.checkoutItem.deleteMany({});
+      prisma.checkoutSession.deleteMany({});
+      prisma.cartItem.deleteMany({});
+      prisma.cart.deleteMany({});
+    } catch {}
     prisma.customerAddress.deleteMany({});
     prisma.customerSession.deleteMany({});
     prisma.customerPasswordReset.deleteMany({});
