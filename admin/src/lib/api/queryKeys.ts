@@ -78,6 +78,8 @@ export const queryKeys = {
     lists: () => ['media', 'list'] as const,
     list: (params?: Record<string, any>) => ['media', 'list', params] as const,
     folders: ['media', 'folders'] as const,
+    folder: (id: string) => ['media', 'folders', id] as const,
+    orphans: (params?: Record<string, any>) => ['media', 'orphans', params] as const,
     detail: (id: string) => ['media', 'detail', id] as const,
   },
   seo: {

@@ -1,4 +1,4 @@
-# Lagoree Arts — Admin Web Application (Phase 5: Collection Management)
+# Lagoree Arts — Admin Web Application (Phase 6: Media Library Management)
 
 Luxury-heritage administrative web application for **Lagoree Arts**.
 
@@ -25,6 +25,15 @@ admin/
 │   │   ├── auth/
 │   │   │   ├── Can.tsx          # Declarative permission check component
 │   │   │   └── ProtectedRoute.tsx # Route protection and role barrier
+│   │   ├── media/
+│   │   │   ├── FolderModal.tsx  # Create / Rename folder modal with slug generation
+│   │   │   ├── FolderTree.tsx   # Nested hierarchy tree sidebar with actions
+│   │   │   ├── MediaDetailDrawer.tsx # Slide-out inspector, metadata editor & CDN copy
+│   │   │   ├── MediaGrid.tsx    # Card thumbnail grid with multi-select
+│   │   │   ├── MediaMoveModal.tsx # Move single/bulk assets across folder hierarchy
+│   │   │   ├── MediaPicker.tsx  # Universal reusable picker modal (single & multi)
+│   │   │   ├── MediaTable.tsx   # Structured list table with sortable columns
+│   │   │   └── MediaUploader.tsx # Multi-file drag & drop queue with progress
 │   │   ├── collections/
 │   │   │   ├── CollectionMediaManager.tsx # Cover/banner & auxiliary media gallery manager
 │   │   │   ├── CollectionPreview.tsx # Storefront simulation with desktop/mobile switcher
@@ -107,6 +116,9 @@ admin/
 │   │   │   └── UnauthorizedPage.tsx # 403 Forbidden access barrier
 │   │   ├── dashboard/
 │   │   │   └── DashboardPage.tsx # Master operational dashboard
+│   │   ├── media/
+│   │   │   ├── MediaLibraryPage.tsx # Master media library, folders & nested browsing
+│   │   │   └── MediaOrphansPage.tsx # Dedicated unattached / orphaned assets view
 │   │   ├── collections/
 │   │   │   ├── CollectionListPage.tsx # Table, search, status/type/featured filters & quick sort
 │   │   │   ├── CollectionCreatePage.tsx # Tabbed create form (General, Merchandising, Media, SEO)
@@ -137,6 +149,7 @@ admin/
 │   │   ├── useDashboard.ts     # TanStack Query hooks for stats & recent records
 │   │   ├── useDebounce.ts      # Debouncing hook (250-300ms)
 │   │   ├── useLocalStorage.ts  # Persistent storage hook
+│   │   ├── useMedia.ts         # Media assets, folders, orphans, uploads & movement hooks
 │   │   ├── useProductMedia.ts  # Media gallery attachment query & mutations
 │   │   ├── useProductSeo.ts    # SEO metadata query & mutations
 │   │   ├── useProducts.ts      # Master product query & CRUD mutations
@@ -151,7 +164,7 @@ admin/
 │       │   ├── client.ts       # Central fetch client with token refresh & retry queue
 │       │   ├── collections.ts  # Curated collections API client
 │       │   ├── customers.ts    # Customers API client
-│       │   ├── media.ts        # Media library & product media API client
+│       │   ├── media.ts        # Media library & entity media API client
 │       │   ├── orders.ts       # Orders API client
 │       │   ├── products.ts     # Products CRUD & merchandising API client
 │       │   ├── queryKeys.ts    # Centralized TanStack Query key factories
@@ -166,7 +179,8 @@ admin/
 │   │   ├── admin-phase2.test.mjs   # Dashboard & Global Component test suite (22 tests)
 │   │   ├── admin-phase3.test.mjs   # Product Management test suite (64 tests)
 │   │   ├── admin-phase4.test.mjs   # Category & Attribute Management test suite (68 tests)
-│   │   └── admin-phase5.test.mjs   # Collection Management test suite (68 tests)
+│   │   ├── admin-phase5.test.mjs   # Collection Management test suite (68 tests)
+│   │   └── admin-phase6.test.mjs   # Media Library Management test suite (70 tests)
 ├── index.html
 ├── package.json
 ├── tailwind.config.js
@@ -190,7 +204,7 @@ npm run typecheck
 # Build for production
 npm run build
 
-# Run complete test suite (Phases 1-5: 225 automated unit & integration tests passing 100%)
+# Run complete test suite (Phases 1-6: 295 automated unit & integration tests passing 100%)
 npm run test
 ```
 

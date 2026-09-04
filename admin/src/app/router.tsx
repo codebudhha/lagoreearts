@@ -22,6 +22,8 @@ import { CollectionListPage } from '../features/collections/CollectionListPage';
 import { CollectionCreatePage } from '../features/collections/CollectionCreatePage';
 import { CollectionDetailPage } from '../features/collections/CollectionDetailPage';
 import { CollectionEditPage } from '../features/collections/CollectionEditPage';
+import { MediaLibraryPage } from '../features/media/MediaLibraryPage';
+import { MediaOrphansPage } from '../features/media/MediaOrphansPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -285,16 +287,36 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Media Asset Library & Folders
       {
         path: 'media',
         element: (
           <ProtectedRoute permission="media.read">
-            <ModulePlaceholder
-              title="Media Asset Library"
-              subtitle="Central storage for high-resolution images, videos, and documents."
-              moduleName="Media Library"
-              permissionRequired="media.read"
-            />
+            <MediaLibraryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'media/folders',
+        element: (
+          <ProtectedRoute permission="media.read">
+            <MediaLibraryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'media/folders/:id',
+        element: (
+          <ProtectedRoute permission="media.read">
+            <MediaLibraryPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'media/orphans',
+        element: (
+          <ProtectedRoute permission="media.read">
+            <MediaOrphansPage />
           </ProtectedRoute>
         ),
       },
