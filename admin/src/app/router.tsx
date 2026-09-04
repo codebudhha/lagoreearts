@@ -5,6 +5,11 @@ import { UnauthorizedPage } from '../features/auth/UnauthorizedPage';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { AdminLayout } from '../components/layout/AdminLayout';
 import { ProtectedRoute } from '../components/auth/ProtectedRoute';
+import { ProductListPage } from '../features/products/ProductListPage';
+import { ProductCreatePage } from '../features/products/ProductCreatePage';
+import { ProductDetailPage } from '../features/products/ProductDetailPage';
+import { ProductEditPage } from '../features/products/ProductEditPage';
+import { ProductPreviewPage } from '../features/products/ProductPreviewPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -41,12 +46,39 @@ export const router = createBrowserRouter([
         path: 'products',
         element: (
           <ProtectedRoute permission="products.read">
-            <ModulePlaceholder
-              title="Products & Artworks"
-              subtitle="Manage product listings, variants, pricing, and inventories."
-              moduleName="Products"
-              permissionRequired="products.read"
-            />
+            <ProductListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'products/new',
+        element: (
+          <ProtectedRoute permission="product.create">
+            <ProductCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'products/:id',
+        element: (
+          <ProtectedRoute permission="products.read">
+            <ProductDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'products/:id/edit',
+        element: (
+          <ProtectedRoute permission="products.read">
+            <ProductEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'products/:id/preview',
+        element: (
+          <ProtectedRoute permission="products.read">
+            <ProductPreviewPage />
           </ProtectedRoute>
         ),
       },

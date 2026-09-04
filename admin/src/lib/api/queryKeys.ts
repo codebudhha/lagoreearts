@@ -25,6 +25,12 @@ export const queryKeys = {
     list: (params?: Record<string, any>) => ['products', 'list', params] as const,
     detail: (id: string) => ['products', 'detail', id] as const,
     lowStock: () => ['products', 'low-stock'] as const,
+    attributes: (id: string) => ['products', 'attributes', id] as const,
+    collections: (id: string) => ['products', 'collections', id] as const,
+    media: (id: string) => ['products', 'media', id] as const,
+    options: (id: string) => ['products', 'options', id] as const,
+    variants: (id: string) => ['products', 'variants', id] as const,
+    seo: (id: string) => ['products', 'seo', id] as const,
   },
   customers: {
     all: ['customers'] as const,
@@ -38,10 +44,30 @@ export const queryKeys = {
   },
   categories: {
     all: ['categories'] as const,
+    tree: ['categories', 'tree'] as const,
     list: (params?: Record<string, any>) => ['categories', 'list', params] as const,
+    detail: (id: string) => ['categories', 'detail', id] as const,
+    attributes: (categoryId: string) => ['categories', 'attributes', categoryId] as const,
   },
   collections: {
     all: ['collections'] as const,
     list: (params?: Record<string, any>) => ['collections', 'list', params] as const,
+    detail: (id: string) => ['collections', 'detail', id] as const,
+  },
+  attributes: {
+    all: ['attributes'] as const,
+    list: (params?: Record<string, any>) => ['attributes', 'list', params] as const,
+    detail: (id: string) => ['attributes', 'detail', id] as const,
+    values: (attributeId: string) => ['attributes', 'values', attributeId] as const,
+  },
+  media: {
+    all: ['media'] as const,
+    list: (params?: Record<string, any>) => ['media', 'list', params] as const,
+    folders: ['media', 'folders'] as const,
+    detail: (id: string) => ['media', 'detail', id] as const,
+  },
+  seo: {
+    detail: (entityType: string, entityId: string) => ['seo', entityType, entityId] as const,
+    settings: ['seo', 'settings'] as const,
   },
 };
