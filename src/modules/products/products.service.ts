@@ -4,6 +4,7 @@ import { CategoriesRepository } from '../categories/categories.repository.ts';
 import { CollectionsRepository } from '../collections/collections.repository.ts';
 import { AttributesRepository } from '../attributes/attributes.repository.ts';
 import { AuditService } from '../../audit/audit.service.ts';
+import { RecommendationService } from '../recommendations/recommendation.service.ts';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -683,7 +684,14 @@ export class ProductsService {
     if (!product || product.status !== 'ACTIVE') {
       throw { status: 404, code: 'NOT_FOUND', message: 'Product not found' };
     }
-    return this.formatPublicProduct(product);
+    const formatted = this.formatPublicProduct(product);
+    try {
+      const recs = await RecommendationService.getPublicRecommendations(product.id);
+      formatted.recommendations = recs.recommendations;
+    } catch {
+      formatted.recommendations = { crossSell: [], upsell: [], related: [] };
+    }
+    return formatted;
   }
 
   /**

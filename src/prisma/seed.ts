@@ -185,6 +185,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Shipment', slug: 'shipment.update', module: 'SHIPPING', description: 'Update shipment tracking and details' },
   { name: 'Manage Shipment Status', slug: 'shipment.manage-status', module: 'SHIPPING', description: 'Advance shipment lifecycle status' },
 
+  // CROSS-SELL & UPSELL RECOMMENDATIONS (MODULE 24)
+  { name: 'View Recommendations', slug: 'recommendation.view', module: 'RECOMMENDATIONS', description: 'View product cross-sell and upsell recommendations' },
+  { name: 'Create Recommendation', slug: 'recommendation.create', module: 'RECOMMENDATIONS', description: 'Create product cross-sell and upsell relationships' },
+  { name: 'Update Recommendation', slug: 'recommendation.update', module: 'RECOMMENDATIONS', description: 'Modify recommendation details and status' },
+  { name: 'Delete Recommendation', slug: 'recommendation.delete', module: 'RECOMMENDATIONS', description: 'Delete recommendation relationships' },
+  { name: 'Reorder Recommendations', slug: 'recommendation.reorder', module: 'RECOMMENDATIONS', description: 'Reorder product recommendations' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -224,6 +231,7 @@ export const ROLES_DATA = [
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
       'lookbook.view', 'lookbook.create', 'lookbook.update',
       'navigation.view', 'navigation.create', 'navigation.update',
+      'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.delete', 'recommendation.reorder',
       'customer.view',
       'seo.view', 'seo.update'
     ]
@@ -254,6 +262,7 @@ export const ROLES_DATA = [
       'journal.delete', 'journal-author.delete', 'journal-category.delete', 'journal-tag.delete',
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.delete', 'lookbook.publish',
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.delete', 'navigation.publish',
+      'recommendation.view',
       'customer.view',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
@@ -272,7 +281,8 @@ export const ROLES_DATA = [
       'shipment.view', 'shipment.create', 'shipment.update', 'shipment.manage-status',
       'cart.view',
       'checkout.view',
-      'customer.view', 'customer.address.view', 'customer.status.update'
+      'customer.view', 'customer.address.view', 'customer.status.update',
+      'recommendation.view'
     ]
   },
   {
@@ -292,7 +302,8 @@ export const ROLES_DATA = [
       'journal.view', 'journal.create', 'journal.update', 'journal.publish',
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.publish',
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.publish',
-      'journal-author.view', 'journal-category.view', 'journal-tag.view'
+      'journal-author.view', 'journal-category.view', 'journal-tag.view',
+      'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.reorder'
     ]
   }
 ];

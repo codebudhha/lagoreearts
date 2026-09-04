@@ -1663,6 +1663,26 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS product_recommendations (
+    id TEXT PRIMARY KEY,
+    source_product_id TEXT NOT NULL,
+    target_product_id TEXT NOT NULL,
+    type TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (source_product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (target_product_id) REFERENCES products(id) ON DELETE CASCADE,
+    UNIQUE (source_product_id, target_product_id, type)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_prod_rec_source ON product_recommendations(source_product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_rec_target ON product_recommendations(target_product_id);
+  CREATE INDEX IF NOT EXISTS idx_prod_rec_type ON product_recommendations(type);
+  CREATE INDEX IF NOT EXISTS idx_prod_rec_is_active ON product_recommendations(is_active);
+  CREATE INDEX IF NOT EXISTS idx_prod_rec_sort_order ON product_recommendations(sort_order);
 `);
 
 /**
@@ -3314,6 +3334,7 @@ export const prisma = {
 
     delete: ({ where }: { where: { id: string } }) => {
       const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true, sanskritEditProfile: true, artists: true } });
+      db.prepare('DELETE FROM product_recommendations WHERE source_product_id = ? OR target_product_id = ?').run(where.id, where.id);
       db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
@@ -12865,6 +12886,177 @@ export const prisma = {
       } else {
         return prisma.shipmentSequence.create({ data: create });
       }
+    }
+  },
+
+  productRecommendation: {
+    findUnique: ({ where, include }: { where: { id?: string; sourceProductId_targetProductId_type?: { sourceProductId: string; targetProductId: string; type: string } }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM product_recommendations WHERE id = ?').get(where.id);
+      } else if (where.sourceProductId_targetProductId_type) {
+        row = db.prepare('SELECT * FROM product_recommendations WHERE source_product_id = ? AND target_product_id = ? AND type = ?')
+          .get(where.sourceProductId_targetProductId_type.sourceProductId, where.sourceProductId_targetProductId_type.targetProductId, where.sourceProductId_targetProductId_type.type);
+      }
+      if (!row) return null;
+
+      const obj: any = {
+        id: row.id,
+        sourceProductId: row.source_product_id,
+        targetProductId: row.target_product_id,
+        type: row.type,
+        sortOrder: Number(row.sort_order),
+        isActive: Boolean(row.is_active),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.sourceProduct) {
+        obj.sourceProduct = prisma.product.findUnique({ where: { id: row.source_product_id }, include: typeof include.sourceProduct === 'object' ? include.sourceProduct.include : undefined });
+      }
+      if (include?.targetProduct) {
+        obj.targetProduct = prisma.product.findUnique({ where: { id: row.target_product_id }, include: typeof include.targetProduct === 'object' ? include.targetProduct.include : undefined });
+      }
+
+      return obj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      const results = prisma.productRecommendation.findMany({ where, include, orderBy, take: 1 });
+      return results[0] || null;
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM product_recommendations WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) {
+        if (where.id.in && Array.isArray(where.id.in)) {
+          sql += ` AND id IN (${where.id.in.map(() => '?').join(', ')})`;
+          params.push(...where.id.in);
+        } else {
+          sql += ' AND id = ?';
+          params.push(where.id);
+        }
+      }
+      if (where?.sourceProductId) {
+        if (where.sourceProductId.in && Array.isArray(where.sourceProductId.in)) {
+          sql += ` AND source_product_id IN (${where.sourceProductId.in.map(() => '?').join(', ')})`;
+          params.push(...where.sourceProductId.in);
+        } else {
+          sql += ' AND source_product_id = ?';
+          params.push(where.sourceProductId);
+        }
+      }
+      if (where?.targetProductId) {
+        if (where.targetProductId.in && Array.isArray(where.targetProductId.in)) {
+          sql += ` AND target_product_id IN (${where.targetProductId.in.map(() => '?').join(', ')})`;
+          params.push(...where.targetProductId.in);
+        } else {
+          sql += ' AND target_product_id = ?';
+          params.push(where.targetProductId);
+        }
+      }
+      if (where?.type) {
+        if (Array.isArray(where.type.in)) {
+          sql += ` AND type IN (${where.type.in.map(() => '?').join(', ')})`;
+          params.push(...where.type.in);
+        } else {
+          sql += ' AND type = ?';
+          params.push(where.type);
+        }
+      }
+      if (where?.isActive !== undefined) {
+        sql += ' AND is_active = ?';
+        params.push(where.isActive ? 1 : 0);
+      }
+
+      if (orderBy) {
+        if (orderBy.sortOrder) sql += ` ORDER BY sort_order ${orderBy.sortOrder.toUpperCase()}`;
+        else if (orderBy.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        else sql += ' ORDER BY sort_order ASC, created_at ASC';
+      } else {
+        sql += ' ORDER BY sort_order ASC, created_at ASC';
+      }
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.productRecommendation.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const isActive = data.isActive !== undefined ? (data.isActive ? 1 : 0) : 1;
+      const sortOrder = data.sortOrder !== undefined ? Number(data.sortOrder) : 0;
+
+      db.prepare(`
+        INSERT INTO product_recommendations (id, source_product_id, target_product_id, type, sort_order, is_active, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(id, data.sourceProductId, data.targetProductId, data.type, sortOrder, isActive, now, now);
+
+      return prisma.productRecommendation.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.productRecommendation.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.type !== undefined) { updates.push('type = ?'); params.push(data.type); }
+      if (data.sortOrder !== undefined) { updates.push('sort_order = ?'); params.push(Number(data.sortOrder)); }
+      if (data.isActive !== undefined) { updates.push('is_active = ?'); params.push(data.isActive ? 1 : 0); }
+      if (data.targetProductId !== undefined) { updates.push('target_product_id = ?'); params.push(data.targetProductId); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE product_recommendations SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.productRecommendation.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.productRecommendation.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM product_recommendations WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM product_recommendations').run();
+        return;
+      }
+      let sql = 'DELETE FROM product_recommendations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.sourceProductId) { sql += ' AND source_product_id = ?'; params.push(where.sourceProductId); }
+      if (where?.targetProductId) { sql += ' AND target_product_id = ?'; params.push(where.targetProductId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM product_recommendations WHERE 1=1';
+      const params: any[] = [];
+      if (where?.sourceProductId) { sql += ' AND source_product_id = ?'; params.push(where.sourceProductId); }
+      if (where?.targetProductId) { sql += ' AND target_product_id = ?'; params.push(where.targetProductId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+      if (where?.isActive !== undefined) { sql += ' AND is_active = ?'; params.push(where.isActive ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
     }
   },
 

@@ -47,6 +47,7 @@ import { orderRouter, customerOrderRouter } from './modules/orders/order.routes.
 import { adminOrderRouter } from './modules/orders/admin-order.routes.ts';
 import { customerPaymentRouter, webhookPaymentRouter, adminPaymentRouter } from './modules/payments/payment.routes.ts';
 import { customerShippingRouter, adminShippingRouter, adminShipmentRouter, publicShippingRouter } from './modules/shipping/shipping.routes.ts';
+import { publicRecommendationRoutes, adminRecommendationRoutes, adminProductRecommendationRoutes } from './modules/recommendations/recommendation.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -198,7 +199,8 @@ export function createApp() {
         'Module 19: Checkout System',
         'Module 20: Order Management',
         'Module 21: Payments & Gateway Orchestration',
-        'Module 22: Shipping & Delivery Management'
+        'Module 22: Shipping & Delivery Management',
+        'Module 24: Cross-sell & Upsell Recommendations'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -256,6 +258,8 @@ export function createApp() {
   app.use('/api/v1/admin/attributes', adminAttributesRoutes);
   app.use('/api/v1/admin/collections', adminCollectionMediaRouter);
   app.use('/api/v1/admin/collections', adminCollectionsRoutes);
+  app.use('/api/v1/admin/products', adminProductRecommendationRoutes);
+  app.use('/api/v1/admin/product-recommendations', adminRecommendationRoutes);
   app.use('/api/v1/admin/products', adminProductArtistsRouter);
   app.use('/api/v1/admin/products', adminProductMediaRouter);
   app.use('/api/v1/admin/products', adminVariantMediaRouter);
@@ -273,6 +277,7 @@ export function createApp() {
   app.use('/api/v1/categories', publicCategoriesRoutes);
   app.use('/api/v1/attributes', publicAttributesRoutes);
   app.use('/api/v1/collections', publicCollectionsRoutes);
+  app.use('/api/v1/products', publicRecommendationRoutes);
   app.use('/api/v1/products', publicProductsRoutes);
   app.use('/api/v1/antiques', publicAntiquesRouter);
   app.use('/api/v1/sanskrit-edit', publicSanskritEditRouter);

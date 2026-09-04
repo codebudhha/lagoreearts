@@ -509,6 +509,8 @@ model Product {
   cartItems         CartItem[]
   checkoutItems     CheckoutItem[]
   orderItems        OrderItem[]
+  recommendationsFrom ProductRecommendation[] @relation("SourceProductRecommendations")
+  recommendationsTo   ProductRecommendation[] @relation("TargetProductRecommendations")
 
   @@index([slug])
   @@index([sku])
@@ -2315,6 +2317,35 @@ model ShipmentSequence {
   @@unique([year])
   @@map("shipment_sequences")
 }
+
+enum RecommendationType {
+  CROSS_SELL
+  UPSELL
+  RELATED
+}
+
+model ProductRecommendation {
+  id              String             @id @default(uuid()) @db.VarChar(36)
+  sourceProductId String             @map("source_product_id") @db.VarChar(36)
+  targetProductId String             @map("target_product_id") @db.VarChar(36)
+  type            RecommendationType
+  sortOrder       Int                @default(0) @map("sort_order")
+  isActive        Boolean            @default(true) @map("is_active")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  sourceProduct   Product            @relation("SourceProductRecommendations", fields: [sourceProductId], references: [id], onDelete: Cascade)
+  targetProduct   Product            @relation("TargetProductRecommendations", fields: [targetProductId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceProductId, targetProductId, type], name: "uq_source_target_type")
+  @@index([sourceProductId])
+  @@index([targetProductId])
+  @@index([type])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("product_recommendations")
+}
+
 
 
 
