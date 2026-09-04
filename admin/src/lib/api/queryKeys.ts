@@ -107,4 +107,25 @@ export const queryKeys = {
     list: (params?: Record<string, any>) => ['sanskrit-edit', 'list', params] as const,
     profile: (productId: string) => ['sanskrit-edit', 'profile', productId] as const,
   },
+  homepage: {
+    all: ['homepage'] as const,
+    lists: () => ['homepage', 'list'] as const,
+    list: (params?: Record<string, any>) => ['homepage', 'list', params] as const,
+    detail: (id: string) => ['homepage', 'detail', id] as const,
+    sections: (homepageId: string) => ['homepage', 'sections', homepageId] as const,
+    section: (homepageId: string, sectionId: string) =>
+      ['homepage', 'sections', homepageId, sectionId] as const,
+  },
+  journal: {
+    all: ['journal'] as const,
+    posts: () => ['journal', 'posts'] as const,
+    postList: (params?: Record<string, any>) => ['journal', 'posts', params] as const,
+    post: (id: string) => ['journal', 'post', id] as const,
+    authors: (params?: Record<string, any>) => ['journal', 'authors', params] as const,
+    author: (id: string) => ['journal', 'author', id] as const,
+    categories: (params?: Record<string, any>) => ['journal', 'categories', params] as const,
+    category: (id: string) => ['journal', 'category', id] as const,
+    tags: (params?: Record<string, any>) => ['journal', 'tags', params] as const,
+    tag: (id: string) => ['journal', 'tag', id] as const,
+  },
 };

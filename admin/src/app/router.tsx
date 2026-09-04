@@ -35,6 +35,17 @@ import { SanskritEditListPage } from '../features/sanskrit/SanskritEditListPage'
 import { SanskritEditCreatePage } from '../features/sanskrit/SanskritEditCreatePage';
 import { SanskritEditDetailPage } from '../features/sanskrit/SanskritEditDetailPage';
 import { SanskritEditEditPage } from '../features/sanskrit/SanskritEditEditPage';
+import { HomepageListPage } from '../features/homepage/HomepageListPage';
+import { HomepageEditPage } from '../features/homepage/HomepageEditPage';
+import { HomepagePreviewPage } from '../features/homepage/HomepagePreviewPage';
+import { JournalListPage } from '../features/journal/JournalListPage';
+import { JournalCreatePage } from '../features/journal/JournalCreatePage';
+import { JournalDetailPage } from '../features/journal/JournalDetailPage';
+import { JournalEditPage } from '../features/journal/JournalEditPage';
+import { JournalPreviewPage } from '../features/journal/JournalPreviewPage';
+import { JournalAuthorsPage } from '../features/journal/JournalAuthorsPage';
+import { JournalCategoriesPage } from '../features/journal/JournalCategoriesPage';
+import { JournalTagsPage } from '../features/journal/JournalTagsPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -301,30 +312,106 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
-      // Content & Editorial
+      // Content & Editorial — Homepage CMS
       {
-        path: 'cms',
+        path: 'homepage',
         element: (
-          <ProtectedRoute permission="cms.read">
-            <ModulePlaceholder
-              title="Homepage CMS"
-              subtitle="Control hero slides, promo blocks, and editorial showcases."
-              moduleName="Homepage CMS"
-              permissionRequired="cms.read"
-            />
+          <ProtectedRoute permission="homepage.read">
+            <HomepageListPage />
           </ProtectedRoute>
         ),
       },
       {
+        path: 'homepage/edit',
+        element: (
+          <ProtectedRoute permission="homepage.update">
+            <HomepageEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'homepage/:id/edit',
+        element: (
+          <ProtectedRoute permission="homepage.update">
+            <HomepageEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'homepage/:id/preview',
+        element: (
+          <ProtectedRoute permission="homepage.read">
+            <HomepagePreviewPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'cms',
+        element: <Navigate to="/admin/homepage" replace />,
+      },
+
+      // Content & Editorial — Journal & Blog
+      {
         path: 'journal',
         element: (
           <ProtectedRoute permission="journal.read">
-            <ModulePlaceholder
-              title="Journal & Stories"
-              subtitle="Publish heritage articles, art history essays, and cultural narratives."
-              moduleName="Journal / Blog"
-              permissionRequired="journal.read"
-            />
+            <JournalListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/new',
+        element: (
+          <ProtectedRoute permission="journal.create">
+            <JournalCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/authors',
+        element: (
+          <ProtectedRoute permission="journal.read">
+            <JournalAuthorsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/categories',
+        element: (
+          <ProtectedRoute permission="journal.read">
+            <JournalCategoriesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/tags',
+        element: (
+          <ProtectedRoute permission="journal.read">
+            <JournalTagsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/:id',
+        element: (
+          <ProtectedRoute permission="journal.read">
+            <JournalDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/:id/edit',
+        element: (
+          <ProtectedRoute permission="journal.update">
+            <JournalEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'journal/:id/preview',
+        element: (
+          <ProtectedRoute permission="journal.read">
+            <JournalPreviewPage />
           </ProtectedRoute>
         ),
       },

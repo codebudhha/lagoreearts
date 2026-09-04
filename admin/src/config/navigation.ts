@@ -87,9 +87,9 @@ export const NAVIGATION_CONFIG: NavSection[] = [
     items: [
       {
         label: 'Homepage CMS',
-        href: '/admin/cms',
+        href: '/admin/homepage',
         icon: LayoutTemplate,
-        permission: 'cms.read',
+        permission: 'homepage.read',
       },
       {
         label: 'Journal & Stories',
