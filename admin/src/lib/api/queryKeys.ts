@@ -39,6 +39,10 @@ export const queryKeys = {
     lists: () => ['customers', 'list'] as const,
     list: (params?: Record<string, any>) => ['customers', 'list', params] as const,
     detail: (id: string) => ['customers', 'detail', id] as const,
+    addresses: (id: string) => ['customers', 'addresses', id] as const,
+    address: (customerId: string, addressId: string) =>
+      ['customers', 'addresses', customerId, addressId] as const,
+    sessions: (id: string) => ['customers', 'sessions', id] as const,
   },
   reviews: {
     all: ['reviews'] as const,
@@ -127,5 +131,21 @@ export const queryKeys = {
     category: (id: string) => ['journal', 'category', id] as const,
     tags: (params?: Record<string, any>) => ['journal', 'tags', params] as const,
     tag: (id: string) => ['journal', 'tag', id] as const,
+  },
+  lookbook: {
+    all: ['lookbook'] as const,
+    lists: () => ['lookbook', 'list'] as const,
+    list: (params?: Record<string, any>) => ['lookbook', 'list', params] as const,
+    detail: (id: string) => ['lookbook', 'detail', id] as const,
+    sections: (lookbookId: string) => ['lookbook', 'sections', lookbookId] as const,
+    section: (lookbookId: string, sectionId: string) =>
+      ['lookbook', 'sections', lookbookId, sectionId] as const,
+  },
+  navigation: {
+    all: ['navigation'] as const,
+    lists: () => ['navigation', 'list'] as const,
+    list: (params?: Record<string, any>) => ['navigation', 'list', params] as const,
+    detail: (id: string) => ['navigation', 'detail', id] as const,
+    items: (navigationId: string) => ['navigation', 'items', navigationId] as const,
   },
 };

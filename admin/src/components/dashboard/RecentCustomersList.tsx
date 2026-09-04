@@ -55,10 +55,9 @@ export const RecentCustomersList: React.FC<RecentCustomersListProps> = ({
         <div className="divide-y divide-ivory-100">
           {customers.map((cust) => {
             const fullName =
-              cust.name ||
-              (cust.firstName
+              cust.firstName
                 ? `${cust.firstName} ${cust.lastName || ''}`.trim()
-                : 'Art Patron');
+                : 'Art Patron';
 
             return (
               <div

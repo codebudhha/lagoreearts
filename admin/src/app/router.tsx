@@ -46,6 +46,18 @@ import { JournalPreviewPage } from '../features/journal/JournalPreviewPage';
 import { JournalAuthorsPage } from '../features/journal/JournalAuthorsPage';
 import { JournalCategoriesPage } from '../features/journal/JournalCategoriesPage';
 import { JournalTagsPage } from '../features/journal/JournalTagsPage';
+import { LookbookListPage } from '../features/lookbook/LookbookListPage';
+import { LookbookCreatePage } from '../features/lookbook/LookbookCreatePage';
+import { LookbookDetailPage } from '../features/lookbook/LookbookDetailPage';
+import { LookbookEditPage } from '../features/lookbook/LookbookEditPage';
+import { LookbookPreviewPage } from '../features/lookbook/LookbookPreviewPage';
+import { NavigationListPage } from '../features/navigation/NavigationListPage';
+import { NavigationCreatePage } from '../features/navigation/NavigationCreatePage';
+import { NavigationDetailPage } from '../features/navigation/NavigationDetailPage';
+import { NavigationEditPage } from '../features/navigation/NavigationEditPage';
+import { CustomerListPage } from '../features/customers/CustomerListPage';
+import { CustomerDetailPage } from '../features/customers/CustomerDetailPage';
+import { CustomerEditPage } from '../features/customers/CustomerEditPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -415,29 +427,77 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Content & Editorial — Lookbook
       {
         path: 'lookbook',
         element: (
           <ProtectedRoute permission="lookbook.read">
-            <ModulePlaceholder
-              title="Lookbook"
-              subtitle="Design lifestyle lookbooks and shoppable editorial scenes."
-              moduleName="Lookbook"
-              permissionRequired="lookbook.read"
-            />
+            <LookbookListPage />
           </ProtectedRoute>
         ),
       },
       {
+        path: 'lookbook/new',
+        element: (
+          <ProtectedRoute permission="lookbook.create">
+            <LookbookCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lookbook/:id',
+        element: (
+          <ProtectedRoute permission="lookbook.read">
+            <LookbookDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lookbook/:id/edit',
+        element: (
+          <ProtectedRoute permission="lookbook.update">
+            <LookbookEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'lookbook/:id/preview',
+        element: (
+          <ProtectedRoute permission="lookbook.read">
+            <LookbookPreviewPage />
+          </ProtectedRoute>
+        ),
+      },
+      // Content & Editorial — Navigation Menus
+      {
         path: 'navigation',
         element: (
           <ProtectedRoute permission="navigation.read">
-            <ModulePlaceholder
-              title="Navigation & Menus"
-              subtitle="Structure storefront mega-menus and footer links."
-              moduleName="Navigation"
-              permissionRequired="navigation.read"
-            />
+            <NavigationListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'navigation/new',
+        element: (
+          <ProtectedRoute permission="navigation.create">
+            <NavigationCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'navigation/:id',
+        element: (
+          <ProtectedRoute permission="navigation.read">
+            <NavigationDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'navigation/:id/edit',
+        element: (
+          <ProtectedRoute permission="navigation.update">
+            <NavigationEditPage />
           </ProtectedRoute>
         ),
       },
@@ -505,12 +565,23 @@ export const router = createBrowserRouter([
         path: 'customers',
         element: (
           <ProtectedRoute permission="customers.read">
-            <ModulePlaceholder
-              title="Patrons & Customers"
-              subtitle="View customer profiles, purchase histories, and contact info."
-              moduleName="Customers"
-              permissionRequired="customers.read"
-            />
+            <CustomerListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'customers/:id',
+        element: (
+          <ProtectedRoute permission="customers.read">
+            <CustomerDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'customers/:id/edit',
+        element: (
+          <ProtectedRoute permission="customers.read">
+            <CustomerEditPage />
           </ProtectedRoute>
         ),
       },
