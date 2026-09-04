@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Menu, LogOut, User, Settings, ExternalLink } from 'lucide-react';
+import { Menu, LogOut, User, Settings, ExternalLink, Search } from 'lucide-react';
 import { Breadcrumbs } from './Breadcrumbs';
 import { Dropdown, DropdownItem } from '../ui/Dropdown';
+import { CommandPalette } from '../global/CommandPalette';
+import { NotificationCenter } from '../global/NotificationCenter';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { ConfirmDialog } from '../feedback/ConfirmDialog';
@@ -16,6 +18,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
   const { admin, logout } = useAuth();
   const { success, error } = useToast();
   const navigate = useNavigate();
+
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -83,8 +87,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           <Breadcrumbs />
         </div>
 
-        {/* Right Section: User Profile & Actions */}
-        <div className="flex items-center gap-3">
+        {/* Center/Right Section: Global Search + Notifications + Profile */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Global Search Shortcut Button */}
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs text-charcoal-400 hover:text-charcoal-700 bg-ivory-50 hover:bg-ivory-100 border border-ivory-200 rounded-xl transition-colors focus:outline-none focus:ring-2 focus:ring-champagne-300"
+            title="Global Command Palette (Ctrl + K)"
+          >
+            <Search className="w-3.5 h-3.5 text-charcoal-400" />
+            <span className="hidden md:inline font-normal">Search command...</span>
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-medium text-charcoal-500 bg-white border border-ivory-200 rounded">
+              ⌘K
+            </kbd>
+          </button>
+
+          {/* Notification Center */}
+          <NotificationCenter />
+
+          <div className="h-5 w-px bg-ivory-200 mx-1 hidden sm:block" />
+
+          {/* Profile Dropdown */}
           <Dropdown
             trigger={
               <button
@@ -109,6 +133,12 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMobileMenu }) => {
           />
         </div>
       </header>
+
+      {/* Global Command Palette */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+      />
 
       {/* Logout Confirmation Modal */}
       <ConfirmDialog

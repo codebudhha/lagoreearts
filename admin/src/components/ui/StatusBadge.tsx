@@ -1,53 +1,70 @@
 import React from 'react';
-import { StatusVariant } from '../../types/ui';
 import { Badge, BadgeVariant } from './Badge';
 
 export interface StatusBadgeProps {
-  status: string | StatusVariant;
+  status: string;
   className?: string;
   size?: 'sm' | 'md';
 }
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className, size = 'sm' }) => {
-  const normalized = status.toLowerCase();
+  if (!status) return null;
+
+  const normalized = status.toUpperCase().trim();
 
   let variant: BadgeVariant = 'secondary';
   let label = status;
 
   switch (normalized) {
-    case 'active':
-    case 'published':
-    case 'approved':
-    case 'completed':
-    case 'delivered':
-    case 'paid':
+    // Success / Completed / Active
+    case 'ACTIVE':
+    case 'PUBLISHED':
+    case 'APPROVED':
+    case 'COMPLETED':
+    case 'DELIVERED':
+    case 'PAID':
+    case 'CONFIRMED':
       variant = 'success';
       break;
 
-    case 'pending':
-    case 'processing':
-    case 'in_transit':
-    case 'submitted':
-    case 'draft':
+    // In-Progress / Pending / Warning
+    case 'PENDING':
+    case 'PROCESSING':
+    case 'IN_TRANSIT':
+    case 'SUBMITTED':
+    case 'DRAFT':
+    case 'AUTHORIZED':
+    case 'PICKED_UP':
+    case 'LABEL_CREATED':
+    case 'OUT_FOR_DELIVERY':
       variant = 'warning';
       break;
 
-    case 'inactive':
-    case 'archived':
-    case 'cancelled':
-    case 'rejected':
-    case 'failed':
-    case 'refunded':
+    // Danger / Negative / Terminal Failure
+    case 'INACTIVE':
+    case 'ARCHIVED':
+    case 'CANCELLED':
+    case 'REJECTED':
+    case 'FAILED':
+    case 'REFUNDED':
+    case 'SUSPENDED':
+    case 'EXCEPTION':
+    case 'RETURNED':
+    case 'HIDDEN':
       variant = 'danger';
       break;
 
-    case 'shipped':
-    case 'info':
+    // Informational
+    case 'SHIPPED':
+    case 'INFO':
       variant = 'info';
       break;
 
-    case 'featured':
-    case 'super_admin':
+    // Highlight / Champagne
+    case 'FEATURED':
+    case 'SUPER_ADMIN':
+    case 'BESTSELLER':
+    case 'NEW_ARRIVAL':
       variant = 'champagne';
       break;
 
@@ -56,8 +73,11 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, className, siz
       break;
   }
 
-  // Format label nicely (e.g. IN_TRANSIT -> In Transit)
-  label = normalized.replace(/_/g, ' ');
+  // Format label: ORDER_STATUS -> Order Status
+  label = status
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <Badge variant={variant} size={size} className={className}>
