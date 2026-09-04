@@ -5,6 +5,7 @@ import { CollectionsRepository } from '../collections/collections.repository.ts'
 import { AttributesRepository } from '../attributes/attributes.repository.ts';
 import { AuditService } from '../../audit/audit.service.ts';
 import { RecommendationService } from '../recommendations/recommendation.service.ts';
+import { ReviewService } from '../reviews/review.service.ts';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -690,6 +691,17 @@ export class ProductsService {
       formatted.recommendations = recs.recommendations;
     } catch {
       formatted.recommendations = { crossSell: [], upsell: [], related: [] };
+    }
+    try {
+      const summary = await ReviewService.getReviewSummary(product.id);
+      formatted.reviewSummary = summary;
+    } catch {
+      formatted.reviewSummary = {
+        averageRating: 0,
+        totalReviews: 0,
+        ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+        verifiedReviewCount: 0
+      };
     }
     return formatted;
   }

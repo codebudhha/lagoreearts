@@ -48,6 +48,7 @@ import { adminOrderRouter } from './modules/orders/admin-order.routes.ts';
 import { customerPaymentRouter, webhookPaymentRouter, adminPaymentRouter } from './modules/payments/payment.routes.ts';
 import { customerShippingRouter, adminShippingRouter, adminShipmentRouter, publicShippingRouter } from './modules/shipping/shipping.routes.ts';
 import { publicRecommendationRoutes, adminRecommendationRoutes, adminProductRecommendationRoutes } from './modules/recommendations/recommendation.routes.ts';
+import { customerReviewRouter, adminReviewRouter, publicReviewRouter } from './modules/reviews/review.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -200,7 +201,8 @@ export function createApp() {
         'Module 20: Order Management',
         'Module 21: Payments & Gateway Orchestration',
         'Module 22: Shipping & Delivery Management',
-        'Module 24: Cross-sell & Upsell Recommendations'
+        'Module 24: Cross-sell & Upsell Recommendations',
+        'Module 25: Product Reviews & Ratings'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -224,6 +226,8 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/customer', customerReviewRouter);
+  app.use('/api/v1/admin/reviews', adminReviewRouter);
   app.use('/api/v1/shipping', publicShippingRouter);
   app.use('/api/v1/customer', customerShippingRouter);
   app.use('/api/v1/admin/shipping', adminShippingRouter);
@@ -277,6 +281,7 @@ export function createApp() {
   app.use('/api/v1/categories', publicCategoriesRoutes);
   app.use('/api/v1/attributes', publicAttributesRoutes);
   app.use('/api/v1/collections', publicCollectionsRoutes);
+  app.use('/api/v1/products', publicReviewRouter);
   app.use('/api/v1/products', publicRecommendationRoutes);
   app.use('/api/v1/products', publicProductsRoutes);
   app.use('/api/v1/antiques', publicAntiquesRouter);

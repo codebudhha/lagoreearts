@@ -192,6 +192,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Delete Recommendation', slug: 'recommendation.delete', module: 'RECOMMENDATIONS', description: 'Delete recommendation relationships' },
   { name: 'Reorder Recommendations', slug: 'recommendation.reorder', module: 'RECOMMENDATIONS', description: 'Reorder product recommendations' },
 
+  // REVIEWS & RATINGS (MODULE 25)
+  { name: 'View Reviews', slug: 'review.view', module: 'REVIEWS', description: 'View product customer reviews and ratings' },
+  { name: 'Create Review', slug: 'review.create', module: 'REVIEWS', description: 'Create product reviews administratively' },
+  { name: 'Update Review', slug: 'review.update', module: 'REVIEWS', description: 'Modify review details' },
+  { name: 'Delete Review', slug: 'review.delete', module: 'REVIEWS', description: 'Delete product reviews' },
+  { name: 'Moderate Reviews', slug: 'review.moderate', module: 'REVIEWS', description: 'Approve, reject, or hide customer reviews' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -232,6 +239,7 @@ export const ROLES_DATA = [
       'lookbook.view', 'lookbook.create', 'lookbook.update',
       'navigation.view', 'navigation.create', 'navigation.update',
       'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.delete', 'recommendation.reorder',
+      'review.view',
       'customer.view',
       'seo.view', 'seo.update'
     ]
@@ -263,6 +271,7 @@ export const ROLES_DATA = [
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.delete', 'lookbook.publish',
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.delete', 'navigation.publish',
       'recommendation.view',
+      'review.view', 'review.moderate', 'review.update',
       'customer.view',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
       'seo.view', 'seo.update'
@@ -282,7 +291,8 @@ export const ROLES_DATA = [
       'cart.view',
       'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update',
-      'recommendation.view'
+      'recommendation.view',
+      'review.view'
     ]
   },
   {
@@ -303,7 +313,8 @@ export const ROLES_DATA = [
       'lookbook.view', 'lookbook.create', 'lookbook.update', 'lookbook.publish',
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.publish',
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
-      'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.reorder'
+      'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.reorder',
+      'review.view', 'review.moderate'
     ]
   }
 ];

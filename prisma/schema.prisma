@@ -511,6 +511,7 @@ model Product {
   orderItems        OrderItem[]
   recommendationsFrom ProductRecommendation[] @relation("SourceProductRecommendations")
   recommendationsTo   ProductRecommendation[] @relation("TargetProductRecommendations")
+  reviews           ProductReview[]
 
   @@index([slug])
   @@index([sku])
@@ -713,6 +714,7 @@ model ProductVariant {
   cartItems         CartItem[]
   checkoutItems     CheckoutItem[]
   orderItems        OrderItem[]
+  reviews           ProductReview[]
 
   @@index([productId])
   @@index([sku])
@@ -1627,6 +1629,7 @@ model Customer {
   cart               Cart?
   checkoutSessions   CheckoutSession[]
   orders             Order[]
+  reviews            ProductReview[]
 
   @@index([normalizedEmail])
   @@index([status])
@@ -1942,6 +1945,7 @@ model OrderItem {
   product            Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
   variant            ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   shipmentItems      ShipmentItem[]
+  reviews            ProductReview[]
 
   @@index([orderId])
   @@index([productId])
@@ -2345,6 +2349,52 @@ model ProductRecommendation {
   @@index([sortOrder])
   @@map("product_recommendations")
 }
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  HIDDEN
+}
+
+model ProductReview {
+  id                   String          @id @default(uuid()) @db.VarChar(36)
+  productId            String          @map("product_id") @db.VarChar(36)
+  customerId           String?         @map("customer_id") @db.VarChar(36)
+  orderItemId          String?         @map("order_item_id") @db.VarChar(36)
+  variantId            String?         @map("variant_id") @db.VarChar(36)
+  rating               Int
+  title                String?         @db.VarChar(150)
+  body                 String          @db.Text
+  status               ReviewStatus    @default(PENDING)
+  verifiedPurchase     Boolean         @default(false) @map("verified_purchase")
+  verifiedPurchaseAt   DateTime?       @map("verified_purchase_at")
+  purchasedSku         String?         @map("purchased_sku") @db.VarChar(100)
+  purchasedVariantName String?         @map("purchased_variant_name") @db.VarChar(255)
+  helpfulCount         Int             @default(0) @map("helpful_count")
+  reportCount          Int             @default(0) @map("report_count")
+  publishedAt          DateTime?       @map("published_at")
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+
+  product              Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customer             Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderItem            OrderItem?      @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  variant              ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@unique([customerId, productId], name: "uq_customer_product_review")
+  @@index([productId])
+  @@index([customerId])
+  @@index([status])
+  @@index([rating])
+  @@index([verifiedPurchase])
+  @@index([publishedAt])
+  @@index([createdAt])
+  @@index([orderItemId])
+  @@index([variantId])
+  @@map("product_reviews")
+}
+
 
 
 

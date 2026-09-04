@@ -1683,6 +1683,42 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_prod_rec_type ON product_recommendations(type);
   CREATE INDEX IF NOT EXISTS idx_prod_rec_is_active ON product_recommendations(is_active);
   CREATE INDEX IF NOT EXISTS idx_prod_rec_sort_order ON product_recommendations(sort_order);
+
+  CREATE TABLE IF NOT EXISTS product_reviews (
+    id TEXT PRIMARY KEY,
+    product_id TEXT NOT NULL,
+    customer_id TEXT,
+    order_item_id TEXT,
+    variant_id TEXT,
+    rating INTEGER NOT NULL,
+    title TEXT,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    verified_purchase INTEGER NOT NULL DEFAULT 0,
+    verified_purchase_at TEXT,
+    purchased_sku TEXT,
+    purchased_variant_name TEXT,
+    helpful_count INTEGER NOT NULL DEFAULT 0,
+    report_count INTEGER NOT NULL DEFAULT 0,
+    published_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    FOREIGN KEY (order_item_id) REFERENCES order_items(id) ON DELETE SET NULL,
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL,
+    UNIQUE (customer_id, product_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_reviews_product_id ON product_reviews(product_id);
+  CREATE INDEX IF NOT EXISTS idx_reviews_customer_id ON product_reviews(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_reviews_status ON product_reviews(status);
+  CREATE INDEX IF NOT EXISTS idx_reviews_rating ON product_reviews(rating);
+  CREATE INDEX IF NOT EXISTS idx_reviews_verified_purchase ON product_reviews(verified_purchase);
+  CREATE INDEX IF NOT EXISTS idx_reviews_published_at ON product_reviews(published_at);
+  CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON product_reviews(created_at);
+  CREATE INDEX IF NOT EXISTS idx_reviews_order_item_id ON product_reviews(order_item_id);
+  CREATE INDEX IF NOT EXISTS idx_reviews_variant_id ON product_reviews(variant_id);
 `);
 
 /**
@@ -3335,6 +3371,7 @@ export const prisma = {
     delete: ({ where }: { where: { id: string } }) => {
       const prod = prisma.product.findUnique({ where, include: { category: true, collections: true, attributes: true, antiqueProfile: true, sanskritEditProfile: true, artists: true } });
       db.prepare('DELETE FROM product_recommendations WHERE source_product_id = ? OR target_product_id = ?').run(where.id, where.id);
+      db.prepare('DELETE FROM product_reviews WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM antique_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM sanskrit_edit_profiles WHERE product_id = ?').run(where.id);
       db.prepare('DELETE FROM product_artists WHERE product_id = ?').run(where.id);
@@ -10314,11 +10351,11 @@ export const prisma = {
       `).run(
         id,
         data.customerId || null,
-        data.cartId,
+        data.cartId || null,
         data.guestTokenHash || null,
         data.status || 'ACTIVE',
         data.currency || 'INR',
-        data.email,
+        data.email || 'customer@example.com',
         data.billingAddressId || null,
         data.shippingAddressId || null,
         Number(data.subtotal || 0),
@@ -13055,6 +13092,318 @@ export const prisma = {
       if (where?.targetProductId) { sql += ' AND target_product_id = ?'; params.push(where.targetProductId); }
       if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
       if (where?.isActive !== undefined) { sql += ' AND is_active = ?'; params.push(where.isActive ? 1 : 0); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  productReview: {
+    findUnique: ({ where, include }: { where: any; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM product_reviews WHERE id = ?').get(where.id);
+      } else if (where.customerId && where.productId) {
+        row = db.prepare('SELECT * FROM product_reviews WHERE customer_id = ? AND product_id = ?').get(where.customerId, where.productId);
+      } else if (where.uq_customer_product_review) {
+        row = db.prepare('SELECT * FROM product_reviews WHERE customer_id = ? AND product_id = ?').get(
+          where.uq_customer_product_review.customerId,
+          where.uq_customer_product_review.productId
+        );
+      } else if (where.customerId_productId) {
+        row = db.prepare('SELECT * FROM product_reviews WHERE customer_id = ? AND product_id = ?').get(
+          where.customerId_productId.customerId,
+          where.customerId_productId.productId
+        );
+      }
+      if (!row) return null;
+
+      const obj: any = {
+        id: row.id,
+        productId: row.product_id,
+        customerId: row.customer_id,
+        orderItemId: row.order_item_id,
+        variantId: row.variant_id,
+        rating: Number(row.rating),
+        title: row.title || null,
+        body: row.body,
+        status: row.status,
+        verifiedPurchase: Boolean(row.verified_purchase),
+        verifiedPurchaseAt: row.verified_purchase_at ? new Date(row.verified_purchase_at) : null,
+        purchasedSku: row.purchased_sku || null,
+        purchasedVariantName: row.purchased_variant_name || null,
+        helpfulCount: Number(row.helpful_count || 0),
+        reportCount: Number(row.report_count || 0),
+        publishedAt: row.published_at ? new Date(row.published_at) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.product) {
+        obj.product = prisma.product.findUnique({ where: { id: row.product_id }, include: typeof include.product === 'object' ? include.product.include : undefined });
+      }
+      if (include?.customer) {
+        obj.customer = row.customer_id ? prisma.customer.findUnique({ where: { id: row.customer_id }, include: typeof include.customer === 'object' ? include.customer.include : undefined }) : null;
+      }
+      if (include?.orderItem) {
+        obj.orderItem = row.order_item_id ? prisma.orderItem.findUnique({ where: { id: row.order_item_id }, include: typeof include.orderItem === 'object' ? include.orderItem.include : undefined }) : null;
+      }
+      if (include?.variant) {
+        obj.variant = row.variant_id ? prisma.productVariant.findUnique({ where: { id: row.variant_id }, include: typeof include.variant === 'object' ? include.variant.include : undefined }) : null;
+      }
+
+      return obj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      const results = prisma.productReview.findMany({ where, include, orderBy, take: 1 });
+      return results[0] || null;
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT * FROM product_reviews WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) {
+        if (where.id.in && Array.isArray(where.id.in)) {
+          sql += ` AND id IN (${where.id.in.map(() => '?').join(', ')})`;
+          params.push(...where.id.in);
+        } else {
+          sql += ' AND id = ?';
+          params.push(where.id);
+        }
+      }
+      if (where?.productId) {
+        if (where.productId.in && Array.isArray(where.productId.in)) {
+          sql += ` AND product_id IN (${where.productId.in.map(() => '?').join(', ')})`;
+          params.push(...where.productId.in);
+        } else {
+          sql += ' AND product_id = ?';
+          params.push(where.productId);
+        }
+      }
+      if (where?.customerId) {
+        if (where.customerId.in && Array.isArray(where.customerId.in)) {
+          sql += ` AND customer_id IN (${where.customerId.in.map(() => '?').join(', ')})`;
+          params.push(...where.customerId.in);
+        } else {
+          sql += ' AND customer_id = ?';
+          params.push(where.customerId);
+        }
+      }
+      if (where?.orderItemId) {
+        sql += ' AND order_item_id = ?';
+        params.push(where.orderItemId);
+      }
+      if (where?.variantId) {
+        sql += ' AND variant_id = ?';
+        params.push(where.variantId);
+      }
+      if (where?.status) {
+        if (Array.isArray(where.status.in)) {
+          sql += ` AND status IN (${where.status.in.map(() => '?').join(', ')})`;
+          params.push(...where.status.in);
+        } else {
+          sql += ' AND status = ?';
+          params.push(where.status);
+        }
+      }
+      if (where?.rating !== undefined) {
+        if (typeof where.rating === 'object' && where.rating !== null) {
+          if (where.rating.gte !== undefined) {
+            sql += ' AND rating >= ?';
+            params.push(Number(where.rating.gte));
+          }
+          if (where.rating.lte !== undefined) {
+            sql += ' AND rating <= ?';
+            params.push(Number(where.rating.lte));
+          }
+          if (Array.isArray(where.rating.in)) {
+            sql += ` AND rating IN (${where.rating.in.map(() => '?').join(', ')})`;
+            params.push(...where.rating.in);
+          }
+        } else {
+          sql += ' AND rating = ?';
+          params.push(Number(where.rating));
+        }
+      }
+      if (where?.verifiedPurchase !== undefined) {
+        sql += ' AND verified_purchase = ?';
+        params.push(where.verifiedPurchase ? 1 : 0);
+      }
+      if (where?.publishedAt !== undefined) {
+        if (where.publishedAt && typeof where.publishedAt === 'object') {
+          if (where.publishedAt.lte) {
+            const dateStr = where.publishedAt.lte instanceof Date ? where.publishedAt.lte.toISOString() : String(where.publishedAt.lte);
+            sql += ' AND published_at <= ?';
+            params.push(dateStr);
+          }
+          if (where.publishedAt.not === null) {
+            sql += ' AND published_at IS NOT NULL';
+          }
+        } else if (where.publishedAt === null) {
+          sql += ' AND published_at IS NULL';
+        }
+      }
+
+      if (where?.search) {
+        sql += ' AND (title LIKE ? OR body LIKE ? OR purchased_sku LIKE ?)';
+        const term = `%${where.search}%`;
+        params.push(term, term, term);
+      }
+
+      if (orderBy) {
+        const orderClauses: string[] = [];
+        const orderList = Array.isArray(orderBy) ? orderBy : [orderBy];
+        for (const ord of orderList) {
+          if (typeof ord === 'object') {
+            for (const [key, dir] of Object.entries(ord)) {
+              const direction = String(dir).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+              if (key === 'createdAt') orderClauses.push(`created_at ${direction}`);
+              else if (key === 'rating') orderClauses.push(`rating ${direction}`);
+              else if (key === 'helpfulCount') orderClauses.push(`helpful_count ${direction}`);
+              else if (key === 'publishedAt') orderClauses.push(`published_at ${direction}`);
+              else if (key === 'id') orderClauses.push(`id ${direction}`);
+            }
+          }
+        }
+        if (orderClauses.length > 0) {
+          sql += ` ORDER BY ${orderClauses.join(', ')}`;
+        } else {
+          sql += ' ORDER BY created_at DESC';
+        }
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.productReview.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const verifiedPurchase = data.verifiedPurchase ? 1 : 0;
+      const verifiedPurchaseAt = data.verifiedPurchaseAt ? (data.verifiedPurchaseAt instanceof Date ? data.verifiedPurchaseAt.toISOString() : String(data.verifiedPurchaseAt)) : null;
+      const publishedAt = data.publishedAt ? (data.publishedAt instanceof Date ? data.publishedAt.toISOString() : String(data.publishedAt)) : null;
+      const helpfulCount = Number(data.helpfulCount || 0);
+      const reportCount = Number(data.reportCount || 0);
+      const rating = Number(data.rating);
+      const status = data.status || 'PENDING';
+
+      db.prepare(`
+        INSERT INTO product_reviews (
+          id, product_id, customer_id, order_item_id, variant_id, rating, title, body,
+          status, verified_purchase, verified_purchase_at, purchased_sku, purchased_variant_name,
+          helpful_count, report_count, published_at, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.productId,
+        data.customerId || null,
+        data.orderItemId || null,
+        data.variantId || null,
+        rating,
+        data.title || null,
+        data.body,
+        status,
+        verifiedPurchase,
+        verifiedPurchaseAt,
+        data.purchasedSku || null,
+        data.purchasedVariantName || null,
+        helpfulCount,
+        reportCount,
+        publishedAt,
+        now,
+        now
+      );
+
+      return prisma.productReview.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.productReview.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.rating !== undefined) { updates.push('rating = ?'); params.push(Number(data.rating)); }
+      if (data.title !== undefined) { updates.push('title = ?'); params.push(data.title); }
+      if (data.body !== undefined) { updates.push('body = ?'); params.push(data.body); }
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.verifiedPurchase !== undefined) { updates.push('verified_purchase = ?'); params.push(data.verifiedPurchase ? 1 : 0); }
+      if (data.verifiedPurchaseAt !== undefined) {
+        updates.push('verified_purchase_at = ?');
+        params.push(data.verifiedPurchaseAt ? (data.verifiedPurchaseAt instanceof Date ? data.verifiedPurchaseAt.toISOString() : String(data.verifiedPurchaseAt)) : null);
+      }
+      if (data.purchasedSku !== undefined) { updates.push('purchased_sku = ?'); params.push(data.purchasedSku); }
+      if (data.purchasedVariantName !== undefined) { updates.push('purchased_variant_name = ?'); params.push(data.purchasedVariantName); }
+      if (data.helpfulCount !== undefined) { updates.push('helpful_count = ?'); params.push(Number(data.helpfulCount)); }
+      if (data.reportCount !== undefined) { updates.push('report_count = ?'); params.push(Number(data.reportCount)); }
+      if (data.publishedAt !== undefined) {
+        updates.push('published_at = ?');
+        params.push(data.publishedAt ? (data.publishedAt instanceof Date ? data.publishedAt.toISOString() : String(data.publishedAt)) : null);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE product_reviews SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.productReview.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.productReview.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM product_reviews WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM product_reviews').run();
+        return;
+      }
+      let sql = 'DELETE FROM product_reviews WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM product_reviews WHERE 1=1';
+      const params: any[] = [];
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.rating !== undefined) { sql += ' AND rating = ?'; params.push(Number(where.rating)); }
+      if (where?.verifiedPurchase !== undefined) { sql += ' AND verified_purchase = ?'; params.push(where.verifiedPurchase ? 1 : 0); }
+      if (where?.publishedAt !== undefined) {
+        if (where.publishedAt && typeof where.publishedAt === 'object') {
+          if (where.publishedAt.lte) {
+            const dateStr = where.publishedAt.lte instanceof Date ? where.publishedAt.lte.toISOString() : String(where.publishedAt.lte);
+            sql += ' AND published_at <= ?';
+            params.push(dateStr);
+          }
+          if (where.publishedAt.not === null) {
+            sql += ' AND published_at IS NOT NULL';
+          }
+        }
+      }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
     }
