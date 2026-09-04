@@ -23,6 +23,7 @@ export const LoginPage: React.FC = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginCredentials>({
+    mode: 'onTouched',
     defaultValues: {
       email: '',
       password: '',
