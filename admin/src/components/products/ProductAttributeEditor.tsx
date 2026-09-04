@@ -28,9 +28,9 @@ export const ProductAttributeEditor: React.FC<ProductAttributeEditorProps> = ({
   });
 
   // Query 2: All global attributes as fallback
-  const { data: globalAttributes = [], isLoading: isLoadingGlobalAttrs } = useQuery({
+  const { data: globalAttributesData, isLoading: isLoadingGlobalAttrs } = useQuery({
     queryKey: queryKeys.attributes.list(),
-    queryFn: attributesApi.list,
+    queryFn: () => attributesApi.list(),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -57,7 +57,8 @@ export const ProductAttributeEditor: React.FC<ProductAttributeEditorProps> = ({
         values: ca.attribute.values || [],
       }));
     }
-    return globalAttributes.map((ga: AdminAttribute) => ({
+    const globalList = globalAttributesData?.items || [];
+    return globalList.map((ga: AdminAttribute) => ({
       id: ga.id,
       name: ga.name,
       slug: ga.slug,
@@ -66,7 +67,7 @@ export const ProductAttributeEditor: React.FC<ProductAttributeEditorProps> = ({
       isRequired: false,
       values: ga.values || [],
     }));
-  }, [categoryId, categoryAttributes, globalAttributes]);
+  }, [categoryId, categoryAttributes, globalAttributesData]);
 
   const getAssignment = (attributeId: string): ProductAttributeAssignment => {
     return (

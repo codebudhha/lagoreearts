@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { PageContainer } from '../../components/layout/PageContainer';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { FilterBar, FilterSelectConfig } from '../../components/ui/FilterBar';
@@ -21,8 +20,7 @@ import {
   useUpdateProductFeatured,
   useDeleteProduct,
 } from '../../hooks/useProducts';
-import { categoriesApi } from '../../lib/api/categories';
-import { queryKeys } from '../../lib/api/queryKeys';
+import { useCategoriesList } from '../../hooks/useCategories';
 import { AdminProduct } from '../../lib/api/products';
 import {
   Plus,
@@ -70,11 +68,8 @@ export const ProductListPage: React.FC = () => {
     sortOrder: 'desc',
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: queryKeys.categories.list(),
-    queryFn: categoriesApi.list,
-    staleTime: 1000 * 60 * 5,
-  });
+  const { data: categoriesData } = useCategoriesList({ limit: 100 });
+  const categoriesList = categoriesData?.items || [];
 
   // Mutations
   const updateStatusMutation = useUpdateProductStatus();
@@ -136,7 +131,7 @@ export const ProductListPage: React.FC = () => {
         value: categoryFilter,
         options: [
           { label: 'All Categories', value: '' },
-          ...categories.map((c) => ({ label: c.name, value: c.id })),
+          ...categoriesList.map((c) => ({ label: c.name, value: c.id })),
         ],
         onChange: (val) => {
           setCategoryFilter(val);
@@ -157,7 +152,7 @@ export const ProductListPage: React.FC = () => {
         },
       },
     ],
-    [statusFilter, typeFilter, categoryFilter, featuredFilter, categories]
+    [statusFilter, typeFilter, categoryFilter, featuredFilter, categoriesList]
   );
 
   const handleSelectAll = (checked: boolean) => {

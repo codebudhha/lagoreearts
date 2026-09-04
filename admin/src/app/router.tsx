@@ -10,6 +10,14 @@ import { ProductCreatePage } from '../features/products/ProductCreatePage';
 import { ProductDetailPage } from '../features/products/ProductDetailPage';
 import { ProductEditPage } from '../features/products/ProductEditPage';
 import { ProductPreviewPage } from '../features/products/ProductPreviewPage';
+import { CategoryListPage } from '../features/categories/CategoryListPage';
+import { CategoryCreatePage } from '../features/categories/CategoryCreatePage';
+import { CategoryDetailPage } from '../features/categories/CategoryDetailPage';
+import { CategoryEditPage } from '../features/categories/CategoryEditPage';
+import { AttributeListPage } from '../features/attributes/AttributeListPage';
+import { AttributeCreatePage } from '../features/attributes/AttributeCreatePage';
+import { AttributeDetailPage } from '../features/attributes/AttributeDetailPage';
+import { AttributeEditPage } from '../features/attributes/AttributeEditPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -82,16 +90,36 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Categories
       {
         path: 'categories',
         element: (
           <ProtectedRoute permission="categories.read">
-            <ModulePlaceholder
-              title="Categories"
-              subtitle="Curate category trees, metadata, and hierarchy."
-              moduleName="Categories"
-              permissionRequired="categories.read"
-            />
+            <CategoryListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'categories/new',
+        element: (
+          <ProtectedRoute permission="category.create">
+            <CategoryCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'categories/:id',
+        element: (
+          <ProtectedRoute permission="categories.read">
+            <CategoryDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'categories/:id/edit',
+        element: (
+          <ProtectedRoute permission="category.update">
+            <CategoryEditPage />
           </ProtectedRoute>
         ),
       },
@@ -108,16 +136,36 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Attributes & Dynamic Filters
       {
         path: 'attributes',
         element: (
           <ProtectedRoute permission="attributes.read">
-            <ModulePlaceholder
-              title="Attributes & Dynamic Filters"
-              subtitle="Configure facets, dimensions, materials, and search filters."
-              moduleName="Attributes"
-              permissionRequired="attributes.read"
-            />
+            <AttributeListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'attributes/new',
+        element: (
+          <ProtectedRoute permission="attribute.create">
+            <AttributeCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'attributes/:id',
+        element: (
+          <ProtectedRoute permission="attributes.read">
+            <AttributeDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'attributes/:id/edit',
+        element: (
+          <ProtectedRoute permission="attribute.update">
+            <AttributeEditPage />
           </ProtectedRoute>
         ),
       },
