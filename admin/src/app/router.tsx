@@ -24,6 +24,17 @@ import { CollectionDetailPage } from '../features/collections/CollectionDetailPa
 import { CollectionEditPage } from '../features/collections/CollectionEditPage';
 import { MediaLibraryPage } from '../features/media/MediaLibraryPage';
 import { MediaOrphansPage } from '../features/media/MediaOrphansPage';
+import { ArtistListPage } from '../features/artists/ArtistListPage';
+import { ArtistCreatePage } from '../features/artists/ArtistCreatePage';
+import { ArtistDetailPage } from '../features/artists/ArtistDetailPage';
+import { ArtistEditPage } from '../features/artists/ArtistEditPage';
+import { AntiqueListPage } from '../features/antiques/AntiqueListPage';
+import { AntiqueDetailPage } from '../features/antiques/AntiqueDetailPage';
+import { AntiqueEditPage } from '../features/antiques/AntiqueEditPage';
+import { SanskritEditListPage } from '../features/sanskrit/SanskritEditListPage';
+import { SanskritEditCreatePage } from '../features/sanskrit/SanskritEditCreatePage';
+import { SanskritEditDetailPage } from '../features/sanskrit/SanskritEditDetailPage';
+import { SanskritEditEditPage } from '../features/sanskrit/SanskritEditEditPage';
 import { ModulePlaceholder } from '../components/layout/ModulePlaceholder';
 
 export const router = createBrowserRouter([
@@ -195,42 +206,98 @@ export const router = createBrowserRouter([
           </ProtectedRoute>
         ),
       },
+      // Antiques & Collectibles
       {
         path: 'antiques',
         element: (
           <ProtectedRoute permission="antiques.read">
-            <ModulePlaceholder
-              title="Antiques & Collectibles"
-              subtitle="Curate historical antiquities, provenance, and certificates."
-              moduleName="Antiques"
-              permissionRequired="antiques.read"
-            />
+            <AntiqueListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'antiques/:id',
+        element: (
+          <ProtectedRoute permission="antiques.read">
+            <AntiqueDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'antiques/:id/edit',
+        element: (
+          <ProtectedRoute permission="antique.update">
+            <AntiqueEditPage />
+          </ProtectedRoute>
+        ),
+      },
+      // The Sanskrit Edit
+      {
+        path: 'sanskrit-edit',
+        element: (
+          <ProtectedRoute permission="sanskrit.read">
+            <SanskritEditListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'sanskrit-edit/new',
+        element: (
+          <ProtectedRoute permission="sanskrit-edit.create">
+            <SanskritEditCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'sanskrit-edit/:id',
+        element: (
+          <ProtectedRoute permission="sanskrit.read">
+            <SanskritEditDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'sanskrit-edit/:id/edit',
+        element: (
+          <ProtectedRoute permission="sanskrit-edit.update">
+            <SanskritEditEditPage />
           </ProtectedRoute>
         ),
       },
       {
         path: 'sanskrit',
-        element: (
-          <ProtectedRoute permission="sanskrit.read">
-            <ModulePlaceholder
-              title="The Sanskrit Edit"
-              subtitle="Curate Sanskrit calligraphy, sacred verses, and Vedic art editions."
-              moduleName="The Sanskrit Edit"
-              permissionRequired="sanskrit.read"
-            />
-          </ProtectedRoute>
-        ),
+        element: <Navigate to="/admin/sanskrit-edit" replace />,
       },
+      // Artists & Master Makers
       {
         path: 'artists',
         element: (
           <ProtectedRoute permission="artists.read">
-            <ModulePlaceholder
-              title="Artists & Master Makers"
-              subtitle="Manage artisan profiles, biographies, and portfolios."
-              moduleName="Artists & Makers"
-              permissionRequired="artists.read"
-            />
+            <ArtistListPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'artists/new',
+        element: (
+          <ProtectedRoute permission="artist.create">
+            <ArtistCreatePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'artists/:id',
+        element: (
+          <ProtectedRoute permission="artists.read">
+            <ArtistDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'artists/:id/edit',
+        element: (
+          <ProtectedRoute permission="artist.update">
+            <ArtistEditPage />
           </ProtectedRoute>
         ),
       },

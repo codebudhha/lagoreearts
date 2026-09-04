@@ -33,7 +33,13 @@ import {
   FolderTree,
   Tag,
   Star,
+  Palette,
+  Hourglass,
+  BookOpen,
 } from 'lucide-react';
+import { ProductArtistManager } from '../../components/artists/ProductArtistManager';
+import { ProductAntiqueProfile } from '../../components/antiques/ProductAntiqueProfile';
+import { ProductSanskritEditProfile } from '../../components/sanskrit/ProductSanskritEditProfile';
 
 export const ProductDetailPage: React.FC = () => {
   const { id = '' } = useParams<{ id: string }>();
@@ -44,7 +50,7 @@ export const ProductDetailPage: React.FC = () => {
   const canDelete = hasPermission('product.delete');
 
   const [activeTab, setActiveTab] = useState<
-    'overview' | 'media' | 'variants' | 'attributes' | 'seo'
+    'overview' | 'media' | 'variants' | 'attributes' | 'artists' | 'antique' | 'sanskrit' | 'seo'
   >('overview');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -265,6 +271,42 @@ export const ProductDetailPage: React.FC = () => {
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab('artists')}
+          className={`pb-3 text-sm font-semibold tracking-wider font-sans transition-all flex items-center gap-2 border-b-2 ${
+            activeTab === 'artists'
+              ? 'border-gold-600 text-charcoal-900'
+              : 'border-transparent text-charcoal-500 hover:text-charcoal-800'
+          }`}
+        >
+          <Palette className="w-4 h-4" />
+          Artists & Makers
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('antique')}
+          className={`pb-3 text-sm font-semibold tracking-wider font-sans transition-all flex items-center gap-2 border-b-2 ${
+            activeTab === 'antique'
+              ? 'border-gold-600 text-charcoal-900'
+              : 'border-transparent text-charcoal-500 hover:text-charcoal-800'
+          }`}
+        >
+          <Hourglass className="w-4 h-4" />
+          Antique Profile
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('sanskrit')}
+          className={`pb-3 text-sm font-semibold tracking-wider font-sans transition-all flex items-center gap-2 border-b-2 ${
+            activeTab === 'sanskrit'
+              ? 'border-gold-600 text-charcoal-900'
+              : 'border-transparent text-charcoal-500 hover:text-charcoal-800'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          The Sanskrit Edit
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab('seo')}
           className={`pb-3 text-sm font-semibold tracking-wider font-sans transition-all flex items-center gap-2 border-b-2 ${
             activeTab === 'seo'
@@ -446,6 +488,32 @@ export const ProductDetailPage: React.FC = () => {
             onChange={setEditedAttributes}
             disabled={!canUpdate}
           />
+        </div>
+      )}
+
+      {/* Tab: Artists & Makers */}
+      {activeTab === 'artists' && (
+        <div className="bg-white rounded-xl border border-sand-200 p-6 shadow-sm">
+          <ProductArtistManager productId={product.id} disabled={!canUpdate} />
+        </div>
+      )}
+
+      {/* Tab: Antique Profile */}
+      {activeTab === 'antique' && (
+        <div className="bg-white rounded-xl border border-sand-200 p-6 shadow-sm">
+          <ProductAntiqueProfile
+            productId={product.id}
+            productStock={product.stockQuantity}
+            productAllowBackorder={product.allowBackorder}
+            disabled={!canUpdate}
+          />
+        </div>
+      )}
+
+      {/* Tab: The Sanskrit Edit */}
+      {activeTab === 'sanskrit' && (
+        <div className="bg-white rounded-xl border border-sand-200 p-6 shadow-sm">
+          <ProductSanskritEditProfile productId={product.id} disabled={!canUpdate} />
         </div>
       )}
 

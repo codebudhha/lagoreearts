@@ -87,4 +87,24 @@ export const queryKeys = {
     detail: (entityType: string, entityId: string) => ['seo', entityType, entityId] as const,
     settings: ['seo', 'settings'] as const,
   },
+  artists: {
+    all: ['artists'] as const,
+    lists: () => ['artists', 'list'] as const,
+    list: (params?: Record<string, any>) => ['artists', 'list', params] as const,
+    detail: (id: string) => ['artists', 'detail', id] as const,
+    media: (artistId: string) => ['artists', 'media', artistId] as const,
+    products: (productId: string) => ['products', 'artists', productId] as const,
+  },
+  antiques: {
+    all: ['antiques'] as const,
+    lists: () => ['antiques', 'list'] as const,
+    list: (params?: Record<string, any>) => ['antiques', 'list', params] as const,
+    profile: (productId: string) => ['antiques', 'profile', productId] as const,
+  },
+  sanskritEdit: {
+    all: ['sanskrit-edit'] as const,
+    lists: () => ['sanskrit-edit', 'list'] as const,
+    list: (params?: Record<string, any>) => ['sanskrit-edit', 'list', params] as const,
+    profile: (productId: string) => ['sanskrit-edit', 'profile', productId] as const,
+  },
 };

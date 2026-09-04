@@ -1,4 +1,4 @@
-# Lagoree Arts — Admin Web Application (Phase 6: Media Library Management)
+# Lagoree Arts — Admin Web Application (Phase 7: Artists, Antiques & Sanskrit Edit Management)
 
 Luxury-heritage administrative web application for **Lagoree Arts**.
 
@@ -22,6 +22,22 @@ admin/
 │   │   ├── App.tsx             # Root application provider wrapper
 │   │   └── router.tsx          # Master route hierarchy and RBAC guards
 │   ├── components/
+│   │   ├── artists/
+│   │   │   ├── ArtistForm.tsx               # Master artist editor (Identity, Lineage, SEO)
+│   │   │   ├── ArtistMediaManager.tsx       # Profile, Gallery, OG media curator with MediaPicker
+│   │   │   ├── ArtistProductAssociations.tsx# Linked products table with roles and primary toggle
+│   │   │   ├── ArtistStatusBadge.tsx        # ACTIVE/INACTIVE & Featured badge
+│   │   │   └── ProductArtistManager.tsx     # Product-level tab to manage artist associations
+│   │   ├── antiques/
+│   │   │   ├── AntiqueProfileForm.tsx       # Antique specifications with 1-of-1 validation
+│   │   │   ├── AuthenticityBadge.tsx        # VERIFIED, UNVERIFIED, UNKNOWN status badge
+│   │   │   ├── ConditionBadge.tsx           # EXCELLENT, GOOD, RESTORED status badge
+│   │   │   └── ProductAntiqueProfile.tsx    # Product-level antique profile tab
+│   │   ├── sanskrit/
+│   │   │   ├── ProductSanskritEditProfile.tsx# Product-level Sanskrit Edit tab
+│   │   │   ├── SanskritEditForm.tsx         # Verse, Calligraphy & Commentary editor
+│   │   │   ├── SanskritPublishingBadge.tsx  # Published vs Draft & Featured status badge
+│   │   │   └── SanskritTextCard.tsx         # Luxury Devanagari & IAST typography presenter
 │   │   ├── auth/
 │   │   │   ├── Can.tsx          # Declarative permission check component
 │   │   │   └── ProtectedRoute.tsx # Route protection and role barrier
@@ -171,6 +187,9 @@ admin/
 │       │   ├── reviews.ts      # Reviews API client
 │       │   ├── seo.ts          # SEO metadata API client
 │       │   ├── types.ts        # API response envelope types
+│       │   ├── antiques.ts     # Antiques & rare collectibles API client
+│       │   ├── artists.ts      # Artists & Master Makers API client
+│       │   ├── sanskritEdit.ts # The Sanskrit Edit API client
 │       │   └── variants.ts     # Product options & variants API client
 │       └── permissions/
 │           └── permissionHelpers.ts # Matrix authorization utilities
@@ -180,7 +199,8 @@ admin/
 │   │   ├── admin-phase3.test.mjs   # Product Management test suite (64 tests)
 │   │   ├── admin-phase4.test.mjs   # Category & Attribute Management test suite (68 tests)
 │   │   ├── admin-phase5.test.mjs   # Collection Management test suite (68 tests)
-│   │   └── admin-phase6.test.mjs   # Media Library Management test suite (70 tests)
+│   │   ├── admin-phase6.test.mjs   # Media Library Management test suite (70 tests)
+│   │   └── admin-phase7.test.mjs   # Artists, Antiques & Sanskrit Edit test suite (50 tests)
 ├── index.html
 ├── package.json
 ├── tailwind.config.js
@@ -201,22 +221,25 @@ npm run dev
 # Run TypeScript typecheck (0 errors)
 npm run typecheck
 
-# Build for production
+# Build for production (Clean bundle with zero errors)
 npm run build
 
-# Run complete test suite (Phases 1-6: 295 automated unit & integration tests passing 100%)
+# Run complete test suite (Phases 1-7: 345 automated unit & integration tests passing 100%)
 npm run test
 ```
 
 ---
 
-## 🔒 Security & Authorization
+## 🔒 Security & Invariant Guarantees
 
 - **In-Memory Access Tokens**: Access tokens are stored exclusively in memory.
 - **Silent Refresh**: On refresh, an HttpOnly cookie automatically recovers session tokens via `/api/v1/admin/auth/refresh`.
 - **401 Interception**: Automatic retry queue refreshes tokens transparently.
-- **RBAC**: Supports `SUPER_ADMIN`, `CATALOGUE_MANAGER`, `CONTENT_MANAGER`, `ORDER_MANAGER`, and `MARKETING_MANAGER`.
-- **System Collection Locks**: Core system collections cannot be deleted and type conversions are guarded.
-- **Safe Dissociation**: Removing a product from a collection dissociates the curation link without deleting the underlying product entity.
+- **RBAC**: Supports `SUPER_ADMIN`, `CATALOGUE_MANAGER`, `CONTENT_MANAGER`, `ORDER_MANAGER`, and `MARKETING_MANAGER` with permission synonyms for `artist.*`, `antique.*`, and `sanskrit-edit.*`.
+- **One-of-a-Kind Stock & Backorder Invariant**: Antique items marked `isOneOfAKind` enforce a strict `stock <= 1` inventory ceiling and prevent `allowBackorder`.
+- **Primary Artist Uniqueness**: Only one primary artist/maker can be assigned to an artwork at a time; assigning a new primary automatically unsets any previous primary.
+- **Sanskrit Edit Publishing Guard**: Curation features (`isFeatured: true`) strictly require publication (`isPublished: true`). Unpublishing automatically unfeatures the entry.
+- **Unicode & Diacritical Fidelity**: Complete UTF-8 preservation for Devanagari calligraphy and IAST scholarly diacritics without lossy client-side transformation.
+- **Safe Dissociation**: Removing a product from an artist, collection, or antique profile preserves the root catalog product entity.
 - **Cost Price Confidentiality**: `costPrice` is strictly hidden on customer storefront previews and read-only non-authorized screens.
 - **Unsaved Changes Guard**: Prevents accidental data loss across internal client-side navigation and external window closing (`beforeunload`).

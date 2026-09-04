@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "node tests/admin-phase1.test.mjs && node tests/admin-phase2.test.mjs && node tests/admin-phase3.test.mjs && node tests/admin-phase4.test.mjs && node tests/admin-phase5.test.mjs && node tests/admin-phase6.test.mjs"
+    "test": "node tests/admin-phase1.test.mjs && node tests/admin-phase2.test.mjs && node tests/admin-phase3.test.mjs && node tests/admin-phase4.test.mjs && node tests/admin-phase5.test.mjs && node tests/admin-phase6.test.mjs && node tests/admin-phase7.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.66.0",

@@ -70,7 +70,7 @@ export const NAVIGATION_CONFIG: NavSection[] = [
       },
       {
         label: 'The Sanskrit Edit',
-        href: '/admin/sanskrit',
+        href: '/admin/sanskrit-edit',
         icon: BookOpen,
         permission: 'sanskrit.read',
       },
