@@ -6,6 +6,7 @@ import { AttributesRepository } from '../attributes/attributes.repository.ts';
 import { AuditService } from '../../audit/audit.service.ts';
 import { RecommendationService } from '../recommendations/recommendation.service.ts';
 import { ReviewService } from '../reviews/review.service.ts';
+import { SeoPublicService } from '../seo/seo.public.service.ts';
 import type {
   CreateProductInput,
   UpdateProductInput,
@@ -701,6 +702,21 @@ export class ProductsService {
         totalReviews: 0,
         ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
         verifiedReviewCount: 0
+      };
+    }
+    try {
+      const seo = await SeoPublicService.getProductLightweightSeo(product.id);
+      formatted.seo = seo;
+    } catch {
+      formatted.seo = {
+        title: `${product.name} | Lagoree Arts`,
+        description: product.shortDescription || product.description || '',
+        canonicalUrl: `https://lagoreearts.com/products/${product.slug}`,
+        robots: product.status === 'ACTIVE' ? 'index,follow' : 'noindex,nofollow',
+        ogTitle: `${product.name} | Lagoree Arts`,
+        ogDescription: product.shortDescription || product.description || '',
+        ogImage: product.image || '',
+        twitterCard: 'summary_large_image'
       };
     }
     return formatted;

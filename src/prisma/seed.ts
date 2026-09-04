@@ -77,9 +77,12 @@ export const PERMISSIONS_DATA = [
   { name: 'Update Marketing', slug: 'marketing.update', module: 'MARKETING', description: 'Modify promotional discounts' },
   { name: 'Delete Coupon', slug: 'marketing.delete', module: 'MARKETING', description: 'Delete promotional coupons' },
 
-  // SEO
-  { name: 'View SEO Settings', slug: 'seo.view', module: 'SEO', description: 'View meta tags and SEO configs' },
-  { name: 'Update SEO Settings', slug: 'seo.update', module: 'SEO', description: 'Modify meta tags and structured data' },
+  // SEO (MODULE 26)
+  { name: 'View SEO Metadata', slug: 'seo.view', module: 'SEO', description: 'View SEO metadata and configurations' },
+  { name: 'Create SEO Metadata', slug: 'seo.create', module: 'SEO', description: 'Create SEO metadata overrides' },
+  { name: 'Update SEO Metadata', slug: 'seo.update', module: 'SEO', description: 'Modify SEO metadata overrides' },
+  { name: 'Delete SEO Metadata', slug: 'seo.delete', module: 'SEO', description: 'Delete SEO metadata overrides (restore fallback)' },
+  { name: 'Manage SEO Settings', slug: 'seo.settings', module: 'SEO', description: 'Manage global SEO site settings' },
 
   // ANTIQUES & COLLECTIBLES (MODULE 9)
   { name: 'View Antique Profiles', slug: 'antique.view', module: 'ANTIQUES', description: 'View antique and collectible profiles' },
@@ -241,7 +244,7 @@ export const ROLES_DATA = [
       'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.delete', 'recommendation.reorder',
       'review.view',
       'customer.view',
-      'seo.view', 'seo.update'
+      'seo.view', 'seo.create', 'seo.update'
     ]
   },
   {
@@ -274,7 +277,7 @@ export const ROLES_DATA = [
       'review.view', 'review.moderate', 'review.update',
       'customer.view',
       'cms.view', 'cms.create', 'cms.update', 'cms.delete',
-      'seo.view', 'seo.update'
+      'seo.view', 'seo.create', 'seo.update'
     ]
   },
   {
@@ -292,7 +295,8 @@ export const ROLES_DATA = [
       'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update',
       'recommendation.view',
-      'review.view'
+      'review.view',
+      'seo.view'
     ]
   },
   {
@@ -314,7 +318,8 @@ export const ROLES_DATA = [
       'navigation.view', 'navigation.create', 'navigation.update', 'navigation.publish',
       'journal-author.view', 'journal-category.view', 'journal-tag.view',
       'recommendation.view', 'recommendation.create', 'recommendation.update', 'recommendation.reorder',
-      'review.view', 'review.moderate'
+      'review.view', 'review.moderate',
+      'seo.view', 'seo.create', 'seo.update', 'seo.settings'
     ]
   }
 ];
@@ -1768,6 +1773,28 @@ export async function runSeed(): Promise<void> {
     });
 
     console.log('✓ Seeded default Header, Footer, and Mobile navigation menus');
+  }
+
+  // Seed default SEO Site Settings if not present
+  const existingSeoSettings = await prisma.seoSiteSettings.findFirst();
+  if (!existingSeoSettings) {
+    await prisma.seoSiteSettings.create({
+      data: {
+        id: 'global',
+        siteName: 'Lagoree Arts',
+        defaultTitle: 'Lagoree Arts | Heritage Luxury & Fine Art',
+        titleTemplate: '%s | Lagoree Arts',
+        defaultMetaDescription: 'Lagoree Arts presents timeless Indian masterworks, museum-grade antiquities, Sanskrit editorial treasures, and bespoke atelier framing.',
+        defaultOgImage: 'https://lagoreearts.com/assets/og-default.jpg',
+        defaultRobots: 'index,follow',
+        canonicalBaseUrl: 'https://lagoreearts.com',
+        twitterCard: 'summary_large_image',
+        organizationName: 'Lagoree Arts',
+        organizationLogo: 'https://lagoreearts.com/assets/logo.png',
+        organizationUrl: 'https://lagoreearts.com'
+      }
+    });
+    console.log('✓ Seeded default SEO Site Settings');
   }
 
   console.log('✨ Seeding Completed Successfully!\n');

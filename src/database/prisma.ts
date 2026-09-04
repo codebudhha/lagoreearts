@@ -1719,6 +1719,46 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON product_reviews(created_at);
   CREATE INDEX IF NOT EXISTS idx_reviews_order_item_id ON product_reviews(order_item_id);
   CREATE INDEX IF NOT EXISTS idx_reviews_variant_id ON product_reviews(variant_id);
+
+  CREATE TABLE IF NOT EXISTS seo_metadata (
+    id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    meta_title TEXT,
+    meta_description TEXT,
+    canonical_url TEXT,
+    robots TEXT,
+    og_title TEXT,
+    og_description TEXT,
+    og_image TEXT,
+    twitter_title TEXT,
+    twitter_description TEXT,
+    twitter_image TEXT,
+    twitter_card TEXT,
+    structured_data TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE (entity_type, entity_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_seo_entity_type ON seo_metadata(entity_type);
+  CREATE INDEX IF NOT EXISTS idx_seo_entity_id ON seo_metadata(entity_id);
+
+  CREATE TABLE IF NOT EXISTS seo_site_settings (
+    id TEXT PRIMARY KEY,
+    site_name TEXT NOT NULL DEFAULT 'Lagoree Arts',
+    default_title TEXT NOT NULL DEFAULT 'Lagoree Arts | Heritage Luxury & Fine Art',
+    title_template TEXT NOT NULL DEFAULT '%s | Lagoree Arts',
+    default_meta_description TEXT NOT NULL DEFAULT 'Lagoree Arts presents timeless Indian masterworks, museum-grade antiquities, Sanskrit editorial treasures, and bespoke atelier framing.',
+    default_og_image TEXT NOT NULL DEFAULT 'https://lagoreearts.com/assets/og-default.jpg',
+    default_robots TEXT NOT NULL DEFAULT 'index,follow',
+    canonical_base_url TEXT NOT NULL DEFAULT 'https://lagoreearts.com',
+    twitter_card TEXT NOT NULL DEFAULT 'summary_large_image',
+    organization_name TEXT NOT NULL DEFAULT 'Lagoree Arts',
+    organization_logo TEXT NOT NULL DEFAULT 'https://lagoreearts.com/assets/logo.png',
+    organization_url TEXT NOT NULL DEFAULT 'https://lagoreearts.com',
+    updated_at TEXT NOT NULL
+  );
 `);
 
 /**
@@ -13406,6 +13446,365 @@ export const prisma = {
       }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
+    }
+  },
+
+  seoMetadata: {
+    findUnique: ({ where }: { where: { id?: string; entityType_entityId?: { entityType: string; entityId: string } } }) => {
+      let row: any = null;
+      if (where?.id) {
+        row = db.prepare('SELECT * FROM seo_metadata WHERE id = ?').get(where.id);
+      } else if (where?.entityType_entityId) {
+        row = db.prepare('SELECT * FROM seo_metadata WHERE entity_type = ? AND entity_id = ?').get(
+          where.entityType_entityId.entityType,
+          where.entityType_entityId.entityId
+        );
+      }
+      if (!row) return null;
+      return {
+        id: row.id,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        metaTitle: row.meta_title,
+        metaDescription: row.meta_description,
+        canonicalUrl: row.canonical_url,
+        robots: row.robots,
+        ogTitle: row.og_title,
+        ogDescription: row.og_description,
+        ogImage: row.og_image,
+        twitterTitle: row.twitter_title,
+        twitterDescription: row.twitter_description,
+        twitterImage: row.twitter_image,
+        twitterCard: row.twitter_card,
+        structuredData: row.structured_data,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findFirst: ({ where }: any = {}) => {
+      let sql = 'SELECT * FROM seo_metadata WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.entityType) { sql += ' AND entity_type = ?'; params.push(where.entityType); }
+      if (where?.entityId) { sql += ' AND entity_id = ?'; params.push(where.entityId); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return {
+        id: row.id,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        metaTitle: row.meta_title,
+        metaDescription: row.meta_description,
+        canonicalUrl: row.canonical_url,
+        robots: row.robots,
+        ogTitle: row.og_title,
+        ogDescription: row.og_description,
+        ogImage: row.og_image,
+        twitterTitle: row.twitter_title,
+        twitterDescription: row.twitter_description,
+        twitterImage: row.twitter_image,
+        twitterCard: row.twitter_card,
+        structuredData: row.structured_data,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findMany: ({ where, orderBy, skip, take }: any = {}) => {
+      let sql = 'SELECT * FROM seo_metadata WHERE 1=1';
+      const params: any[] = [];
+      if (where?.entityType) { sql += ' AND entity_type = ?'; params.push(where.entityType); }
+      if (where?.entityId) { sql += ' AND entity_id = ?'; params.push(where.entityId); }
+      if (where?.OR && Array.isArray(where.OR)) {
+        const orClauses: string[] = [];
+        for (const cond of where.OR) {
+          if (cond.metaTitle?.contains) {
+            orClauses.push('meta_title LIKE ?');
+            params.push(`%${cond.metaTitle.contains}%`);
+          }
+          if (cond.metaDescription?.contains) {
+            orClauses.push('meta_description LIKE ?');
+            params.push(`%${cond.metaDescription.contains}%`);
+          }
+          if (cond.entityId?.contains) {
+            orClauses.push('entity_id LIKE ?');
+            params.push(`%${cond.entityId.contains}%`);
+          }
+        }
+        if (orClauses.length > 0) {
+          sql += ` AND (${orClauses.join(' OR ')})`;
+        }
+      }
+      if (orderBy) {
+        const key = Object.keys(orderBy)[0];
+        const dir = (orderBy[key] || 'asc').toUpperCase();
+        const colMap: Record<string, string> = {
+          createdAt: 'created_at',
+          updatedAt: 'updated_at',
+          entityType: 'entity_type',
+          entityId: 'entity_id',
+          metaTitle: 'meta_title'
+        };
+        const dbCol = colMap[key] || 'created_at';
+        sql += ` ORDER BY ${dbCol} ${dir}`;
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+      if (take !== undefined) {
+        sql += ` LIMIT ${Number(take)}`;
+        if (skip !== undefined) {
+          sql += ` OFFSET ${Number(skip)}`;
+        }
+      }
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(row => ({
+        id: row.id,
+        entityType: row.entity_type,
+        entityId: row.entity_id,
+        metaTitle: row.meta_title,
+        metaDescription: row.meta_description,
+        canonicalUrl: row.canonical_url,
+        robots: row.robots,
+        ogTitle: row.og_title,
+        ogDescription: row.og_description,
+        ogImage: row.og_image,
+        twitterTitle: row.twitter_title,
+        twitterDescription: row.twitter_description,
+        twitterImage: row.twitter_image,
+        twitterCard: row.twitter_card,
+        structuredData: row.structured_data,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO seo_metadata (
+          id, entity_type, entity_id, meta_title, meta_description, canonical_url,
+          robots, og_title, og_description, og_image, twitter_title, twitter_description,
+          twitter_image, twitter_card, structured_data, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.entityType,
+        data.entityId,
+        data.metaTitle ?? null,
+        data.metaDescription ?? null,
+        data.canonicalUrl ?? null,
+        data.robots ?? null,
+        data.ogTitle ?? null,
+        data.ogDescription ?? null,
+        data.ogImage ?? null,
+        data.twitterTitle ?? null,
+        data.twitterDescription ?? null,
+        data.twitterImage ?? null,
+        data.twitterCard ?? null,
+        typeof data.structuredData === 'object' ? JSON.stringify(data.structuredData) : (data.structuredData ?? null),
+        now,
+        now
+      );
+      return prisma.seoMetadata.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { id?: string; entityType_entityId?: { entityType: string; entityId: string } }; data: any }) => {
+      const existing = prisma.seoMetadata.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.metaTitle !== undefined) { updates.push('meta_title = ?'); params.push(data.metaTitle); }
+      if (data.metaDescription !== undefined) { updates.push('meta_description = ?'); params.push(data.metaDescription); }
+      if (data.canonicalUrl !== undefined) { updates.push('canonical_url = ?'); params.push(data.canonicalUrl); }
+      if (data.robots !== undefined) { updates.push('robots = ?'); params.push(data.robots); }
+      if (data.ogTitle !== undefined) { updates.push('og_title = ?'); params.push(data.ogTitle); }
+      if (data.ogDescription !== undefined) { updates.push('og_description = ?'); params.push(data.ogDescription); }
+      if (data.ogImage !== undefined) { updates.push('og_image = ?'); params.push(data.ogImage); }
+      if (data.twitterTitle !== undefined) { updates.push('twitter_title = ?'); params.push(data.twitterTitle); }
+      if (data.twitterDescription !== undefined) { updates.push('twitter_description = ?'); params.push(data.twitterDescription); }
+      if (data.twitterImage !== undefined) { updates.push('twitter_image = ?'); params.push(data.twitterImage); }
+      if (data.twitterCard !== undefined) { updates.push('twitter_card = ?'); params.push(data.twitterCard); }
+      if (data.structuredData !== undefined) {
+        updates.push('structured_data = ?');
+        params.push(typeof data.structuredData === 'object' ? JSON.stringify(data.structuredData) : data.structuredData);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(existing.id);
+
+      db.prepare(`UPDATE seo_metadata SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.seoMetadata.findUnique({ where: { id: existing.id } });
+    },
+
+    upsert: ({ where, create, update }: any) => {
+      const existing = prisma.seoMetadata.findUnique({ where });
+      if (existing) {
+        return prisma.seoMetadata.update({ where: { id: existing.id }, data: update });
+      } else {
+        return prisma.seoMetadata.create({ data: create });
+      }
+    },
+
+    delete: ({ where }: any) => {
+      const existing = prisma.seoMetadata.findUnique({ where });
+      if (!existing) return null;
+      db.prepare('DELETE FROM seo_metadata WHERE id = ?').run(existing.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM seo_metadata').run();
+        return;
+      }
+      let sql = 'DELETE FROM seo_metadata WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.entityType) { sql += ' AND entity_type = ?'; params.push(where.entityType); }
+      if (where?.entityId) { sql += ' AND entity_id = ?'; params.push(where.entityId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM seo_metadata WHERE 1=1';
+      const params: any[] = [];
+      if (where?.entityType) { sql += ' AND entity_type = ?'; params.push(where.entityType); }
+      if (where?.entityId) { sql += ' AND entity_id = ?'; params.push(where.entityId); }
+      if (where?.OR && Array.isArray(where.OR)) {
+        const orClauses: string[] = [];
+        for (const cond of where.OR) {
+          if (cond.metaTitle?.contains) {
+            orClauses.push('meta_title LIKE ?');
+            params.push(`%${cond.metaTitle.contains}%`);
+          }
+          if (cond.metaDescription?.contains) {
+            orClauses.push('meta_description LIKE ?');
+            params.push(`%${cond.metaDescription.contains}%`);
+          }
+          if (cond.entityId?.contains) {
+            orClauses.push('entity_id LIKE ?');
+            params.push(`%${cond.entityId.contains}%`);
+          }
+        }
+        if (orClauses.length > 0) {
+          sql += ` AND (${orClauses.join(' OR ')})`;
+        }
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  seoSiteSettings: {
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const row: any = db.prepare('SELECT * FROM seo_site_settings WHERE id = ?').get(where.id);
+      if (!row) return null;
+      return {
+        id: row.id,
+        siteName: row.site_name,
+        defaultTitle: row.default_title,
+        titleTemplate: row.title_template,
+        defaultMetaDescription: row.default_meta_description,
+        defaultOgImage: row.default_og_image,
+        defaultRobots: row.default_robots,
+        canonicalBaseUrl: row.canonical_base_url,
+        twitterCard: row.twitter_card,
+        organizationName: row.organization_name,
+        organizationLogo: row.organization_logo,
+        organizationUrl: row.organization_url,
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findFirst: () => {
+      const row: any = db.prepare('SELECT * FROM seo_site_settings LIMIT 1').get();
+      if (!row) return null;
+      return {
+        id: row.id,
+        siteName: row.site_name,
+        defaultTitle: row.default_title,
+        titleTemplate: row.title_template,
+        defaultMetaDescription: row.default_meta_description,
+        defaultOgImage: row.default_og_image,
+        defaultRobots: row.default_robots,
+        canonicalBaseUrl: row.canonical_base_url,
+        twitterCard: row.twitter_card,
+        organizationName: row.organization_name,
+        organizationLogo: row.organization_logo,
+        organizationUrl: row.organization_url,
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || 'global';
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO seo_site_settings (
+          id, site_name, default_title, title_template, default_meta_description,
+          default_og_image, default_robots, canonical_base_url, twitter_card,
+          organization_name, organization_logo, organization_url, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.siteName || 'Lagoree Arts',
+        data.defaultTitle || 'Lagoree Arts | Heritage Luxury & Fine Art',
+        data.titleTemplate || '%s | Lagoree Arts',
+        data.defaultMetaDescription || 'Lagoree Arts presents timeless Indian masterworks, museum-grade antiquities, Sanskrit editorial treasures, and bespoke atelier framing.',
+        data.defaultOgImage || 'https://lagoreearts.com/assets/og-default.jpg',
+        data.defaultRobots || 'index,follow',
+        data.canonicalBaseUrl || 'https://lagoreearts.com',
+        data.twitterCard || 'summary_large_image',
+        data.organizationName || 'Lagoree Arts',
+        data.organizationLogo || 'https://lagoreearts.com/assets/logo.png',
+        data.organizationUrl || 'https://lagoreearts.com',
+        now
+      );
+      return prisma.seoSiteSettings.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: any }) => {
+      const existing = prisma.seoSiteSettings.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+      const now = new Date().toISOString();
+
+      if (data.siteName !== undefined) { updates.push('site_name = ?'); params.push(data.siteName); }
+      if (data.defaultTitle !== undefined) { updates.push('default_title = ?'); params.push(data.defaultTitle); }
+      if (data.titleTemplate !== undefined) { updates.push('title_template = ?'); params.push(data.titleTemplate); }
+      if (data.defaultMetaDescription !== undefined) { updates.push('default_meta_description = ?'); params.push(data.defaultMetaDescription); }
+      if (data.defaultOgImage !== undefined) { updates.push('default_og_image = ?'); params.push(data.defaultOgImage); }
+      if (data.defaultRobots !== undefined) { updates.push('default_robots = ?'); params.push(data.defaultRobots); }
+      if (data.canonicalBaseUrl !== undefined) { updates.push('canonical_base_url = ?'); params.push(data.canonicalBaseUrl); }
+      if (data.twitterCard !== undefined) { updates.push('twitter_card = ?'); params.push(data.twitterCard); }
+      if (data.organizationName !== undefined) { updates.push('organization_name = ?'); params.push(data.organizationName); }
+      if (data.organizationLogo !== undefined) { updates.push('organization_logo = ?'); params.push(data.organizationLogo); }
+      if (data.organizationUrl !== undefined) { updates.push('organization_url = ?'); params.push(data.organizationUrl); }
+
+      updates.push('updated_at = ?');
+      params.push(now);
+      params.push(where.id);
+
+      db.prepare(`UPDATE seo_site_settings SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      return prisma.seoSiteSettings.findUnique({ where: { id: where.id } });
+    },
+
+    upsert: ({ where, create, update }: any) => {
+      const existing = prisma.seoSiteSettings.findUnique({ where });
+      if (existing) {
+        return prisma.seoSiteSettings.update({ where: { id: existing.id }, data: update });
+      } else {
+        return prisma.seoSiteSettings.create({ data: create });
+      }
     }
   },
 

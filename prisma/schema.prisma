@@ -2395,6 +2395,62 @@ model ProductReview {
   @@map("product_reviews")
 }
 
+enum SeoEntityType {
+  PRODUCT
+  CATEGORY
+  COLLECTION
+  ARTIST
+  JOURNAL_POST
+  LOOKBOOK
+  SANSKRIT_EDIT
+  ANTIQUE
+  HOMEPAGE
+  PAGE
+}
+
+model SeoMetadata {
+  id                 String        @id @default(uuid()) @db.VarChar(36)
+  entityType         SeoEntityType @map("entity_type")
+  entityId           String        @map("entity_id") @db.VarChar(100)
+  metaTitle          String?       @map("meta_title") @db.VarChar(255)
+  metaDescription    String?       @map("meta_description") @db.VarChar(1000)
+  canonicalUrl       String?       @map("canonical_url") @db.VarChar(500)
+  robots             String?       @map("robots") @db.VarChar(50)
+  ogTitle            String?       @map("og_title") @db.VarChar(255)
+  ogDescription      String?       @map("og_description") @db.VarChar(1000)
+  ogImage            String?       @map("og_image") @db.VarChar(500)
+  twitterTitle       String?       @map("twitter_title") @db.VarChar(255)
+  twitterDescription String?       @map("twitter_description") @db.VarChar(1000)
+  twitterImage       String?       @map("twitter_image") @db.VarChar(500)
+  twitterCard        String?       @map("twitter_card") @db.VarChar(50)
+  structuredData     String?       @map("structured_data") @db.Text
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+
+  @@unique([entityType, entityId], name: "uq_seo_entity")
+  @@index([entityType])
+  @@index([entityId])
+  @@map("seo_metadata")
+}
+
+model SeoSiteSettings {
+  id                     String   @id @default("global") @db.VarChar(36)
+  siteName               String   @default("Lagoree Arts") @map("site_name") @db.VarChar(100)
+  defaultTitle           String   @default("Lagoree Arts | Heritage Luxury & Fine Art") @map("default_title") @db.VarChar(255)
+  titleTemplate          String   @default("%s | Lagoree Arts") @map("title_template") @db.VarChar(100)
+  defaultMetaDescription String   @default("Lagoree Arts presents timeless Indian masterworks, museum-grade antiquities, Sanskrit editorial treasures, and bespoke atelier framing.") @map("default_meta_description") @db.VarChar(1000)
+  defaultOgImage         String   @default("https://lagoreearts.com/assets/og-default.jpg") @map("default_og_image") @db.VarChar(500)
+  defaultRobots          String   @default("index,follow") @map("default_robots") @db.VarChar(50)
+  canonicalBaseUrl       String   @default("https://lagoreearts.com") @map("canonical_base_url") @db.VarChar(255)
+  twitterCard            String   @default("summary_large_image") @map("twitter_card") @db.VarChar(50)
+  organizationName       String   @default("Lagoree Arts") @map("organization_name") @db.VarChar(100)
+  organizationLogo       String   @default("https://lagoreearts.com/assets/logo.png") @map("organization_logo") @db.VarChar(500)
+  organizationUrl        String   @default("https://lagoreearts.com") @map("organization_url") @db.VarChar(255)
+  updatedAt              DateTime @updatedAt @map("updated_at")
+
+  @@map("seo_site_settings")
+}
+
 
 
 

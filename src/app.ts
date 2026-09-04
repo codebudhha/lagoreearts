@@ -49,6 +49,7 @@ import { customerPaymentRouter, webhookPaymentRouter, adminPaymentRouter } from 
 import { customerShippingRouter, adminShippingRouter, adminShipmentRouter, publicShippingRouter } from './modules/shipping/shipping.routes.ts';
 import { publicRecommendationRoutes, adminRecommendationRoutes, adminProductRecommendationRoutes } from './modules/recommendations/recommendation.routes.ts';
 import { customerReviewRouter, adminReviewRouter, publicReviewRouter } from './modules/reviews/review.routes.ts';
+import { adminSeoRouter, publicSeoRouter, SitemapController, RobotsController } from './modules/seo/seo.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -202,12 +203,17 @@ export function createApp() {
         'Module 21: Payments & Gateway Orchestration',
         'Module 22: Shipping & Delivery Management',
         'Module 24: Cross-sell & Upsell Recommendations',
-        'Module 25: Product Reviews & Ratings'
+        'Module 25: Product Reviews & Ratings',
+        'Module 26: Search Engine Optimization (SEO)'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
     });
   });
+
+  // Root SEO Endpoints (Sitemap & Robots)
+  app.get('/sitemap.xml', SitemapController.getSitemapXml);
+  app.get('/robots.txt', RobotsController.getRobotsTxt);
 
   // Serve uploaded media files statically
   app.use('/uploads', (req, res, next) => {
@@ -226,6 +232,8 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/admin/seo', adminSeoRouter);
+  app.use('/api/v1/seo', publicSeoRouter);
   app.use('/api/v1/customer', customerReviewRouter);
   app.use('/api/v1/admin/reviews', adminReviewRouter);
   app.use('/api/v1/shipping', publicShippingRouter);

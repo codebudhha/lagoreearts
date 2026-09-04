@@ -188,6 +188,14 @@ export class ExpressApp extends RouterInstance {
         return res;
       };
 
+      res.send = function (data: any) {
+        if (typeof data === 'object' && data !== null && !Buffer.isBuffer(data)) {
+          return res.json(data);
+        }
+        res.end(data);
+        return res;
+      };
+
       res.json = function (data: any) {
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.end(JSON.stringify(data));
