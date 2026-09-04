@@ -45,6 +45,7 @@ import { checkoutRoutes } from './modules/checkout/checkout.routes.ts';
 import { adminCheckoutRoutes } from './modules/checkout/admin-checkout.routes.ts';
 import { orderRouter, customerOrderRouter } from './modules/orders/order.routes.ts';
 import { adminOrderRouter } from './modules/orders/admin-order.routes.ts';
+import { customerPaymentRouter, webhookPaymentRouter, adminPaymentRouter } from './modules/payments/payment.routes.ts';
 import { ApiResponse } from './utils/apiResponse.ts';
 
 import path from 'node:path';
@@ -59,8 +60,13 @@ export function createApp() {
   // Serve static files (HTML, CSS, JS, images)
   app.use(express.static(rootDir));
 
-  // Parse JSON bodies
-  app.use(express.json({ limit: '1mb' }));
+  // Parse JSON bodies with raw body capture for HMAC webhook verification
+  app.use(express.json({
+    limit: '1mb',
+    verify: (req, res, buf) => {
+      (req as any).rawBody = buf;
+    }
+  }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
   // Basic Cookie Parser
@@ -189,7 +195,8 @@ export function createApp() {
         'Module 16: Customer Management & Customer Accounts',
         'Module 18: Cart & Shopping Cart Management',
         'Module 19: Checkout System',
-        'Module 20: Order Management'
+        'Module 20: Order Management',
+        'Module 21: Payments & Gateway Orchestration'
       ],
       brand: 'Lagoree Arts',
       timestamp: new Date().toISOString()
@@ -213,6 +220,9 @@ export function createApp() {
   });
 
   // 3. Module Routes
+  app.use('/api/v1/payments/webhooks', webhookPaymentRouter);
+  app.use('/api/v1/customer/orders', customerPaymentRouter);
+  app.use('/api/v1/admin/payments', adminPaymentRouter);
   app.use('/api/v1/orders', orderRouter);
   app.use('/api/v1/customer/orders', customerOrderRouter);
   app.use('/api/v1/admin/orders', adminOrderRouter);

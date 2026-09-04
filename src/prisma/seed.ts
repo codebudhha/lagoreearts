@@ -165,6 +165,13 @@ export const PERMISSIONS_DATA = [
   { name: 'Cancel Order', slug: 'order.cancel', module: 'ORDERS', description: 'Cancel order records' },
   { name: 'Manage Order Status', slug: 'order.manage-status', module: 'ORDERS', description: 'Advance order lifecycle and payment status' },
 
+  // PAYMENTS (MODULE 21)
+  { name: 'View Payments', slug: 'payment.view', module: 'PAYMENTS', description: 'View payment records and attempt history' },
+  { name: 'Create Payment', slug: 'payment.create', module: 'PAYMENTS', description: 'Initiate payment sessions' },
+  { name: 'Update Payment', slug: 'payment.update', module: 'PAYMENTS', description: 'Update payment records and status' },
+  { name: 'Reconcile Payment', slug: 'payment.reconcile', module: 'PAYMENTS', description: 'Manually reconcile payment status with gateways' },
+  { name: 'Refund Payment', slug: 'payment.refund', module: 'PAYMENTS', description: 'Issue partial or full payment refunds' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -246,6 +253,7 @@ export const ROLES_DATA = [
     isSystem: true,
     permissionSlugs: [
       'order.view', 'order.create', 'order.update', 'order.cancel', 'order.manage-status',
+      'payment.view', 'payment.create', 'payment.update', 'payment.reconcile', 'payment.refund',
       'cart.view',
       'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update'

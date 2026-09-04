@@ -1421,6 +1421,93 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS payments (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    provider TEXT NOT NULL DEFAULT 'RAZORPAY',
+    provider_payment_id TEXT,
+    provider_order_id TEXT,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL DEFAULT 'CREATED',
+    method TEXT,
+    idempotency_key TEXT,
+    failure_code TEXT,
+    failure_message TEXT,
+    paid_at TEXT,
+    failed_at TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
+  CREATE INDEX IF NOT EXISTS idx_payments_provider ON payments(provider);
+  CREATE INDEX IF NOT EXISTS idx_payments_provider_payment_id ON payments(provider_payment_id);
+  CREATE INDEX IF NOT EXISTS idx_payments_provider_order_id ON payments(provider_order_id);
+  CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+  CREATE INDEX IF NOT EXISTS idx_payments_idempotency_key ON payments(idempotency_key);
+  CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at);
+
+  CREATE TABLE IF NOT EXISTS payment_attempts (
+    id TEXT PRIMARY KEY,
+    payment_id TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    provider_order_id TEXT,
+    provider_payment_id TEXT,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL,
+    idempotency_key TEXT,
+    request_reference TEXT,
+    failure_code TEXT,
+    failure_message TEXT,
+    raw_response_sanitized TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payment_attempts_payment_id ON payment_attempts(payment_id);
+  CREATE INDEX IF NOT EXISTS idx_payment_attempts_provider_payment_id ON payment_attempts(provider_payment_id);
+  CREATE INDEX IF NOT EXISTS idx_payment_attempts_provider_order_id ON payment_attempts(provider_order_id);
+  CREATE INDEX IF NOT EXISTS idx_payment_attempts_status ON payment_attempts(status);
+  CREATE INDEX IF NOT EXISTS idx_payment_attempts_created_at ON payment_attempts(created_at);
+
+  CREATE TABLE IF NOT EXISTS payment_webhook_events (
+    id TEXT PRIMARY KEY,
+    provider TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    signature_verified INTEGER NOT NULL DEFAULT 0,
+    payload_hash TEXT NOT NULL,
+    processed_at TEXT,
+    created_at TEXT NOT NULL,
+    UNIQUE(provider, event_id)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payment_webhook_provider ON payment_webhook_events(provider);
+  CREATE INDEX IF NOT EXISTS idx_payment_webhook_event_type ON payment_webhook_events(event_type);
+  CREATE INDEX IF NOT EXISTS idx_payment_webhook_payload_hash ON payment_webhook_events(payload_hash);
+  CREATE INDEX IF NOT EXISTS idx_payment_webhook_processed_at ON payment_webhook_events(processed_at);
+
+  CREATE TABLE IF NOT EXISTS payment_refunds (
+    id TEXT PRIMARY KEY,
+    payment_id TEXT NOT NULL,
+    provider_refund_id TEXT,
+    amount REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    reason TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (payment_id) REFERENCES payments(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_payment_refunds_payment_id ON payment_refunds(payment_id);
+  CREATE INDEX IF NOT EXISTS idx_payment_refunds_provider_refund_id ON payment_refunds(provider_refund_id);
+  CREATE INDEX IF NOT EXISTS idx_payment_refunds_status ON payment_refunds(status);
 `);
 
 /**
@@ -10495,6 +10582,13 @@ export const prisma = {
         });
       }
 
+      if (include?.payments) {
+        orderObj.payments = prisma.payment.findMany({
+          where: { orderId: row.id },
+          include: typeof include.payments === 'object' ? include.payments.include : undefined
+        });
+      }
+
       return orderObj;
     },
 
@@ -11015,6 +11109,484 @@ export const prisma = {
       } else {
         return prisma.orderSequence.create({ data: create });
       }
+    }
+  },
+
+  payment: {
+    findUnique: ({ where, include }: { where: { id?: string; idempotencyKey?: string; providerPaymentId?: string; providerOrderId?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM payments WHERE id = ?').get(where.id);
+      } else if (where.idempotencyKey) {
+        row = db.prepare('SELECT * FROM payments WHERE idempotency_key = ?').get(where.idempotencyKey);
+      } else if (where.providerPaymentId) {
+        row = db.prepare('SELECT * FROM payments WHERE provider_payment_id = ?').get(where.providerPaymentId);
+      } else if (where.providerOrderId) {
+        row = db.prepare('SELECT * FROM payments WHERE provider_order_id = ?').get(where.providerOrderId);
+      }
+      if (!row) return null;
+
+      const paymentObj: any = {
+        id: row.id,
+        orderId: row.order_id,
+        provider: row.provider,
+        providerPaymentId: row.provider_payment_id,
+        providerOrderId: row.provider_order_id,
+        amount: Number(row.amount),
+        currency: row.currency,
+        status: row.status,
+        method: row.method,
+        idempotencyKey: row.idempotency_key,
+        failureCode: row.failure_code,
+        failureMessage: row.failure_message,
+        paidAt: row.paid_at ? new Date(row.paid_at) : null,
+        failedAt: row.failed_at ? new Date(row.failed_at) : null,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.order && row.order_id) {
+        paymentObj.order = prisma.order.findUnique({
+          where: { id: row.order_id },
+          include: typeof include.order === 'object' ? include.order.include : undefined
+        });
+      }
+
+      if (include?.attempts) {
+        paymentObj.attempts = prisma.paymentAttempt.findMany({
+          where: { paymentId: row.id },
+          include: typeof include.attempts === 'object' ? include.attempts.include : undefined
+        });
+      }
+
+      if (include?.refunds) {
+        paymentObj.refunds = prisma.paymentRefund.findMany({
+          where: { paymentId: row.id },
+          include: typeof include.refunds === 'object' ? include.refunds.include : undefined
+        });
+      }
+
+      return paymentObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM payments WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      if (where?.providerPaymentId) { sql += ' AND provider_payment_id = ?'; params.push(where.providerPaymentId); }
+      if (where?.providerOrderId) { sql += ' AND provider_order_id = ?'; params.push(where.providerOrderId); }
+      if (where?.status) {
+        if (Array.isArray(where.status.in)) {
+          sql += ` AND status IN (${where.status.in.map(() => '?').join(', ')})`;
+          params.push(...where.status.in);
+        } else {
+          sql += ' AND status = ?';
+          params.push(where.status);
+        }
+      }
+      if (where?.idempotencyKey) { sql += ' AND idempotency_key = ?'; params.push(where.idempotencyKey); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.payment.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM payments WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      if (where?.providerPaymentId) { sql += ' AND provider_payment_id = ?'; params.push(where.providerPaymentId); }
+      if (where?.providerOrderId) { sql += ' AND provider_order_id = ?'; params.push(where.providerOrderId); }
+      if (where?.status) {
+        if (Array.isArray(where.status.in)) {
+          sql += ` AND status IN (${where.status.in.map(() => '?').join(', ')})`;
+          params.push(...where.status.in);
+        } else {
+          sql += ' AND status = ?';
+          params.push(where.status);
+        }
+      }
+      if (where?.idempotencyKey) { sql += ' AND idempotency_key = ?'; params.push(where.idempotencyKey); }
+
+      if (orderBy) {
+        if (orderBy.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        else if (orderBy.paidAt) sql += ` ORDER BY paid_at ${orderBy.paidAt.toUpperCase()}`;
+        else sql += ' ORDER BY created_at DESC';
+      } else {
+        sql += ' ORDER BY created_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.payment.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const paidAt = data.paidAt instanceof Date ? data.paidAt.toISOString() : (data.paidAt || null);
+      const failedAt = data.failedAt instanceof Date ? data.failedAt.toISOString() : (data.failedAt || null);
+
+      db.prepare(`
+        INSERT INTO payments (
+          id, order_id, provider, provider_payment_id, provider_order_id,
+          amount, currency, status, method, idempotency_key, failure_code,
+          failure_message, paid_at, failed_at, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderId,
+        data.provider || 'RAZORPAY',
+        data.providerPaymentId || null,
+        data.providerOrderId || null,
+        Number(data.amount || 0),
+        data.currency || 'INR',
+        data.status || 'CREATED',
+        data.method || null,
+        data.idempotencyKey || null,
+        data.failureCode || null,
+        data.failureMessage || null,
+        paidAt,
+        failedAt,
+        now,
+        now
+      );
+
+      if (data.attempts?.create) {
+        const attemptsToCreate = Array.isArray(data.attempts.create) ? data.attempts.create : [data.attempts.create];
+        for (const att of attemptsToCreate) {
+          prisma.paymentAttempt.create({
+            data: {
+              ...att,
+              paymentId: id
+            }
+          });
+        }
+      }
+
+      return prisma.payment.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.payment.findUnique({ where });
+      if (!existing) return null;
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.providerPaymentId !== undefined) { updates.push('provider_payment_id = ?'); params.push(data.providerPaymentId); }
+      if (data.providerOrderId !== undefined) { updates.push('provider_order_id = ?'); params.push(data.providerOrderId); }
+      if (data.method !== undefined) { updates.push('method = ?'); params.push(data.method); }
+      if (data.failureCode !== undefined) { updates.push('failure_code = ?'); params.push(data.failureCode); }
+      if (data.failureMessage !== undefined) { updates.push('failure_message = ?'); params.push(data.failureMessage); }
+      if (data.paidAt !== undefined) {
+        const val = data.paidAt instanceof Date ? data.paidAt.toISOString() : (data.paidAt || null);
+        updates.push('paid_at = ?');
+        params.push(val);
+      }
+      if (data.failedAt !== undefined) {
+        const val = data.failedAt instanceof Date ? data.failedAt.toISOString() : (data.failedAt || null);
+        updates.push('failed_at = ?');
+        params.push(val);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE payments SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.payment.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.payment.findUnique({ where, include: { attempts: true, refunds: true } });
+      if (!existing) return null;
+      db.prepare('DELETE FROM payments WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM payment_refunds').run();
+        db.prepare('DELETE FROM payment_attempts').run();
+        db.prepare('DELETE FROM payments').run();
+        return;
+      }
+      let sql = 'DELETE FROM payments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM payments WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  paymentAttempt: {
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const row: any = db.prepare('SELECT * FROM payment_attempts WHERE id = ?').get(where.id);
+      if (!row) return null;
+      return {
+        id: row.id,
+        paymentId: row.payment_id,
+        provider: row.provider,
+        providerOrderId: row.provider_order_id,
+        providerPaymentId: row.provider_payment_id,
+        amount: Number(row.amount),
+        currency: row.currency,
+        status: row.status,
+        idempotencyKey: row.idempotency_key,
+        requestReference: row.request_reference,
+        failureCode: row.failure_code,
+        failureMessage: row.failure_message,
+        rawResponseSanitized: row.raw_response_sanitized,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findMany: ({ where, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM payment_attempts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.paymentId) { sql += ' AND payment_id = ?'; params.push(where.paymentId); }
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.paymentAttempt.findUnique({ where: { id: r.id } }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO payment_attempts (
+          id, payment_id, provider, provider_order_id, provider_payment_id,
+          amount, currency, status, idempotency_key, request_reference,
+          failure_code, failure_message, raw_response_sanitized, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.paymentId,
+        data.provider || 'MOCK',
+        data.providerOrderId || null,
+        data.providerPaymentId || null,
+        Number(data.amount || 0),
+        data.currency || 'INR',
+        data.status || 'PENDING',
+        data.idempotencyKey || null,
+        data.requestReference || null,
+        data.failureCode || null,
+        data.failureMessage || null,
+        data.rawResponseSanitized || null,
+        now,
+        now
+      );
+      return prisma.paymentAttempt.findUnique({ where: { id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM payment_attempts').run();
+        return;
+      }
+      let sql = 'DELETE FROM payment_attempts WHERE 1=1';
+      const params: any[] = [];
+      if (where?.paymentId) { sql += ' AND payment_id = ?'; params.push(where.paymentId); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  paymentWebhookEvent: {
+    findUnique: ({ where }: { where: { id?: string; provider_eventId?: { provider: string; eventId: string } } }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM payment_webhook_events WHERE id = ?').get(where.id);
+      } else if (where.provider_eventId) {
+        row = db.prepare('SELECT * FROM payment_webhook_events WHERE provider = ? AND event_id = ?')
+          .get(where.provider_eventId.provider, where.provider_eventId.eventId);
+      }
+      if (!row) return null;
+      return {
+        id: row.id,
+        provider: row.provider,
+        eventId: row.event_id,
+        eventType: row.event_type,
+        signatureVerified: Boolean(row.signature_verified),
+        payloadHash: row.payload_hash,
+        processedAt: row.processed_at ? new Date(row.processed_at) : null,
+        createdAt: new Date(row.created_at)
+      };
+    },
+
+    findFirst: ({ where }: any = {}) => {
+      let sql = 'SELECT id FROM payment_webhook_events WHERE 1=1';
+      const params: any[] = [];
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      if (where?.eventId) { sql += ' AND event_id = ?'; params.push(where.eventId); }
+      if (where?.eventType) { sql += ' AND event_type = ?'; params.push(where.eventType); }
+      if (where?.payloadHash) { sql += ' AND payload_hash = ?'; params.push(where.payloadHash); }
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.paymentWebhookEvent.findUnique({ where: { id: row.id } });
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const processedAt = data.processedAt instanceof Date ? data.processedAt.toISOString() : (data.processedAt || null);
+
+      db.prepare(`
+        INSERT INTO payment_webhook_events (
+          id, provider, event_id, event_type, signature_verified, payload_hash, processed_at, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.provider || 'MOCK',
+        data.eventId,
+        data.eventType || 'payment.captured',
+        data.signatureVerified ? 1 : 0,
+        data.payloadHash || '',
+        processedAt,
+        now
+      );
+
+      return prisma.paymentWebhookEvent.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { id: string }; data: any }) => {
+      const existing = prisma.paymentWebhookEvent.findUnique({ where });
+      if (!existing) return null;
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.processedAt !== undefined) {
+        const val = data.processedAt instanceof Date ? data.processedAt.toISOString() : (data.processedAt || null);
+        updates.push('processed_at = ?');
+        params.push(val);
+      }
+      if (data.signatureVerified !== undefined) {
+        updates.push('signature_verified = ?');
+        params.push(data.signatureVerified ? 1 : 0);
+      }
+
+      if (updates.length > 0) {
+        params.push(where.id);
+        db.prepare(`UPDATE payment_webhook_events SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+      }
+
+      return prisma.paymentWebhookEvent.findUnique({ where: { id: where.id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM payment_webhook_events').run();
+        return;
+      }
+      let sql = 'DELETE FROM payment_webhook_events WHERE 1=1';
+      const params: any[] = [];
+      if (where?.provider) { sql += ' AND provider = ?'; params.push(where.provider); }
+      db.prepare(sql).run(...params);
+    }
+  },
+
+  paymentRefund: {
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const row: any = db.prepare('SELECT * FROM payment_refunds WHERE id = ?').get(where.id);
+      if (!row) return null;
+      return {
+        id: row.id,
+        paymentId: row.payment_id,
+        providerRefundId: row.provider_refund_id,
+        amount: Number(row.amount),
+        currency: row.currency,
+        status: row.status,
+        reason: row.reason,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    findMany: ({ where, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM payment_refunds WHERE 1=1';
+      const params: any[] = [];
+      if (where?.paymentId) { sql += ' AND payment_id = ?'; params.push(where.paymentId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.paymentRefund.findUnique({ where: { id: r.id } }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO payment_refunds (
+          id, payment_id, provider_refund_id, amount, currency, status, reason, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.paymentId,
+        data.providerRefundId || null,
+        Number(data.amount || 0),
+        data.currency || 'INR',
+        data.status || 'PENDING',
+        data.reason || null,
+        now,
+        now
+      );
+      return prisma.paymentRefund.findUnique({ where: { id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM payment_refunds').run();
+        return;
+      }
+      let sql = 'DELETE FROM payment_refunds WHERE 1=1';
+      const params: any[] = [];
+      if (where?.paymentId) { sql += ' AND payment_id = ?'; params.push(where.paymentId); }
+      db.prepare(sql).run(...params);
     }
   },
 

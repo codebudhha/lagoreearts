@@ -1906,6 +1906,7 @@ model Order {
   checkoutSession    CheckoutSession  @relation(fields: [checkoutSessionId], references: [id], onDelete: Restrict)
   items              OrderItem[]
   addresses          OrderAddress[]
+  payments           Payment[]
 
   @@index([orderNumber])
   @@index([checkoutSessionId])
@@ -1979,5 +1980,117 @@ model OrderSequence {
   @@unique([year])
   @@map("order_sequences")
 }
+
+// ==========================================
+// MODULE 21 — PAYMENTS
+// ==========================================
+
+enum PaymentRecordStatus {
+  CREATED
+  PENDING
+  AUTHORIZED
+  CAPTURED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+model Payment {
+  id                String              @id @default(uuid()) @db.VarChar(36)
+  orderId           String              @map("order_id") @db.VarChar(36)
+  provider          String              @default("RAZORPAY") @db.VarChar(50)
+  providerPaymentId String?             @map("provider_payment_id") @db.VarChar(100)
+  providerOrderId   String?             @map("provider_order_id") @db.VarChar(100)
+  amount            Decimal             @db.Decimal(12, 2)
+  currency          String              @default("INR") @db.VarChar(10)
+  status            PaymentRecordStatus @default(CREATED)
+  method            String?             @db.VarChar(50)
+  idempotencyKey    String?             @map("idempotency_key") @db.VarChar(255)
+  failureCode       String?             @map("failure_code") @db.VarChar(100)
+  failureMessage    String?             @map("failure_message") @db.Text
+  paidAt            DateTime?           @map("paid_at")
+  failedAt          DateTime?           @map("failed_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  order             Order               @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  attempts          PaymentAttempt[]
+  refunds           PaymentRefund[]
+
+  @@index([orderId])
+  @@index([provider])
+  @@index([providerPaymentId])
+  @@index([providerOrderId])
+  @@index([status])
+  @@index([idempotencyKey])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id                   String   @id @default(uuid()) @db.VarChar(36)
+  paymentId            String   @map("payment_id") @db.VarChar(36)
+  provider             String   @db.VarChar(50)
+  providerOrderId      String?  @map("provider_order_id") @db.VarChar(100)
+  providerPaymentId    String?  @map("provider_payment_id") @db.VarChar(100)
+  amount               Decimal  @db.Decimal(12, 2)
+  currency             String   @default("INR") @db.VarChar(10)
+  status               String   @db.VarChar(50)
+  idempotencyKey       String?  @map("idempotency_key") @db.VarChar(255)
+  requestReference     String?  @map("request_reference") @db.VarChar(255)
+  failureCode          String?  @map("failure_code") @db.VarChar(100)
+  failureMessage       String?  @map("failure_message") @db.Text
+  rawResponseSanitized String?  @map("raw_response_sanitized") @db.Text
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  payment              Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([providerPaymentId])
+  @@index([providerOrderId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment_attempts")
+}
+
+model PaymentWebhookEvent {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  provider          String    @db.VarChar(50)
+  eventId           String    @map("event_id") @db.VarChar(100)
+  eventType         String    @map("event_type") @db.VarChar(100)
+  signatureVerified Boolean   @default(false) @map("signature_verified")
+  payloadHash       String    @map("payload_hash") @db.VarChar(255)
+  processedAt       DateTime? @map("processed_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@unique([provider, eventId])
+  @@index([provider])
+  @@index([eventType])
+  @@index([payloadHash])
+  @@index([processedAt])
+  @@map("payment_webhook_events")
+}
+
+model PaymentRefund {
+  id               String    @id @default(uuid()) @db.VarChar(36)
+  paymentId        String    @map("payment_id") @db.VarChar(36)
+  providerRefundId String?   @map("provider_refund_id") @db.VarChar(100)
+  amount           Decimal   @db.Decimal(12, 2)
+  currency         String    @default("INR") @db.VarChar(10)
+  status           String    @default("PENDING") @db.VarChar(50)
+  reason           String?   @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  payment          Payment   @relation(fields: [paymentId], references: [id], onDelete: Restrict)
+
+  @@index([paymentId])
+  @@index([providerRefundId])
+  @@index([status])
+  @@map("payment_refunds")
+}
+
 
 
