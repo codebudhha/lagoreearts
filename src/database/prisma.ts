@@ -1229,7 +1229,7 @@ db.exec(`
     expires_at TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_carts_customer_id ON carts(customer_id);
@@ -1257,7 +1257,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS checkout_sessions (
     id TEXT PRIMARY KEY,
     customer_id TEXT,
-    cart_id TEXT NOT NULL,
+    cart_id TEXT,
     guest_token_hash TEXT,
     status TEXT NOT NULL DEFAULT 'ACTIVE',
     currency TEXT NOT NULL DEFAULT 'INR',
@@ -1275,7 +1275,7 @@ db.exec(`
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
-    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE CASCADE
+    FOREIGN KEY (cart_id) REFERENCES carts(id) ON DELETE SET NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_checkout_customer_id ON checkout_sessions(customer_id);
@@ -1329,6 +1329,98 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_checkout_addresses_session_id ON checkout_addresses(checkout_session_id);
   CREATE INDEX IF NOT EXISTS idx_checkout_addresses_type ON checkout_addresses(type);
+
+  CREATE TABLE IF NOT EXISTS orders (
+    id TEXT PRIMARY KEY,
+    order_number TEXT UNIQUE NOT NULL,
+    customer_id TEXT,
+    checkout_session_id TEXT UNIQUE NOT NULL,
+    guest_order_token_hash TEXT,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    status TEXT NOT NULL DEFAULT 'PENDING',
+    payment_status TEXT NOT NULL DEFAULT 'PENDING',
+    email TEXT NOT NULL,
+    subtotal REAL NOT NULL,
+    discount_total REAL NOT NULL DEFAULT 0.0,
+    shipping_total REAL NOT NULL DEFAULT 0.0,
+    tax_total REAL NOT NULL DEFAULT 0.0,
+    grand_total REAL NOT NULL,
+    notes TEXT,
+    placed_at TEXT NOT NULL,
+    confirmed_at TEXT,
+    shipped_at TEXT,
+    delivered_at TEXT,
+    cancelled_at TEXT,
+    cancellation_reason TEXT,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
+    FOREIGN KEY (checkout_session_id) REFERENCES checkout_sessions(id) ON DELETE RESTRICT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
+  CREATE INDEX IF NOT EXISTS idx_orders_checkout_session_id ON orders(checkout_session_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_customer_id ON orders(customer_id);
+  CREATE INDEX IF NOT EXISTS idx_orders_guest_order_token ON orders(guest_order_token_hash);
+  CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+  CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+  CREATE INDEX IF NOT EXISTS idx_orders_email ON orders(email);
+  CREATE INDEX IF NOT EXISTS idx_orders_placed_at ON orders(placed_at);
+  CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+
+  CREATE TABLE IF NOT EXISTS order_items (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    product_id TEXT,
+    variant_id TEXT,
+    sku TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    variant_description TEXT,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price REAL NOT NULL,
+    line_total REAL NOT NULL,
+    currency TEXT NOT NULL DEFAULT 'INR',
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL,
+    FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE SET NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+  CREATE INDEX IF NOT EXISTS idx_order_items_product_id ON order_items(product_id);
+  CREATE INDEX IF NOT EXISTS idx_order_items_variant_id ON order_items(variant_id);
+  CREATE INDEX IF NOT EXISTS idx_order_items_sku ON order_items(sku);
+
+  CREATE TABLE IF NOT EXISTS order_addresses (
+    id TEXT PRIMARY KEY,
+    order_id TEXT NOT NULL,
+    type TEXT NOT NULL DEFAULT 'SHIPPING',
+    full_name TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    company_name TEXT,
+    address_line1 TEXT NOT NULL,
+    address_line2 TEXT,
+    landmark TEXT,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    postal_code TEXT NOT NULL,
+    country TEXT NOT NULL DEFAULT 'INDIA',
+    phone TEXT NOT NULL,
+    created_at TEXT NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_order_addresses_order_id ON order_addresses(order_id);
+  CREATE INDEX IF NOT EXISTS idx_order_addresses_type ON order_addresses(type);
+
+  CREATE TABLE IF NOT EXISTS order_sequences (
+    id TEXT PRIMARY KEY,
+    year INTEGER UNIQUE NOT NULL,
+    current_number INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  );
 `);
 
 /**
@@ -8846,6 +8938,24 @@ export const prisma = {
     delete: ({ where }: { where: { id: string } }) => {
       const existing = prisma.customer.findUnique({ where });
       if (!existing) return null;
+      try {
+        db.prepare('UPDATE orders SET customer_id = NULL WHERE customer_id = ?').run(where.id);
+        db.prepare('UPDATE checkout_sessions SET customer_id = NULL WHERE customer_id = ?').run(where.id);
+        db.prepare('DELETE FROM cart_items WHERE cart_id IN (SELECT id FROM carts WHERE customer_id = ?)').run(where.id);
+        const referencingCheckouts = db.prepare('SELECT COUNT(*) as count FROM checkout_sessions WHERE cart_id IN (SELECT id FROM carts WHERE customer_id = ?)').get(where.id) as any;
+        if (referencingCheckouts && referencingCheckouts.count > 0) {
+          db.prepare('UPDATE carts SET customer_id = NULL WHERE customer_id = ?').run(where.id);
+        } else {
+          db.prepare('DELETE FROM carts WHERE customer_id = ?').run(where.id);
+        }
+        db.prepare('DELETE FROM customer_addresses WHERE customer_id = ?').run(where.id);
+        db.prepare('DELETE FROM customer_sessions WHERE customer_id = ?').run(where.id);
+        db.prepare('DELETE FROM customer_consents WHERE customer_id = ?').run(where.id);
+        db.prepare('DELETE FROM customer_password_resets WHERE customer_id = ?').run(where.id);
+        db.prepare('DELETE FROM customer_email_verifications WHERE customer_id = ?').run(where.id);
+      } catch (e: any) {
+        // Ignored if table does not exist
+      }
       db.prepare('DELETE FROM customers WHERE id = ?').run(where.id);
       return existing;
     },
@@ -9565,12 +9675,25 @@ export const prisma = {
     delete: ({ where }: { where: { id?: string; customerId?: string; guestTokenHash?: string } }) => {
       const existing = prisma.cart.findUnique({ where });
       if (!existing) return null;
+      try {
+        db.prepare('UPDATE checkout_sessions SET cart_id = NULL WHERE cart_id = ?').run(existing.id);
+        db.prepare('DELETE FROM cart_items WHERE cart_id = ?').run(existing.id);
+      } catch (e) {}
       db.prepare('DELETE FROM carts WHERE id = ?').run(existing.id);
       return existing;
     },
 
     deleteMany: ({ where }: any = {}) => {
       if (!where || Object.keys(where).length === 0) {
+        try {
+          db.prepare('DELETE FROM order_addresses').run();
+          db.prepare('DELETE FROM order_items').run();
+          db.prepare('DELETE FROM orders').run();
+          db.prepare('DELETE FROM checkout_addresses').run();
+          db.prepare('DELETE FROM checkout_items').run();
+          db.prepare('DELETE FROM checkout_sessions').run();
+          db.prepare('DELETE FROM cart_items').run();
+        } catch (e) {}
         db.prepare('DELETE FROM carts').run();
         return;
       }
@@ -10009,12 +10132,26 @@ export const prisma = {
     delete: ({ where }: { where: { id: string } }) => {
       const existing = prisma.checkoutSession.findUnique({ where, include: { items: true, addresses: true } });
       if (!existing) return null;
+      try {
+        db.prepare('DELETE FROM order_addresses WHERE order_id IN (SELECT id FROM orders WHERE checkout_session_id = ?)').run(where.id);
+        db.prepare('DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE checkout_session_id = ?)').run(where.id);
+        db.prepare('DELETE FROM orders WHERE checkout_session_id = ?').run(where.id);
+        db.prepare('DELETE FROM checkout_addresses WHERE checkout_session_id = ?').run(where.id);
+        db.prepare('DELETE FROM checkout_items WHERE checkout_session_id = ?').run(where.id);
+      } catch (e) {}
       db.prepare('DELETE FROM checkout_sessions WHERE id = ?').run(where.id);
       return existing;
     },
 
     deleteMany: ({ where }: any = {}) => {
       if (!where || Object.keys(where).length === 0) {
+        try {
+          db.prepare('DELETE FROM order_addresses').run();
+          db.prepare('DELETE FROM order_items').run();
+          db.prepare('DELETE FROM orders').run();
+          db.prepare('DELETE FROM checkout_addresses').run();
+          db.prepare('DELETE FROM checkout_items').run();
+        } catch (e) {}
         db.prepare('DELETE FROM checkout_sessions').run();
         return;
       }
@@ -10292,6 +10429,592 @@ export const prisma = {
       if (where?.checkoutSessionId) { sql += ' AND checkout_session_id = ?'; params.push(where.checkoutSessionId); }
       const res: any = db.prepare(sql).get(...params);
       return Number(res?.count || 0);
+    }
+  },
+
+  order: {
+    findUnique: ({ where, include }: { where: { id?: string; orderNumber?: string; checkoutSessionId?: string }; include?: any }) => {
+      let row: any = null;
+      if (where.id) {
+        row = db.prepare('SELECT * FROM orders WHERE id = ?').get(where.id);
+      } else if (where.orderNumber) {
+        row = db.prepare('SELECT * FROM orders WHERE order_number = ?').get(where.orderNumber);
+      } else if (where.checkoutSessionId) {
+        row = db.prepare('SELECT * FROM orders WHERE checkout_session_id = ?').get(where.checkoutSessionId);
+      }
+      if (!row) return null;
+
+      const orderObj: any = {
+        id: row.id,
+        orderNumber: row.order_number,
+        customerId: row.customer_id,
+        checkoutSessionId: row.checkout_session_id,
+        guestOrderTokenHash: row.guest_order_token_hash,
+        currency: row.currency,
+        status: row.status,
+        paymentStatus: row.payment_status,
+        email: row.email,
+        subtotal: Number(row.subtotal),
+        discountTotal: Number(row.discount_total),
+        shippingTotal: Number(row.shipping_total),
+        taxTotal: Number(row.tax_total),
+        grandTotal: Number(row.grand_total),
+        notes: row.notes,
+        placedAt: new Date(row.placed_at),
+        confirmedAt: row.confirmed_at ? new Date(row.confirmed_at) : null,
+        shippedAt: row.shipped_at ? new Date(row.shipped_at) : null,
+        deliveredAt: row.delivered_at ? new Date(row.delivered_at) : null,
+        cancelledAt: row.cancelled_at ? new Date(row.cancelled_at) : null,
+        cancellationReason: row.cancellation_reason,
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+
+      if (include?.items) {
+        orderObj.items = prisma.orderItem.findMany({
+          where: { orderId: row.id },
+          include: typeof include.items === 'object' ? include.items.include : undefined
+        });
+      }
+
+      if (include?.addresses) {
+        orderObj.addresses = prisma.orderAddress.findMany({
+          where: { orderId: row.id }
+        });
+      }
+
+      if (include?.customer && row.customer_id) {
+        orderObj.customer = prisma.customer.findUnique({
+          where: { id: row.customer_id }
+        });
+      }
+
+      if (include?.checkoutSession && row.checkout_session_id) {
+        orderObj.checkoutSession = prisma.checkoutSession.findUnique({
+          where: { id: row.checkout_session_id }
+        });
+      }
+
+      return orderObj;
+    },
+
+    findFirst: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM orders WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderNumber) { sql += ' AND order_number = ?'; params.push(where.orderNumber); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.checkoutSessionId) { sql += ' AND checkout_session_id = ?'; params.push(where.checkoutSessionId); }
+      if (where?.guestOrderTokenHash) { sql += ' AND guest_order_token_hash = ?'; params.push(where.guestOrderTokenHash); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.paymentStatus) { sql += ' AND payment_status = ?'; params.push(where.paymentStatus); }
+      if (where?.email) { sql += ' AND LOWER(email) = LOWER(?)'; params.push(where.email); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else if (orderBy?.placedAt) sql += ` ORDER BY placed_at ${orderBy.placedAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at DESC';
+
+      sql += ' LIMIT 1';
+      const row: any = db.prepare(sql).get(...params);
+      if (!row) return null;
+      return prisma.order.findUnique({ where: { id: row.id }, include });
+    },
+
+    findMany: ({ where, include, orderBy, take, skip }: any = {}) => {
+      let sql = 'SELECT id FROM orders WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.checkoutSessionId) { sql += ' AND checkout_session_id = ?'; params.push(where.checkoutSessionId); }
+      if (where?.email) {
+        if (where.email.contains) {
+          sql += ' AND LOWER(email) LIKE LOWER(?)';
+          params.push(`%${where.email.contains}%`);
+        } else {
+          sql += ' AND LOWER(email) = LOWER(?)';
+          params.push(where.email);
+        }
+      }
+      if (where?.orderNumber) {
+        if (where.orderNumber.contains) {
+          sql += ' AND LOWER(order_number) LIKE LOWER(?)';
+          params.push(`%${where.orderNumber.contains}%`);
+        } else {
+          sql += ' AND order_number = ?';
+          params.push(where.orderNumber);
+        }
+      }
+      if (where?.status) {
+        if (Array.isArray(where.status.in)) {
+          sql += ` AND status IN (${where.status.in.map(() => '?').join(', ')})`;
+          params.push(...where.status.in);
+        } else {
+          sql += ' AND status = ?';
+          params.push(where.status);
+        }
+      }
+      if (where?.paymentStatus) {
+        if (Array.isArray(where.paymentStatus.in)) {
+          sql += ` AND payment_status IN (${where.paymentStatus.in.map(() => '?').join(', ')})`;
+          params.push(...where.paymentStatus.in);
+        } else {
+          sql += ' AND payment_status = ?';
+          params.push(where.paymentStatus);
+        }
+      }
+      if (where?.placedAt?.gte) {
+        const d = where.placedAt.gte instanceof Date ? where.placedAt.gte.toISOString() : where.placedAt.gte;
+        sql += ' AND placed_at >= ?';
+        params.push(d);
+      }
+      if (where?.placedAt?.lte) {
+        const d = where.placedAt.lte instanceof Date ? where.placedAt.lte.toISOString() : where.placedAt.lte;
+        sql += ' AND placed_at <= ?';
+        params.push(d);
+      }
+      if (where?.createdAt?.gte) {
+        const d = where.createdAt.gte instanceof Date ? where.createdAt.gte.toISOString() : where.createdAt.gte;
+        sql += ' AND created_at >= ?';
+        params.push(d);
+      }
+      if (where?.createdAt?.lte) {
+        const d = where.createdAt.lte instanceof Date ? where.createdAt.lte.toISOString() : where.createdAt.lte;
+        sql += ' AND created_at <= ?';
+        params.push(d);
+      }
+
+      if (orderBy) {
+        if (orderBy.placedAt) sql += ` ORDER BY placed_at ${orderBy.placedAt.toUpperCase()}`;
+        else if (orderBy.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+        else if (orderBy.orderNumber) sql += ` ORDER BY order_number ${orderBy.orderNumber.toUpperCase()}`;
+        else if (orderBy.grandTotal) sql += ` ORDER BY grand_total ${orderBy.grandTotal.toUpperCase()}`;
+        else sql += ' ORDER BY placed_at DESC';
+      } else {
+        sql += ' ORDER BY placed_at DESC';
+      }
+
+      if (take !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(Number(take));
+        if (skip !== undefined) {
+          sql += ' OFFSET ?';
+          params.push(Number(skip));
+        }
+      }
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.order.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+      const placedAt = data.placedAt instanceof Date ? data.placedAt.toISOString() : (data.placedAt || now);
+      const confirmedAt = data.confirmedAt instanceof Date ? data.confirmedAt.toISOString() : (data.confirmedAt || null);
+      const shippedAt = data.shippedAt instanceof Date ? data.shippedAt.toISOString() : (data.shippedAt || null);
+      const deliveredAt = data.deliveredAt instanceof Date ? data.deliveredAt.toISOString() : (data.deliveredAt || null);
+      const cancelledAt = data.cancelledAt instanceof Date ? data.cancelledAt.toISOString() : (data.cancelledAt || null);
+
+      db.prepare(`
+        INSERT INTO orders (
+          id, order_number, customer_id, checkout_session_id, guest_order_token_hash,
+          currency, status, payment_status, email, subtotal, discount_total,
+          shipping_total, tax_total, grand_total, notes, placed_at, confirmed_at,
+          shipped_at, delivered_at, cancelled_at, cancellation_reason, created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderNumber,
+        data.customerId || null,
+        data.checkoutSessionId,
+        data.guestOrderTokenHash || null,
+        data.currency || 'INR',
+        data.status || 'PENDING',
+        data.paymentStatus || 'PENDING',
+        data.email,
+        Number(data.subtotal || 0),
+        Number(data.discountTotal || 0),
+        Number(data.shippingTotal || 0),
+        Number(data.taxTotal || 0),
+        Number(data.grandTotal || 0),
+        data.notes || null,
+        placedAt,
+        confirmedAt,
+        shippedAt,
+        deliveredAt,
+        cancelledAt,
+        data.cancellationReason || null,
+        now,
+        now
+      );
+
+      if (data.items?.create) {
+        const itemsToCreate = Array.isArray(data.items.create) ? data.items.create : [data.items.create];
+        for (const itm of itemsToCreate) {
+          prisma.orderItem.create({
+            data: {
+              ...itm,
+              orderId: id
+            }
+          });
+        }
+      }
+
+      if (data.addresses?.create) {
+        const addrsToCreate = Array.isArray(data.addresses.create) ? data.addresses.create : [data.addresses.create];
+        for (const addr of addrsToCreate) {
+          prisma.orderAddress.create({
+            data: {
+              ...addr,
+              orderId: id
+            }
+          });
+        }
+      }
+
+      return prisma.order.findUnique({ where: { id }, include });
+    },
+
+    update: ({ where, data, include }: { where: { id: string }; data: any; include?: any }) => {
+      const existing = prisma.order.findUnique({ where });
+      if (!existing) throw new Error('Order not found');
+
+      const updates: string[] = [];
+      const params: any[] = [];
+
+      if (data.status !== undefined) { updates.push('status = ?'); params.push(data.status); }
+      if (data.paymentStatus !== undefined) { updates.push('payment_status = ?'); params.push(data.paymentStatus); }
+      if (data.notes !== undefined) { updates.push('notes = ?'); params.push(data.notes); }
+      if (data.cancellationReason !== undefined) { updates.push('cancellation_reason = ?'); params.push(data.cancellationReason); }
+      if (data.confirmedAt !== undefined) {
+        const val = data.confirmedAt instanceof Date ? data.confirmedAt.toISOString() : (data.confirmedAt || null);
+        updates.push('confirmed_at = ?');
+        params.push(val);
+      }
+      if (data.shippedAt !== undefined) {
+        const val = data.shippedAt instanceof Date ? data.shippedAt.toISOString() : (data.shippedAt || null);
+        updates.push('shipped_at = ?');
+        params.push(val);
+      }
+      if (data.deliveredAt !== undefined) {
+        const val = data.deliveredAt instanceof Date ? data.deliveredAt.toISOString() : (data.deliveredAt || null);
+        updates.push('delivered_at = ?');
+        params.push(val);
+      }
+      if (data.cancelledAt !== undefined) {
+        const val = data.cancelledAt instanceof Date ? data.cancelledAt.toISOString() : (data.cancelledAt || null);
+        updates.push('cancelled_at = ?');
+        params.push(val);
+      }
+
+      updates.push('updated_at = ?');
+      params.push(new Date().toISOString());
+
+      params.push(where.id);
+      db.prepare(`UPDATE orders SET ${updates.join(', ')} WHERE id = ?`).run(...params);
+
+      return prisma.order.findUnique({ where: { id: where.id }, include });
+    },
+
+    delete: ({ where }: { where: { id: string } }) => {
+      const existing = prisma.order.findUnique({ where, include: { items: true, addresses: true } });
+      if (!existing) return null;
+      db.prepare('DELETE FROM orders WHERE id = ?').run(where.id);
+      return existing;
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM orders').run();
+        return;
+      }
+      let sql = 'DELETE FROM orders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.checkoutSessionId) { sql += ' AND checkout_session_id = ?'; params.push(where.checkoutSessionId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM orders WHERE 1=1';
+      const params: any[] = [];
+      if (where?.customerId) { sql += ' AND customer_id = ?'; params.push(where.customerId); }
+      if (where?.status) { sql += ' AND status = ?'; params.push(where.status); }
+      if (where?.paymentStatus) { sql += ' AND payment_status = ?'; params.push(where.paymentStatus); }
+      if (where?.email) {
+        if (where.email.contains) {
+          sql += ' AND LOWER(email) LIKE LOWER(?)';
+          params.push(`%${where.email.contains}%`);
+        } else {
+          sql += ' AND LOWER(email) = LOWER(?)';
+          params.push(where.email);
+        }
+      }
+      if (where?.orderNumber) {
+        if (where.orderNumber.contains) {
+          sql += ' AND LOWER(order_number) LIKE LOWER(?)';
+          params.push(`%${where.orderNumber.contains}%`);
+        } else {
+          sql += ' AND order_number = ?';
+          params.push(where.orderNumber);
+        }
+      }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  orderItem: {
+    findUnique: ({ where, include }: { where: { id: string }; include?: any }) => {
+      const row: any = db.prepare('SELECT * FROM order_items WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      const item: any = {
+        id: row.id,
+        orderId: row.order_id,
+        productId: row.product_id,
+        variantId: row.variant_id,
+        sku: row.sku,
+        productName: row.product_name,
+        variantDescription: row.variant_description,
+        quantity: Number(row.quantity),
+        unitPrice: Number(row.unit_price),
+        lineTotal: Number(row.line_total),
+        currency: row.currency,
+        createdAt: new Date(row.created_at)
+      };
+
+      if (include?.product && row.product_id) {
+        item.product = prisma.product.findUnique({
+          where: { id: row.product_id },
+          include: typeof include.product === 'object' ? include.product.include : undefined
+        });
+      }
+
+      if (include?.variant && row.variant_id) {
+        item.variant = prisma.productVariant.findUnique({
+          where: { id: row.variant_id },
+          include: typeof include.variant === 'object' ? include.variant.include : undefined
+        });
+      }
+
+      return item;
+    },
+
+    findMany: ({ where, include, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM order_items WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.productId) { sql += ' AND product_id = ?'; params.push(where.productId); }
+      if (where?.variantId) { sql += ' AND variant_id = ?'; params.push(where.variantId); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.orderItem.findUnique({ where: { id: r.id }, include }));
+    },
+
+    create: ({ data, include }: { data: any; include?: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        INSERT INTO order_items (
+          id, order_id, product_id, variant_id, sku,
+          product_name, variant_description, quantity, unit_price,
+          line_total, currency, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderId,
+        data.productId || null,
+        data.variantId || null,
+        data.sku,
+        data.productName,
+        data.variantDescription || null,
+        Number(data.quantity || 1),
+        Number(data.unitPrice || 0),
+        Number(data.lineTotal || 0),
+        data.currency || 'INR',
+        now
+      );
+
+      return prisma.orderItem.findUnique({ where: { id }, include });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM order_items').run();
+        return;
+      }
+      let sql = 'DELETE FROM order_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM order_items WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  orderAddress: {
+    findUnique: ({ where }: { where: { id: string } }) => {
+      const row: any = db.prepare('SELECT * FROM order_addresses WHERE id = ?').get(where.id);
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        orderId: row.order_id,
+        type: row.type,
+        fullName: row.full_name,
+        firstName: row.first_name,
+        lastName: row.last_name,
+        companyName: row.company_name,
+        addressLine1: row.address_line1,
+        addressLine2: row.address_line2,
+        landmark: row.landmark,
+        city: row.city,
+        state: row.state,
+        postalCode: row.postal_code,
+        country: row.country,
+        phone: row.phone,
+        createdAt: new Date(row.created_at)
+      };
+    },
+
+    findMany: ({ where, orderBy }: any = {}) => {
+      let sql = 'SELECT id FROM order_addresses WHERE 1=1';
+      const params: any[] = [];
+
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      if (where?.type) { sql += ' AND type = ?'; params.push(where.type); }
+
+      if (orderBy?.createdAt) sql += ` ORDER BY created_at ${orderBy.createdAt.toUpperCase()}`;
+      else sql += ' ORDER BY created_at ASC';
+
+      const rows: any[] = db.prepare(sql).all(...params);
+      return rows.map(r => prisma.orderAddress.findUnique({ where: { id: r.id } }));
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || randomUUID();
+      const now = new Date().toISOString();
+
+      const fullName = data.fullName || `${data.firstName || ''} ${data.lastName || ''}`.trim();
+
+      db.prepare(`
+        INSERT INTO order_addresses (
+          id, order_id, type, full_name, first_name, last_name, company_name,
+          address_line1, address_line2, landmark, city, state, postal_code,
+          country, phone, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        data.orderId,
+        data.type || 'SHIPPING',
+        fullName,
+        data.firstName || '',
+        data.lastName || '',
+        data.companyName || null,
+        data.addressLine1,
+        data.addressLine2 || null,
+        data.landmark || null,
+        data.city,
+        data.state,
+        data.postalCode,
+        data.country || 'INDIA',
+        data.phone,
+        now
+      );
+
+      return prisma.orderAddress.findUnique({ where: { id } });
+    },
+
+    deleteMany: ({ where }: any = {}) => {
+      if (!where || Object.keys(where).length === 0) {
+        db.prepare('DELETE FROM order_addresses').run();
+        return;
+      }
+      let sql = 'DELETE FROM order_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.id) { sql += ' AND id = ?'; params.push(where.id); }
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      db.prepare(sql).run(...params);
+    },
+
+    count: ({ where }: any = {}) => {
+      let sql = 'SELECT COUNT(*) as count FROM order_addresses WHERE 1=1';
+      const params: any[] = [];
+      if (where?.orderId) { sql += ' AND order_id = ?'; params.push(where.orderId); }
+      const res: any = db.prepare(sql).get(...params);
+      return Number(res?.count || 0);
+    }
+  },
+
+  orderSequence: {
+    findUnique: ({ where }: { where: { year?: number; id?: string } }) => {
+      let row: any = null;
+      if (where.year !== undefined) {
+        row = db.prepare('SELECT * FROM order_sequences WHERE year = ?').get(where.year);
+      } else if (where.id) {
+        row = db.prepare('SELECT * FROM order_sequences WHERE id = ?').get(where.id);
+      }
+      if (!row) return null;
+      return {
+        id: row.id,
+        year: Number(row.year),
+        currentNumber: Number(row.current_number),
+        createdAt: new Date(row.created_at),
+        updatedAt: new Date(row.updated_at)
+      };
+    },
+
+    create: ({ data }: { data: any }) => {
+      const id = data.id || `ORDER_SEQ_${data.year}`;
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO order_sequences (id, year, current_number, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?)
+      `).run(id, data.year, Number(data.currentNumber || 0), now, now);
+
+      return prisma.orderSequence.findUnique({ where: { id } });
+    },
+
+    update: ({ where, data }: { where: { year?: number; id?: string }; data: any }) => {
+      const now = new Date().toISOString();
+      if (where.year !== undefined) {
+        db.prepare('UPDATE order_sequences SET current_number = ?, updated_at = ? WHERE year = ?')
+          .run(Number(data.currentNumber), now, where.year);
+        return prisma.orderSequence.findUnique({ where: { year: where.year } });
+      } else {
+        db.prepare('UPDATE order_sequences SET current_number = ?, updated_at = ? WHERE id = ?')
+          .run(Number(data.currentNumber), now, where.id);
+        return prisma.orderSequence.findUnique({ where: { id: where.id } });
+      }
+    },
+
+    upsert: ({ where, create, update }: any) => {
+      const existing = prisma.orderSequence.findUnique({ where });
+      if (existing) {
+        return prisma.orderSequence.update({ where, data: update });
+      } else {
+        return prisma.orderSequence.create({ data: create });
+      }
     }
   },
 

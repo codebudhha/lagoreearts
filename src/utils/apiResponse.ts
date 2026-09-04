@@ -34,7 +34,45 @@ export const ApiResponse = {
     return ApiResponse.success(res, data, 201, message);
   },
 
-  error(res: Response, code: string, message: string, statusCode: number = 400, details?: any) {
+  paginated<T>(res: Response, data: T[], page: number, limit: number, total: number, statusCode: number = 200, message?: string) {
+    const totalPages = Math.ceil(total / (limit || 1));
+    const payload: any = {
+      success: true,
+      data,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    };
+    if (message) payload.message = message;
+    return res.status(statusCode).json(payload);
+  },
+
+  error(res: Response, arg1: string, arg2?: any, arg3?: any, details?: any) {
+    let code = 'BAD_REQUEST';
+    let message = 'An error occurred';
+    let statusCode = 400;
+
+    if (typeof arg2 === 'number') {
+      // Called as: (res, message, statusCode, code, details)
+      message = arg1;
+      statusCode = arg2;
+      if (typeof arg3 === 'string') code = arg3;
+    } else if (typeof arg3 === 'number') {
+      // Called as: (res, code, message, statusCode, details)
+      code = arg1;
+      if (typeof arg2 === 'string') message = arg2;
+      statusCode = arg3;
+    } else {
+      code = arg1 || 'BAD_REQUEST';
+      message = typeof arg2 === 'string' ? arg2 : 'An error occurred';
+      statusCode = typeof arg3 === 'number' ? arg3 : 400;
+    }
+
     const payload: ApiErrorResponse = {
       success: false,
       error: {

@@ -866,9 +866,13 @@ export class CheckoutService {
   }
 
   /**
-   * MODULE 20 ORDER MODULE CONTRACT
+   * MODULE 20 ORDER MODULE CONTRACT (Static & Instance)
    */
   public async getCompletedCheckoutForOrder(checkoutId: string): Promise<CompletedCheckoutContract> {
+    return CheckoutService.getCompletedCheckoutForOrder(checkoutId);
+  }
+
+  public static async getCompletedCheckoutForOrder(checkoutId: string): Promise<CompletedCheckoutContract> {
     const session = await CheckoutRepository.findCheckoutById(checkoutId);
     if (!session) {
       throw new ApiError(404, 'CHECKOUT_NOT_FOUND', 'Checkout session not found');

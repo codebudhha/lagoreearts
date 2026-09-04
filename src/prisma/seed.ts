@@ -158,6 +158,13 @@ export const PERMISSIONS_DATA = [
   // CHECKOUT (MODULE 19)
   { name: 'View Checkout Sessions', slug: 'checkout.view', module: 'CHECKOUT', description: 'Inspect active, completed, and expired checkout sessions' },
 
+  // ORDERS (MODULE 20)
+  { name: 'View Orders', slug: 'order.view', module: 'ORDERS', description: 'View patron and guest orders' },
+  { name: 'Create Order', slug: 'order.create', module: 'ORDERS', description: 'Create order records' },
+  { name: 'Update Order', slug: 'order.update', module: 'ORDERS', description: 'Modify order operational details' },
+  { name: 'Cancel Order', slug: 'order.cancel', module: 'ORDERS', description: 'Cancel order records' },
+  { name: 'Manage Order Status', slug: 'order.manage-status', module: 'ORDERS', description: 'Advance order lifecycle and payment status' },
+
   // SETTINGS & ROLES
   { name: 'View Settings & Roles', slug: 'settings.view', module: 'SETTINGS', description: 'View platform settings and roles' },
   { name: 'Update Settings & Roles', slug: 'settings.update', module: 'SETTINGS', description: 'Modify roles, permissions, settings' },
@@ -238,7 +245,7 @@ export const ROLES_DATA = [
     description: 'Manages patron acquisitions, atelier framing tracking, crating, and patron concierge.',
     isSystem: true,
     permissionSlugs: [
-      'order.view', 'order.update',
+      'order.view', 'order.create', 'order.update', 'order.cancel', 'order.manage-status',
       'cart.view',
       'checkout.view',
       'customer.view', 'customer.address.view', 'customer.status.update'
