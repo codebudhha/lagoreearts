@@ -138,7 +138,7 @@ export const LoginPage: React.FC = () => {
                 type="submit"
                 variant="primary"
                 size="md"
-                className="w-full py-2.5 shadow-md hover:shadow-lg"
+                className="w-full py-2.5 shadow-md hover:shadow-lg bg-charcoal-900 text-white hover:bg-charcoal-800 border border-charcoal-900 font-medium"
                 isLoading={isSubmitting}
               >
                 Sign In to Console

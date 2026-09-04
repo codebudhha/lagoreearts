@@ -31,15 +31,15 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variantStyles: Record<ButtonVariant, string> = {
       primary:
-        'bg-charcoal-900 text-ivory-50 hover:bg-charcoal-800 focus:ring-champagne-500 shadow-sm border border-charcoal-900',
+        'bg-charcoal-900 text-white hover:bg-charcoal-800 focus:ring-champagne-500 shadow-sm border border-charcoal-900',
       secondary:
-        'bg-ivory-100 text-charcoal-800 hover:bg-ivory-200 focus:ring-champagne-400 border border-ivory-300',
+        'bg-ivory-100 text-charcoal-900 hover:bg-ivory-200 focus:ring-champagne-400 border border-ivory-300',
       outline:
-        'bg-transparent text-charcoal-800 border border-charcoal-300 hover:border-charcoal-900 hover:bg-ivory-50 focus:ring-champagne-400',
+        'bg-transparent text-charcoal-900 border border-charcoal-300 hover:border-charcoal-900 hover:bg-ivory-50 focus:ring-champagne-400',
       ghost:
-        'bg-transparent text-charcoal-700 hover:bg-ivory-100 hover:text-charcoal-900 focus:ring-champagne-400',
+        'bg-transparent text-charcoal-800 hover:bg-ivory-100 hover:text-charcoal-900 focus:ring-champagne-400',
       danger:
-        'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm',
+        'bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-500 shadow-sm border border-rose-600',
     };
 
     const sizeStyles: Record<ButtonSize, string> = {
